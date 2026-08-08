@@ -1,9 +1,59 @@
-@import "tailwindcss";
-@plugin "daisyui" {
-  themes: light --default, dark --prefersdark;
+@import 'tailwindcss';
+@plugin "daisyui";
+
+/* Custom daisyUI theme built from the Oh Jamming brand palette.
+   base-100 = white surfaces (cards), base-200 = faintly indigo-tinted page
+   background, text is near-black, and brand colors drive primary/secondary/accent.
+   Forced on via <html data-theme="ohjamming"> so OS dark mode can't override it. */
+@plugin "daisyui/theme" {
+  name: 'ohjamming';
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: #ffffff;
+  --color-base-200: #f2f1fb;
+  --color-base-300: #e2e0f5;
+  --color-base-content: #0a0a0a;
+
+  --color-primary: #5546ff;
+  --color-primary-content: #ffffff;
+
+  /* Pink and green are light: both need dark text on top, never white. */
+  --color-secondary: #ff7bca;
+  --color-secondary-content: #0a0a0a;
+
+  --color-accent: #bfff0a;
+  --color-accent-content: #0a0a0a;
+
+  --color-neutral: #0a0a0a;
+  --color-neutral-content: #f2f1fb;
+
+  --color-info: #5546ff;
+  --color-info-content: #ffffff;
+  --color-success: #16a34a;
+  --color-success-content: #ffffff;
+  --color-warning: #facc15;
+  --color-warning-content: #0a0a0a;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --border: 1px;
+  --depth: 1;
 }
 
+/* `inline` is required so these resolve against the next/font variables
+   that layout.tsx puts on <html> at runtime. */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-manrope);
+  --font-heading: var(--font-changa-one);
+}
+
+@theme {
+  --color-brand-indigo: #5546ff;
+  --color-brand-pink: #ff7bca;
+  --color-brand-green: #bfff0a;
 }
