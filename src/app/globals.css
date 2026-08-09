@@ -19,10 +19,12 @@
   --color-primary: #5546ff;
   --color-primary-content: #ffffff;
 
-  /* Pink and green are light: both need dark text on top, never white. */
+  /* Pink: white text is a brand choice, not a contrast-driven one — see the
+     note in NavActions. Green is light enough that it still needs dark text. */
   --color-secondary: #ff7bca;
-  --color-secondary-content: #0a0a0a;
+  --color-secondary-content: #ffffff;
 
+    /* green */
   --color-accent: #bfff0a;
   --color-accent-content: #0a0a0a;
 

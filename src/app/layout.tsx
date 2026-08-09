@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Changa_One, Manrope } from 'next/font/google';
+import Header from '@/components/layout/Header';
 import './globals.css';
 
 // Changa One is a static font — Next requires an explicit weight (400 is all it has).
@@ -28,6 +29,8 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${manrope.variable} ${changaOne.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-base-200 text-base-content">
+        {/* Fixed, so it sits outside the flow and overlays the hero video. */}
+        <Header />
         {children}
       </body>
     </html>

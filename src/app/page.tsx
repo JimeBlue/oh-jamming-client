@@ -1,18 +1,14 @@
 import ApiStatus from '@/components/ApiStatus';
+import Hero from '@/components/hero/Hero';
 
 export default function Home() {
   return (
-    <main className="hero flex-1">
-      <div className="hero-content text-center">
-        <div className="max-w-md">
-          <h1 className="font-heading text-6xl">Oh Jamming</h1>
-          <p className="py-6">Book a spot in a jam session.</p>
-          <button className="btn btn-primary">Browse sessions</button>
-          <div className="mt-8">
-            <ApiStatus />
-          </div>
-        </div>
-      </div>
+    <main className="flex-1">
+      <Hero />
+
+      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+        <ApiStatus />
+      </section>
     </main>
   );
 }
