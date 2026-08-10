@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import {
   IoChevronForward,
-  IoClose,
   IoLogInOutline,
   IoPersonAddOutline,
 } from 'react-icons/io5';
@@ -18,19 +17,15 @@ type GuestMenuProps = {
    base-content or it would be white on white. */
 export default function GuestMenu({ onClose }: GuestMenuProps) {
   return (
-    <div className="relative w-80 rounded-box border border-secondary bg-base-100 p-6 text-base-content shadow-2xl">
-      {/* Mainly for touch, where there's no cursor to move away — but it costs
-          nothing to leave it on every size. */}
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Close menu"
-        className="btn btn-ghost btn-sm btn-circle absolute right-2 top-2"
-      >
-        <IoClose className="size-5" />
-      </button>
-
-      <h2 className="pr-8 text-center font-heading text-2xl leading-tight">
+    /* w-80 is the widest this can be on a 390px phone: the panel is anchored to
+       the right edge of the account button, which leaves roughly 320px before
+       it would run off the left of the screen. So the heading is fitted to that
+       width rather than the panel being widened to the heading. */
+    <div className="w-80 rounded-box border border-secondary bg-base-100 p-6 text-base-content shadow-2xl sm:w-96">
+      {/* whitespace-nowrap is the guarantee: the size below is chosen to fit,
+          and this makes a future wording change fail visibly rather than
+          silently wrapping back to two lines. */}
+      <h2 className="whitespace-nowrap text-center font-heading text-xl leading-tight sm:text-2xl">
         You are not logged in yet
       </h2>
 

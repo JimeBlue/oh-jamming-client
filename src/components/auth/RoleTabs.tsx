@@ -5,10 +5,10 @@ import type { UserRole } from '@/schemas/user';
 const tabs: { role: UserRole; label: string; href: string }[] = [
   {
     role: 'musician',
-    label: 'register as a musician',
+    label: 'Register as a musician',
     href: '/register/musician',
   },
-  { role: 'venue', label: 'register as a venue', href: '/register/venue' },
+  { role: 'venue', label: 'Register as a venue', href: '/register/venue' },
 ];
 
 /* Links rather than buttons, because the tabs *are* the routes — switching them

@@ -1,14 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { FaClipboardUser, FaPlugCirclePlus } from 'react-icons/fa6';
+import { IoLogOutOutline, IoTicketSharp } from 'react-icons/io5';
 import type { IconType } from 'react-icons/lib';
-import {
-  IoAddCircleOutline,
-  IoLogOutOutline,
-  IoMusicalNotesOutline,
-  IoSpeedometerOutline,
-  IoTicketOutline,
-} from 'react-icons/io5';
+import { MdBadge } from 'react-icons/md';
 
 import { useAuth } from '@/context/AuthContext';
 import type { User, UserRole } from '@/schemas/user';
@@ -27,12 +23,12 @@ type AccountLink = {
    path would just 404 today. */
 const linksByRole: Record<UserRole, AccountLink[]> = {
   musician: [
-    { label: 'My spots', href: '#', icon: IoTicketOutline },
-    { label: 'Book a spot', href: '#', icon: IoMusicalNotesOutline },
+    { label: 'My spots', href: '#', icon: FaClipboardUser },
+    { label: 'Book a spot', href: '#', icon: IoTicketSharp },
   ],
   venue: [
-    { label: 'My Backstage', href: '#', icon: IoSpeedometerOutline },
-    { label: 'Insert your Jam', href: '#', icon: IoAddCircleOutline },
+    { label: 'My Backstage', href: '#', icon: MdBadge },
+    { label: 'Insert your Jam', href: '#', icon: FaPlugCirclePlus },
   ],
 };
 
