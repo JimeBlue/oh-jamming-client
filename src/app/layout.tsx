@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Changa_One, Manrope } from 'next/font/google';
 import Header from '@/components/layout/Header';
+import AuthProvider from '@/context/AuthContext';
 import './globals.css';
 
 // Changa One is a static font — Next requires an explicit weight (400 is all it has).
@@ -29,9 +30,14 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${manrope.variable} ${changaOne.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-base-200 text-base-content">
-        {/* Fixed, so it sits outside the flow and overlays the hero video. */}
-        <Header />
-        {children}
+        {/* Wraps both, since the header reads the session and pages will too.
+            children stays server-rendered — passing it through a Client
+            Component doesn't pull it into the client bundle. */}
+        <AuthProvider>
+          {/* Fixed, so it sits outside the flow and overlays the hero video. */}
+          <Header />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
