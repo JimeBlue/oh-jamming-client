@@ -57,7 +57,7 @@ export default function JamStepBar({ currentIndex }: JamStepBarProps) {
                   isDone
                     ? 'bg-accent text-accent-content'
                     : isCurrent
-                      ? 'bg-base-100 ring-2 ring-secondary'
+                      ? 'bg-base-100 ring-2 ring-primary'
                       : 'bg-base-300'
                 }`}
               >

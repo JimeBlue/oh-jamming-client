@@ -16,7 +16,7 @@ export default function JamBuilderHeader() {
     /* In the flow rather than fixed, unlike the site header — there's no video
        to overlay here, and it saves every page under this layout having to pad
        itself out from under it. */
-    <header className="bg-neutral text-white">
+    <header className="bg-primary text-primary-content">
       <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Oh Jamming — home" className="shrink-0">
           <Image src={logo} alt="Oh Jamming" priority className="h-9 w-auto" />

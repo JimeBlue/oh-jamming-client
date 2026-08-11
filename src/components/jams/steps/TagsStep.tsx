@@ -92,12 +92,12 @@ const TagRow = <T extends string>({
   </fieldset>
 );
 
-/* The catch-all wears the lime accent rather than the pink: it isn't one more
+/* The catch-all wears the lime accent rather than the indigo: it isn't one more
    choice in the row, it's the answer that replaces the row. */
 const chipClass = (isSelected: boolean, isCatchAll: boolean): string => {
   if (!isSelected) return 'btn-outline';
 
-  return isCatchAll ? 'btn-accent' : 'btn-secondary';
+  return isCatchAll ? 'btn-accent' : 'btn-primary';
 };
 
 export default function TagsStep() {

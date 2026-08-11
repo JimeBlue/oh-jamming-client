@@ -143,7 +143,7 @@ export default function LinkDialog({ onCancel, onSave }: LinkDialogProps) {
         </div>
 
         <div className="modal-action justify-center">
-          <button type="button" onClick={save} className="btn btn-secondary font-bold">
+          <button type="button" onClick={save} className="btn btn-primary font-bold">
             Save
           </button>
           <button type="button" onClick={onCancel} className="btn btn-outline font-bold">

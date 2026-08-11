@@ -89,7 +89,11 @@ daisyUI 5 with a custom `ohjamming` theme in `globals.css`, forced via
 `<html data-theme="ohjamming">` — there is no dark mode. `--font-heading` is
 Changa One, applied as `font-heading`. Note `--color-info` is the brand indigo,
 which makes `alert-info` a solid loud block; for soft notices use a tinted panel
-(`border-secondary/40 bg-secondary/10`).
+(`border-primary/40 bg-primary/10`).
+
+The jam builder is **indigo, not pink** — `bg-primary` header, primary buttons,
+chips and highlights. The pink stays the site's accent elsewhere. If you add a
+step, match the steps around it rather than reaching for `btn-secondary`.
 
 ## Current work
 

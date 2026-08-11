@@ -99,7 +99,7 @@ export default function InstrumentsStep() {
               <li
                 key={row.id}
                 className={`flex items-center gap-3 rounded-box border p-3 ${
-                  spots > 0 ? 'border-secondary/50 bg-secondary/5' : 'border-base-300'
+                  spots > 0 ? 'border-primary/50 bg-primary/5' : 'border-base-300'
                 }`}
               >
                 {/* Editable rather than fixed text: the presets are a starting
@@ -199,7 +199,7 @@ export default function InstrumentsStep() {
             type="button"
             onClick={addInstrument}
             disabled={!newInstrument.trim()}
-            className="btn btn-secondary font-bold"
+            className="btn btn-primary font-bold"
           >
             Add
           </button>

@@ -96,7 +96,7 @@ export default function PreviewStep() {
           {genres.map((genre) => (
             <li
               key={genre}
-              className="rounded-field bg-secondary/15 px-3 py-1 text-sm"
+              className="rounded-field bg-primary/15 px-3 py-1 text-sm"
             >
               {genre && GENRE_LABELS[genre]}
             </li>

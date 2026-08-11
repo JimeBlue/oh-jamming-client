@@ -217,7 +217,7 @@ export default function AddressField() {
                   onClick={() => select(suggestion)}
                   onMouseEnter={() => setActiveIndex(index)}
                   className={`flex cursor-pointer items-start gap-3 px-4 py-3 text-sm ${
-                    index === activeIndex ? 'bg-secondary text-secondary-content' : ''
+                    index === activeIndex ? 'bg-primary text-primary-content' : ''
                   }`}
                 >
                   <FaLocationDot className="mt-0.5 size-4 shrink-0 opacity-60" />

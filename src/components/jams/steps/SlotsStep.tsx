@@ -49,9 +49,9 @@ export default function SlotsStep() {
     return (
       <div
         role="note"
-        className="flex gap-3 rounded-box border border-secondary/40 bg-secondary/10 p-4"
+        className="flex gap-3 rounded-box border border-primary/40 bg-primary/10 p-4"
       >
-        <IoInformationCircle className="size-6 shrink-0 text-secondary" />
+        <IoInformationCircle className="size-6 shrink-0 text-primary" />
         <p className="text-sm">
           Set the start and end times on the previous step first — which slot
           lengths are possible depends entirely on how long the session runs.
@@ -129,7 +129,7 @@ export default function SlotsStep() {
    which one is picked would make the error underneath unreadable — but wears the
    error colour instead of the brand one. */
 const optionClass = (isSelected: boolean, isAvailable: boolean): string => {
-  if (isSelected) return isAvailable ? 'btn-secondary' : 'btn-outline btn-error';
+  if (isSelected) return isAvailable ? 'btn-primary' : 'btn-outline btn-error';
 
   return isAvailable ? 'btn-outline' : 'btn-outline btn-disabled';
 };

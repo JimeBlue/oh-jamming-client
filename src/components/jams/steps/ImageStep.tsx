@@ -7,14 +7,14 @@ import { IoInformationCircle } from 'react-icons/io5';
 export default function ImageStep() {
   return (
     /* Not daisyUI's `alert alert-info`: this theme's --color-info is the brand
-       indigo, which fills the whole box and shouts at someone who is only being
-       told a field isn't ready yet. A tinted panel says the same thing at the
-       volume it deserves. */
+       indigo, and `alert-info` fills the whole box with it — shouting at someone
+       who is only being told a field isn't ready yet. Same colour, as a tint
+       rather than a solid block, which says it at the volume it deserves. */
     <div
       role="note"
-      className="flex gap-3 rounded-box border border-secondary/40 bg-secondary/10 p-4"
+      className="flex gap-3 rounded-box border border-primary/40 bg-primary/10 p-4"
     >
-      <IoInformationCircle className="size-6 shrink-0 text-secondary" />
+      <IoInformationCircle className="size-6 shrink-0 text-primary" />
       <p className="text-sm">
         Image upload is still to be built — the API has no field for it yet.
         Carry on to the next step; you&apos;ll be able to add a photo here once

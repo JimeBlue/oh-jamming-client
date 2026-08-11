@@ -208,7 +208,7 @@ export default function JamWizard() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-secondary gap-2 font-bold"
+                className="btn btn-primary gap-2 font-bold"
               >
                 {isSubmitting && <span className="loading loading-spinner" />}
                 {isSubmitting ? 'Publishing…' : 'Publish jam session'}
@@ -217,7 +217,7 @@ export default function JamWizard() {
               <button
                 type="button"
                 onClick={goNext}
-                className="btn btn-secondary gap-2 font-bold"
+                className="btn btn-primary gap-2 font-bold"
               >
                 Go to the next step
                 <FaArrowRight className="size-4" />
