@@ -146,17 +146,64 @@ lowered. It matters because the API deletes **every** session for a user if it
 sees a rotated refresh token reused — and a twenty-minute form is exactly where
 an access token dies mid-session.
 
-### Phase 4 — Address autocomplete + map
+### Phase 4 — Address autocomplete + map ✅ done
 
-Photon (`photon.komoot.io`) debounced ~300ms — free, no key, CORS-open. Leaflet
-+ OSM tiles for the pin.
+Photon (`photon.komoot.io`) for the suggestions, Leaflet + OSM raster tiles for
+the pin. Both free and keyless, which is the whole reason for them over Google
+Places or Mapbox: a key would have to sit in `NEXT_PUBLIC_*` — published to
+anyone who opens devtools — or behind a proxy route on the API, and this phase
+wanted no backend change. The price is coverage: Photon knows what OSM knows.
 
-Photon returns GeoJSON `coordinates: [lng, lat]`; **Leaflet takes `[lat, lng]`**.
-Swapping them puts a Nürnberg venue in the Indian Ocean without erroring.
+- `src/services/geocoding.ts` — the query, and OSM's parts assembled into two
+  lines. Deliberately **not** routed through `services/api.ts`: a third party
+  must not receive our cookies, must not trigger a session refresh on a 401, and
+  a geocoder being down is a degraded input rather than a failed request
+- `src/hooks/useAddressSearch.ts` — 300ms debounce, one in-flight request,
+  aborted on the next keystroke
+- `src/components/jams/steps/AddressField.tsx` — the combobox, and the whole
+  `address` object rather than `address.formatted` alone
+- `src/components/jams/steps/VenueMap.tsx` — loaded through `next/dynamic` with
+  `ssr: false`, because Leaflet reads `window` at import time
 
-Free text must stay submittable when nothing is picked — the map simply doesn't
-render. `Alte Werkstatt` in the seed data deliberately has no coordinates so
-that path can be built against real data.
+Decisions and traps, in the order they bite:
+
+- **Photon returns GeoJSON `coordinates: [lng, lat]`; Leaflet takes
+  `[lat, lng]`.** Swapping them puts a Nürnberg venue in the Indian Ocean
+  without erroring. The pair is split into named numbers in the service and the
+  array never leaves that file.
+- **The map is on screen from the first paint**, Germany at country scale, with
+  no pin. Rendering it only once coordinates exist would hide it at exactly the
+  moment it earns its keep: an empty map is what tells the venue that picking a
+  suggestion buys them something. One map instance is built and kept — the pin
+  and the view move, nothing is torn down — because rebuilding would re-request
+  every tile in view from a volunteer-funded server, and for the same reason the
+  zoom-in is `setView` rather than the prettier `flyTo`, which would drag a
+  corridor of tiles across half of Germany on the way.
+- **Typing after picking drops the coordinates.** The text and the pin are one
+  fact; a stale pin pointing at the last place chosen is worse than no pin. This
+  is why the field controls the whole `address` object.
+- **Free text stays submittable.** The API asks only for `formatted`, and plenty
+  of real rooms aren't in OSM — `Alte Werkstatt` in the seed data has no
+  coordinates on purpose. No match, a failed lookup and a typed-out address all
+  end the same way: it posts, without a pin.
+- **The search query is state of its own, not the field's value.** Deriving it
+  from the form would fire a lookup and drop a list over the page the moment a
+  saved draft was restored.
+- **Enter belongs to the list while the list is open.** The wizard turns Enter
+  into "next step", which would otherwise skip past a half-finished address
+  behind a panel the venue was still reading.
+- **daisyUI's `.input` is `position: relative` with an opaque background**, so
+  the search icon inside it needs `z-10` — without it the icon is present,
+  correctly positioned, and completely invisible. Found by looking, not by
+  reading: every DOM measurement said it was fine.
+- OSM's tile attribution is a licence condition, and Leaflet renders it itself.
+
+Verified against Photon and the local API: 17 keystrokes produced exactly one
+request; duplicate OSM entries for one building collapse to a single row;
+arrow-keys and Enter pick a suggestion; a restored draft comes back with its pin
+and fires no lookup; and a session published with coordinates round-tripped
+`lat`/`lng` through the API's `strictObject` intact (**Phase 4 map test,
+2026-10-15** — another one for the re-seed).
 
 ### Phase 5 — Overview
 

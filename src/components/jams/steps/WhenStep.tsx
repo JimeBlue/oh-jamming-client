@@ -5,6 +5,7 @@ import { useWatch } from 'react-hook-form';
 import { useJamForm } from '@/hooks/useJamForm';
 import { formatMinutes } from '@/lib/slotPlan';
 import { isTime, nowInAppTimezone, timeToMinutes } from '@/lib/time';
+import AddressField from './AddressField';
 import JamField from './JamField';
 
 /* Date, times, and where the room is.
@@ -99,24 +100,9 @@ export default function WhenStep() {
         />
       </JamField>
 
-      <JamField
-        label="Address*"
-        /* The pairing rule reports on `address.lat`. It can't fire from this
-           step — nothing here sets coordinates — but a draft saved once the
-           autocomplete lands could carry a half-filled pair into it, and an
-           error with nowhere to appear is an error nobody can fix. */
-        error={errors.address?.formatted?.message ?? errors.address?.lat?.message}
-        hint="Street, number, postcode and city."
-      >
-        <input
-          {...register('address.formatted')}
-          type="text"
-          autoComplete="off"
-          placeholder="Königstraße 12, 90402 Nürnberg"
-          aria-invalid={errors.address?.formatted ? true : undefined}
-          className={`input w-full ${errors.address?.formatted ? 'input-error' : ''}`}
-        />
-      </JamField>
+      {/* Its own component: it owns a search, a listbox and a map, and none of
+          that has anything to say to the date and time inputs above it. */}
+      <AddressField />
     </div>
   );
 }
