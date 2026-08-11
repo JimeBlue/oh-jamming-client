@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
-import { IoInformationCircle } from 'react-icons/io5';
 
 import { JAM_STEPS, JAM_STEP_FIELDS, type JamStepId } from '@/config/jamSteps';
 import { clearJamDraft, readJamDraft, writeJamDraft } from '@/lib/jamDraft';
@@ -18,6 +17,14 @@ import {
 import { ApiError } from '@/services/api';
 import { createJamSession } from '@/services/jamSessions';
 import JamStepBar from './JamStepBar';
+import BasicsStep from './steps/BasicsStep';
+import ImageStep from './steps/ImageStep';
+import InstrumentsStep from './steps/InstrumentsStep';
+import OverviewStep from './steps/OverviewStep';
+import PreviewStep from './steps/PreviewStep';
+import SlotsStep from './steps/SlotsStep';
+import TagsStep from './steps/TagsStep';
+import WhenStep from './steps/WhenStep';
 
 /* The shell: progress bar, one card, and the two buttons that move between the
    eight steps.
@@ -44,6 +51,14 @@ export default function JamWizard() {
 
   const form = useForm<JamFormValues>({
     resolver: zodResolver(jamFormSchema),
+    /* Not the default 'onSubmit'. Next validates with `trigger`, which never sets
+       `isSubmitted`, so react-hook-form's automatic re-validation-on-change never
+       switches on — and a message would sit there in red while the venue is
+       typing the very thing that fixes it. 'onTouched' validates a field once it
+       has been left, and on every keystroke after that.
+
+       Controls that are clicked rather than typed in — the spot steppers, the
+       genre chips — never blur, so they re-validate themselves. */
     /* A complete object either way — see the note on `emptyJamForm`. Fields that
        start undefined make React flip the input from uncontrolled to controlled
        on the first keystroke, and leave the schema's cross-field rules unrun. */
@@ -96,10 +111,7 @@ export default function JamWizard() {
   const goNext = async () => {
     if (!step) return;
 
-    const stepIsValid =
-      PLACEHOLDER_STEPS.has(step.id) || (await trigger(JAM_STEP_FIELDS[step.id]));
-
-    if (!stepIsValid) return;
+    if (!(await trigger(JAM_STEP_FIELDS[step.id], { shouldFocus: true }))) return;
 
     setStepIndex((index) => Math.min(JAM_STEPS.length - 1, index + 1));
   };
@@ -131,7 +143,22 @@ export default function JamWizard() {
     if (firstBrokenStep >= 0) setStepIndex(firstBrokenStep);
   };
 
+  /* Enter inside a text field submits the form it's in — which on step 2 would
+     mean publishing a session the venue hasn't finished writing. On every step
+     but the last, Enter means "next". */
+  const onFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    if (!isLastStep) {
+      event.preventDefault();
+      void goNext();
+      return;
+    }
+
+    void handleSubmit(onValid, onInvalid)(event);
+  };
+
   if (!step) return null;
+
+  const StepFields = STEP_FIELDS[step.id];
 
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
@@ -141,17 +168,16 @@ export default function JamWizard() {
           and reaches the form with useFormContext, so adding a step doesn't mean
           threading `register` and `control` down through this file. */}
       <FormProvider {...form}>
-        {/* onSubmit is wired to the form element as well as to the button, so the
-            Enter key inside a text input publishes rather than silently doing
-            nothing — and noValidate keeps the browser's own bubbles out of it, so
-            every message the venue sees comes from the same schema. */}
-        <form onSubmit={handleSubmit(onValid, onInvalid)} noValidate>
+        {/* noValidate hands validation entirely to zod — without it the browser's
+            own bubbles fire first on the date and time inputs, and the venue gets
+            two different messages for one mistake in two different styles. */}
+        <form onSubmit={onFormSubmit} noValidate>
           <div className="mt-8 rounded-box bg-base-100 p-6 shadow-xl sm:p-10">
             <h1 className="font-heading text-2xl sm:text-3xl">{step.title}</h1>
             <p className="mt-2 text-sm opacity-70">{step.description}</p>
 
             <div className="mt-8">
-              <StepPlaceholder stepId={step.id} />
+              <StepFields />
             </div>
           </div>
 
@@ -181,7 +207,7 @@ export default function JamWizard() {
             {isLastStep ? (
               <button
                 type="submit"
-                disabled={isSubmitting || PLACEHOLDER_STEPS.size > 0}
+                disabled={isSubmitting}
                 className="btn btn-secondary gap-2 font-bold"
               >
                 {isSubmitting && <span className="loading loading-spinner" />}
@@ -222,48 +248,20 @@ const publishErrorMessage = (error: unknown): string => {
   return error.message;
 };
 
-/* Temporary. Every step but the first gets its real fields in a later phase, and
-   this whole component goes away when the last one lands. Kept in one place so
-   deleting it is a single change rather than a hunt. */
-const StepPlaceholder = ({ stepId }: { stepId: string }) => {
-  if (stepId === 'image') {
-    return (
-      /* Not daisyUI's `alert alert-info`: this theme's --color-info is the
-         brand indigo, which fills the whole box and shouts at someone who is
-         only being told a field isn't ready yet. A tinted panel says the same
-         thing at the volume it deserves. */
-      <div
-        role="note"
-        className="flex gap-3 rounded-box border border-secondary/40 bg-secondary/10 p-4"
-      >
-        <IoInformationCircle className="size-6 shrink-0 text-secondary" />
-        <p className="text-sm">
-          Image upload is still to be built — the API has no field for it yet.
-          Carry on to the next step; you&apos;ll be able to add a photo here
-          once it&apos;s ready.
-        </p>
-      </div>
-    );
-  }
+/* Which component owns each step's fields. Keyed by id rather than positional,
+   so reordering JAM_STEPS can't quietly pair a heading with the wrong inputs.
 
-  return (
-    <div className="grid min-h-40 place-items-center rounded-box border border-dashed border-base-300 p-6 text-center text-sm opacity-50">
-      The fields for this step are coming next.
-    </div>
-  );
+   Every one of them registers into the same form through useFormContext, and
+   react-hook-form keeps the values of fields that are no longer mounted — which
+   is what lets a venue walk back to step 3, fix a time, and find step 6 exactly
+   as they left it. */
+const STEP_FIELDS: Record<JamStepId, React.ComponentType> = {
+  image: ImageStep,
+  basics: BasicsStep,
+  when: WhenStep,
+  overview: OverviewStep,
+  slots: SlotsStep,
+  instruments: InstrumentsStep,
+  tags: TagsStep,
+  preview: PreviewStep,
 };
-
-/* Also temporary, and the counterpart to the placeholder above: a step with no
-   inputs on it has nothing to validate, so Next would otherwise refuse to move
-   past step 2 forever. Ids come out of this set as each step gets its real
-   fields, and the publish button turns on when it empties. */
-const PLACEHOLDER_STEPS = new Set<JamStepId>([
-  'image',
-  'basics',
-  'when',
-  'overview',
-  'slots',
-  'instruments',
-  'tags',
-  'preview',
-]);

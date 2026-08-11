@@ -101,18 +101,42 @@ Two things learned here that the code depends on:
 Verified by running `toJamSessionPayload`'s output through the API's own
 `jamSessionInputSchema` — the real oracle, not a second reading of it.
 
-### Phase 3 — The required steps, end to end
+### Phase 3 — The required steps, end to end ✅ done
 
-Title/summary, date + times, venue name, **address as plain text**, slot
-duration with the live preview, instrument steppers, genre and level chips,
-submit with pending state and API error mapping.
+One component per step under `src/components/jams/steps/`, wired to the wizard
+through `STEP_FIELDS` in `JamWizard.tsx`. The placeholder machinery is gone and
+the wizard publishes for real.
 
-After this the form produces a valid session. Everything later is enrichment.
+- `JamField` carries the label / control / message stack the auth forms inline
+- The **slots step** greys out lengths that don't divide the session and shows
+  the boundaries it would produce; `src/lib/slotPlan.ts` does that arithmetic and
+  the instruments and preview steps read it too
+- The **instruments step** shows spots-per-slot × slots, because the 300 cap is
+  a product of two numbers entered three steps apart
+- The **overview step** is a plain textarea; the value is already markdown, so
+  phase 5 adds a toolbar rather than a migration
+- The **preview step** is a recap, not the musician-facing listing — that's
+  phase 6, and it needs the browse card to exist first
 
-Each step's real fields replace its entry in `PLACEHOLDER_STEPS` at the bottom of
-`JamWizard.tsx`. A step still in that set skips validation on Next, and while the
-set has anything in it the publish button stays disabled — so emptying it is what
-turns the wizard on.
+Decisions taken while building:
+
+- **`mode: 'onTouched'`.** Next validates with `trigger`, which never sets
+  `isSubmitted`, so RHF's automatic re-validation never switches on and an error
+  would sit there while the venue types the fix. Controls that are clicked rather
+  than typed in — steppers, chips — never blur, so they call `trigger` themselves.
+- **Enter means "next", not "publish".** On steps 1–7 the form's submit handler
+  advances instead of submitting; only step 8 publishes.
+- **Failed publish walks to the problem.** `onInvalid` finds the first step
+  owning a broken field and goes there. The path that reaches it is a draft that
+  went stale overnight — a date that was in the future when it was saved.
+- The **spot stepper reads `getValues`**, not the rendered count, so two taps
+  inside one frame don't both start from the same number.
+
+Verified end to end against the local API: `POST /jam-sessions` → 201, six slots
+of five spots, labels generated (`First Guitar`, `Second Guitar`, …), zero-spot
+rows dropped, overview stored as one text block, address stored without
+coordinates. A test session (**Thursday Night Jam, 2026-09-17**) is sitting in
+the local dev database as a result — re-seed to clear it.
 
 **Verification owed here:** real expired-token recovery. The single-flight
 refresh in `src/services/api.ts` is proven against a stubbed fetch (5
@@ -136,11 +160,15 @@ that path can be built against real data.
 
 ### Phase 5 — Overview
 
-Markdown editor, bold/italic/link/lists. Library chosen here.
+Markdown editor, bold/italic/link/lists, replacing the plain textarea that ships
+in phase 3. Library chosen here. The stored value doesn't change — it's markdown
+in a single text block either way — so this is additive.
 
 ### Phase 6 — Preview step
 
-Renders the assembled session as a musician will see it.
+Renders the assembled session as a musician will see it, replacing phase 3's
+recap. Wants the browse card design to exist first, so the preview and the real
+listing are the same component rather than two drawings of one thing.
 
 ### Phase 7 — Image *(backend first)*
 
