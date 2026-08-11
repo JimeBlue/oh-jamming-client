@@ -1,6 +1,7 @@
 'use client';
 
 import { useWatch } from 'react-hook-form';
+import ReactMarkdown from 'react-markdown';
 
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import { useJamForm } from '@/hooks/useJamForm';
@@ -113,10 +114,18 @@ export default function PreviewStep() {
 
       {overview?.trim() && (
         <JamField label="Overview">
-          {/* whitespace-pre-wrap so the line breaks the venue typed survive.
-              It's markdown underneath, and phase 5 renders it as such — showing
-              it raw is more honest than showing it collapsed into one block. */}
-          <p className="whitespace-pre-wrap text-sm opacity-80">{overview}</p>
+          {/* Rendered, not raw: the editor two steps back produces markdown, and
+              a last look that shows `**asterisks**` isn't a preview of anything
+              a musician will ever see.
+
+              react-markdown rather than dangerouslySetInnerHTML — it never
+              builds an HTML string, so there is nothing to sanitise. Raw HTML in
+              the source is escaped and `javascript:` hrefs are dropped, which
+              matters the moment this content comes back from the API rather than
+              from the editor beside it. */}
+          <div className="rich-text text-sm opacity-80">
+            <ReactMarkdown>{overview}</ReactMarkdown>
+          </div>
         </JamField>
       )}
     </div>

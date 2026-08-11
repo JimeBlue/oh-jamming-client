@@ -17,7 +17,7 @@ Branch: `feature/jam-session-creator`.
 | 1 | **8 steps**, single route, client state | Not a route per step: there is no draft endpoint, nothing is stored until the final POST, so `/jams/new/step-5` would advertise resumability the API can't back |
 | 2 | Step 1 (image) ships with **placeholder copy** | The API has no image field yet. Real upload is phase 7 |
 | 3 | AI generation is **deferred**; manual text entry works from the start | Needs a backend endpoint — the key can't live in the browser. Phase 8 |
-| 4 | Overview stored as **markdown** inside `content` | No backend change, real formatting, no HTML sanitisation. Editor library chosen in phase 5 |
+| 4 | Overview stored as **markdown** inside `content` | No backend change, real formatting, no HTML sanitisation. TipTap + `tiptap-markdown` chosen in phase 5 — the editor is WYSIWYG, the stored value is still markdown |
 | 5 | Genres and skill levels use **the API's lists**, not the mockup's | See the constraint table below |
 | 6 | Image storage decided **later**, at phase 7 | The user has requirements to bring to that conversation |
 | 7 | Submit lands on **`/my-backstage`** | Built as a placeholder in phase 1 so the address is already correct |
@@ -205,17 +205,77 @@ and fires no lookup; and a session published with coordinates round-tripped
 `lat`/`lng` through the API's `strictObject` intact (**Phase 4 map test,
 2026-10-15** — another one for the re-seed).
 
-### Phase 5 — Overview
+### Phase 5 — Overview ✅ done
 
-Markdown editor, bold/italic/link/lists, replacing the plain textarea that ships
-in phase 3. Library chosen here. The stored value doesn't change — it's markdown
-in a single text block either way — so this is additive.
+TipTap 3 (`StarterKit` + `tiptap-markdown`) in `steps/MarkdownEditor.tsx`,
+replacing the plain textarea. Five buttons — bold, italic, link, bulleted list,
+numbered list — and nothing else. The stored value didn't change: markdown in a
+single text block before and after, so nothing typed under the textarea needed
+migrating.
+
+**TipTap and Quill are HTML editors; this field is markdown.** That mismatch is
+the whole reason `tiptap-markdown` is here — TipTap's own document is
+ProseMirror JSON, markdown goes in at mount and the serialiser produces it again
+on every change. It also means the value is *re-derived* rather than typed, so
+the round-trip was tested rather than assumed: parse a stored draft, type one
+word, and confirm the serialised markdown differs by exactly that word.
+
+The `.rich-text` class in `globals.css` is the other half. Tailwind's preflight
+strips list markers, bold weights and italics from everything, so markdown
+rendered anywhere on this site looks like unformatted text until something
+puts them back. The editor and the rendered listing wear the same class, so they
+can't drift into showing one string two ways.
+
+Decisions and traps from the build:
+
+- **`StarterKit` ships more than five buttons' worth.** Headings, quotes, code
+  blocks, strikethrough, underline and horizontal rules are switched off rather
+  than left enabled and unlabelled — an editor that accepts a `# heading` from a
+  paste but has no button for it is a surface with no edge.
+- **`useEditorState` caches the snapshot it took while the editor was still
+  null**, and only refreshes it on the first transaction. Gate a render on it
+  — `if (!state) return skeleton` — and the toolbar never appears at all. The
+  selector returns defaults instead, and only `editor` itself gates.
+- **`immediatelyRender: false`.** TipTap builds real DOM. The builder is
+  client-only today because the role guard renders a spinner until `/auth/me`
+  answers, but relying on that would break this component anywhere else.
+- **`editor.storage.markdown` is untyped** — tiptap-markdown never tells TipTap
+  it added anything. Declared in `src/types/tiptap-markdown.d.ts` rather than
+  cast at the call site, so removing the extension is a compile error rather
+  than `getMarkdown is not a function` in the browser.
+- `openOnClick: false` on links: a click inside the editor would otherwise
+  navigate away from a wizard holding twenty minutes of unsaved typing.
+- The link button opens a **native `<dialog>`** (`steps/LinkDialog.tsx`) wearing
+  daisyUI's `modal` classes. `showModal()` brings the focus trap, the Escape key,
+  the backdrop and the inert page behind it; a positioned div would mean writing
+  all four by hand. Three things it has to get right:
+  - **It sits inside the wizard's `<form>`**, so nothing in it is a form of its
+    own and every button says `type="button"`. Enter in the field is intercepted
+    and means Save — unintercepted it submits the wizard, which on the last step
+    publishes the session.
+  - **React's `autoFocus` can't focus it.** React focuses at mount, while the
+    dialog is still `display:none`, and sets no `autofocus` attribute for
+    `showModal` to find afterwards — so the dialog opened with the caret on the
+    close button. Focused by hand in the effect instead.
+  - **Escape closes the dialog without telling React**, which would leave the
+    editor thinking it was still open and its link button dead. `onClose` syncs
+    the state back, and it fires however the dialog was dismissed.
+- The address is normalised before it is stored: a bare `ohjamming.com` becomes
+  `https://ohjamming.com`, and anything carrying a scheme that isn't http(s) is
+  refused rather than repaired — `javascript:alert(1)` is a valid URL.
+
+`react-markdown` arrived here rather than in phase 6 — the preview step was
+showing raw `**asterisks**` the moment the editor could produce them. No
+sanitiser needed: it builds React elements, never an HTML string, so raw HTML in
+the source is escaped and `javascript:` hrefs are dropped.
 
 ### Phase 6 — Preview step
 
 Renders the assembled session as a musician will see it, replacing phase 3's
 recap. Wants the browse card design to exist first, so the preview and the real
-listing are the same component rather than two drawings of one thing.
+listing are the same component rather than two drawings of one thing. The
+markdown renderer it needs is already here — `react-markdown` inside
+`.rich-text`, see phase 5.
 
 ### Phase 7 — Image *(backend first)*
 
