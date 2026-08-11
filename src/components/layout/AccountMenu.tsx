@@ -19,16 +19,17 @@ type AccountLink = {
    up for booking. Keyed by role so adding an item is a one-line change and the
    two lists can't quietly diverge in styling.
 
-   The hrefs are placeholders: these destinations are a later phase, and a real
-   path would just 404 today. */
+   The venue pair points at real routes now. The musician pair is still `#`:
+   those pages don't exist, and a link to a 404 is worse than one that visibly
+   does nothing. */
 const linksByRole: Record<UserRole, AccountLink[]> = {
   musician: [
     { label: 'My spots', href: '#', icon: FaClipboardUser },
     { label: 'Book a spot', href: '#', icon: IoTicketSharp },
   ],
   venue: [
-    { label: 'My Backstage', href: '#', icon: MdBadge },
-    { label: 'Insert your Jam', href: '#', icon: FaPlugCirclePlus },
+    { label: 'My Backstage', href: '/my-backstage', icon: MdBadge },
+    { label: 'Insert your Jam', href: '/jams/new', icon: FaPlugCirclePlus },
   ],
 };
 

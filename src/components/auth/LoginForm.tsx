@@ -2,12 +2,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 import PasswordInput from '@/components/ui/PasswordInput';
 import { HOME_BY_ROLE } from '@/config/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { safeNextPath } from '@/lib/nextPath';
 import { loginSchema, type LoginInput } from '@/schemas/auth';
 import { ApiError } from '@/services/api';
 
@@ -32,6 +33,12 @@ export default function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
 
+  /* Set by the role guard when it turns someone away from a protected page —
+     they clicked something specific, and sending them to their role's home
+     instead would quietly drop that. Absent on a plain visit to /login, which
+     is why there's still a fallback below. */
+  const next = useSearchParams().get('next');
+
   const {
     register,
     handleSubmit,
@@ -49,9 +56,13 @@ export default function LoginForm() {
     try {
       const user = await login(values);
 
-      /* replace, not push: the login page shouldn't sit in history for the
+      /* The ?next= value came out of a URL, so it is checked before it is used
+         — see lib/nextPath. Unchecked, an absolute URL here would turn the
+         login page into an open redirect.
+
+         replace, not push: the login page shouldn't sit in history for the
          back button to land on once the user is already signed in. */
-      router.replace(HOME_BY_ROLE[user.role]);
+      router.replace(safeNextPath(next, HOME_BY_ROLE[user.role]));
     } catch (error) {
       /* Every way the API can reject a login is about the attempt as a whole
          rather than one field, so it goes above the button rather than under an

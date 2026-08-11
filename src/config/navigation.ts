@@ -1,13 +1,14 @@
 import type { UserRole } from '@/schemas/user';
 
-/* Where each role lands after logging in or registering.
+/* Where each role lands after logging in or registering, and where the
+   wrong-role guard sends someone who ended up on the other side of the app.
 
-   Both point at home for the moment. The real destinations — a musician's
-   spots, a venue's backstage — are a later phase and those pages don't exist
-   yet, so redirecting to them would 404 the user immediately after a
-   *successful* login. Kept in one place so switching them on is a two-line
-   change once the pages are built. */
+   Venues have a real home now — the backstage board is a placeholder inside,
+   but the address is correct, so nothing has to be rewired when it fills in.
+   Musicians still land on `/`: "My spots" doesn't exist yet, and redirecting to
+   a page that 404s straight after a *successful* login is worse than landing
+   somewhere plain. */
 export const HOME_BY_ROLE: Record<UserRole, string> = {
   musician: '/',
-  venue: '/',
+  venue: '/my-backstage',
 };

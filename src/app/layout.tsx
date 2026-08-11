@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Changa_One, Manrope } from 'next/font/google';
-import Header from '@/components/layout/Header';
 import AuthProvider from '@/context/AuthContext';
 import './globals.css';
 
@@ -30,14 +29,15 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       className={`${manrope.variable} ${changaOne.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-base-200 text-base-content">
-        {/* Wraps both, since the header reads the session and pages will too.
-            children stays server-rendered — passing it through a Client
-            Component doesn't pull it into the client bundle. */}
-        <AuthProvider>
-          {/* Fixed, so it sits outside the flow and overlays the hero video. */}
-          <Header />
-          {children}
-        </AuthProvider>
+        {/* Every route reads the session — the site header, the jam builder's
+            guard — so the provider is the one thing that belongs at the root.
+            children stays server-rendered: passing it through a Client
+            Component doesn't pull it into the client bundle.
+
+            The header deliberately isn't here. It differs by section — the
+            public site gets the full nav, the jam builder gets a stripped bar
+            with an exit link — so each route group renders its own. */}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
