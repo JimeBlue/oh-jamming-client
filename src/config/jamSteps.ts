@@ -1,3 +1,5 @@
+import type { JamFormValues } from '@/schemas/jamSession';
+
 /* The eight screens of the jam builder, in order.
 
    One list, used three ways: the progress bar reads `shortLabel`, the card
@@ -71,3 +73,32 @@ export const JAM_STEPS = [
 export type JamStepId = (typeof JAM_STEPS)[number]['id'];
 
 export const JAM_STEP_COUNT = JAM_STEPS.length;
+
+/* Which of the form's fields each step is responsible for.
+
+   There is one form behind all eight screens, so "is this step finished?" has to
+   be asked as "are *these* fields valid?" — validating the whole thing on every
+   Next would stop someone on step 2 because they haven't chosen a genre yet.
+   `trigger(JAM_STEP_FIELDS[id])` is that question.
+
+   Top-level names only, and typed as `keyof` to keep it that way: the wizard
+   also uses this map in reverse, to find which step an error belongs to when a
+   submit fails, and that lookup reads the error object one key deep.
+
+   Cross-field errors land on whichever field the rule names — "doesn't divide
+   evenly" is reported on `slotDurationMinutes`, so it surfaces on the slots step
+   even though the times it depends on were entered two steps earlier. That's the
+   right place: the slot length is what the venue can change from there. */
+export const JAM_STEP_FIELDS: Record<JamStepId, readonly (keyof JamFormValues)[]> = {
+  /* Nothing to validate — the field doesn't exist on the API yet. */
+  image: [],
+  basics: ['title', 'summary'],
+  when: ['date', 'startTime', 'endTime', 'venueName', 'address'],
+  overview: ['overview'],
+  slots: ['slotDurationMinutes'],
+  instruments: ['instrumentTemplate'],
+  tags: ['genres', 'skillLevel'],
+  /* The last step introduces no fields of its own; publishing validates the
+     whole form in one go. */
+  preview: [],
+};
