@@ -35,6 +35,7 @@ const jamDraftSchema: z.ZodType<JamDraft> = z.object({
   values: z.object({
     title: z.string(),
     summary: z.string(),
+    summaryNotes: z.string(),
     /* No `image`: the photo is a File held in JamImageContext until publish, and
        a File cannot be written here as JSON. It is the one thing a reload loses.
        See the note at the top of that file. */
@@ -48,6 +49,9 @@ const jamDraftSchema: z.ZodType<JamDraft> = z.object({
       lng: z.number().optional(),
     }),
     overview: z.string(),
+    /* Kept, unlike the photo — plain text is JSON, and the notes are half the
+       reason to come back to step 4. */
+    overviewNotes: z.string(),
     slotDurationMinutes: z.number(),
     instrumentTemplate: z.array(
       z.object({ instrument: z.string(), spotsTotal: z.number() }),

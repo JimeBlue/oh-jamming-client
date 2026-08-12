@@ -68,6 +68,8 @@ export const MAX_INSTRUMENTS_PER_SESSION = 20;
 export const MAX_SLOTS_PER_SESSION = 24;
 export const MAX_SPOTS_PER_SESSION = 300;
 export const MAX_OVERVIEW_CHARS = 2000;
+export const MIN_SUMMARY_CHARS = 10;
+export const MAX_SUMMARY_CHARS = 500;
 
 // ---------------------------------------------------------------------------
 // Field pieces shared by the form and the payload
@@ -91,8 +93,8 @@ const sharedFields = {
   summary: z
     .string()
     .trim()
-    .min(10, 'Please use at least 10 characters')
-    .max(500, 'Please use 500 characters or fewer'),
+    .min(MIN_SUMMARY_CHARS, `Please use at least ${MIN_SUMMARY_CHARS} characters`)
+    .max(MAX_SUMMARY_CHARS, `Please use ${MAX_SUMMARY_CHARS} characters or fewer`),
 
   /* Kept as "YYYY-MM-DD" rather than a Date, matching the API: the past-date
      rule below is a string comparison against Berlin's calendar day, and
@@ -178,6 +180,29 @@ const jamFormFields = z.object({
   overview: z
     .string()
     .max(MAX_OVERVIEW_CHARS, `Please use ${MAX_OVERVIEW_CHARS} characters or fewer`),
+
+  /* The notes the AI tab generates from. In the form rather than in component
+     state so that it rides the draft to sessionStorage for free and survives
+     walking back to step 4 — regenerating with one line changed is the normal
+     way this gets used, and retyping the notes each time is the annoying part.
+
+     No `max` here on purpose, even though the API caps it at 1000. This value is
+     never published, so an over-long note is not a reason to refuse to leave the
+     step — the AI tab disables its own button and says so, and `Next` stays
+     about the overview. A rule here would block the venue on a field nobody but
+     the model will ever read.
+
+     Stripped in `toJamSessionPayload` — which only works because both of these
+     are declared *here* and not in `sharedFields`. `sharedFields` is spread into
+     the payload schema as well, so a client-only field added there is declared
+     on the wire shape, survives the parse, and comes back as
+     `Unrecognized key: "summaryNotes"` from the API's strictObject. That is a
+     400 for the entire publish, at the last step of the wizard. */
+  overviewNotes: z.string(),
+
+  /* The notes the Basics step's AI tab writes the summary from. Its twin, and
+     here for the reason directly above rather than beside `summary`. */
+  summaryNotes: z.string(),
 
   instrumentTemplate: z.array(instrumentRowSchema),
 });
@@ -348,12 +373,14 @@ export const DEFAULT_INSTRUMENT_ROWS: readonly { instrument: string; spotsTotal:
 export const emptyJamForm = (): JamFormValues => ({
   title: '',
   summary: '',
+  summaryNotes: '',
   date: '',
   startTime: '',
   endTime: '',
   venueName: '',
   address: { formatted: '' },
   overview: '',
+  overviewNotes: '',
   slotDurationMinutes: 30,
   instrumentTemplate: DEFAULT_INSTRUMENT_ROWS.map((row) => ({ ...row })),
   genres: [],
@@ -419,6 +446,12 @@ export const toJamSessionPayload = (
   const { lat, lng, formatted } = values.address;
   const overview = values.overview.trim();
 
+  /* `overviewNotes` is spread in and dropped here, the same way
+     `toRegisterPayload` drops `confirmPassword`: the payload schema has no such
+     key, and `z.object` strips what it doesn't declare. Which is the reason
+     these adapters parse rather than cast — the API's own schema is strict, so a
+     client-only field that reached the wire would be a 400 for the whole
+     request, and this is what makes sure none does. */
   return jamSessionPayloadSchema.parse({
     ...values,
     address:

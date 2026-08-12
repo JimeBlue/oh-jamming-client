@@ -451,10 +451,227 @@ photo, with the step back to its empty prompt and no error. A PDF and a 7MB file
 are both refused in the picker without a request. Before the credentials were set,
 the 503 arrived as its own sentence.
 
-### Phase 8 — AI description *(backend first)*
+### Phase 8 — AI overview *(backend first)*
 
-`POST /ai/…`, venue-only, rate-limited, key server-side only. A plain
-completion — **not** tool calling: this is text→text, bullets in, prose out.
+`POST /ai/…`, venue-only, rate-limited, key server-side only — the same shape as
+the upload endpoint, and for the same reasons. Bullets in, markdown out.
+
+**Provider: Gemini, on the free tier.** No card on the project, so the failure
+mode when the quota runs out is a 429 rather than an invoice. The trade is that
+free-tier prompts and responses are used to improve Google's products, which is
+survivable here only because of what gets sent: the venue's own typed bullets
+and their own form fields, never anything read back out of the database. No
+emails, no names, no other user's data. Worth a sentence in the README.
+
+**Model: `gemini-3.5-flash-lite`** — Lite specifically, and this is the decision
+worth writing down, because the obvious choice is wrong. Checked against this
+project's own limits in AI Studio:
+
+| Model | RPM | RPD |
+|---|---|---|
+| Gemini 3.6 / 3.5 / 3 Flash | 5 | **20** |
+| Gemini 2.5 Flash Lite | 10 | 20 |
+| **Gemini 3.5 / 3.1 Flash Lite** | **15** | **500** |
+| Gemini 3.1 Pro, 2.5 Pro | — | **0** (no free tier) |
+
+Full Flash is capped at 20 requests a day, which is not a demo-day problem so
+much as a *development* problem: writing a prompt that produces a decent
+overview takes twenty-plus iterations, and the cap would be gone before lunch.
+Lite is 25× the daily quota and 3× the per-minute headroom for a task that
+doesn't use what Flash costs more to have — this is bullets to ~150 words of
+markdown in a fixed voice, a short constrained rewrite with a fixed output
+schema. No reasoning, no long context, no code. The 20/day of full Flash is
+still there, and is enough to A/B the same prompt against both during
+development rather than guessing.
+
+Google no longer publishes free-tier numbers in the docs; they are per-project
+at `aistudio.google.com/rate-limit`. Check there rather than anywhere else. The
+key lives in its own `oh-jamming` Google Cloud project rather than sharing one,
+so its quota, its usage figures and its revocation are all isolated.
+
+**Not tool calling**, and not an agent loop. Tool calling exists so a model can
+fetch something it doesn't have or decide between actions; here the backend
+already holds every input and there is exactly one thing to produce, so a tool
+round-trip buys a second API call, more latency and a new failure mode (model
+calls nothing, or calls with junk) to arrive at the same string.
+
+**But structured output, yes** — `responseMimeType: 'application/json'` plus a
+`responseSchema`, the technique from the class `gemini-sdk.ts` demo. Three
+concrete reasons, none of them decorative: the editor round-trips markdown and
+`MAX_OVERVIEW_CHARS` counts the asterisks, so the shape has to be stated rather
+than hoped for; it kills the *"Here's a great overview for your session:"*
+preamble that free text generation prepends, which is otherwise regexed off; and
+the response Zod-parses on the way out like every other response in the API.
+
+**Two steps get two tabs** — *Enter manually* and *Generate with AI* — over one
+form field each: the **overview** on step 4 and the **short description** on step
+2. Each field stays a single value with two ways of filling it, for the same
+reason `JamListing` has one component and two adapters: the moment there are two
+overviews, they disagree.
+
+Both are the same component, `AiAssistedField`. The two differ in almost
+everything visible — a markdown editor against a textarea, six paragraphs against
+one line — and in nothing about how the tabs behave, and it is the behaviour that
+would go subtly wrong if written twice: what happens to the notes on success,
+which tab an error leaves you on, whether the button comes back.
+
+**Both tabs go `text-primary` when active**, like the rest of the builder — a
+pink active *Enter manually* was tried against its indigo pair and rejected;
+which tab is which is carried by the label and the badge, not by colour.
+Inactive is filled (`bg-base-200`) rather than transparent, so it reads as
+"there is another one of these" instead of as empty space, and it takes the
+active colour on hover, which answers "what happens if I click this" before the
+click.
+
+**Filling the inactive tab is what forced `[--tabcontent-radius-ss:0]`** on both
+panels. daisyUI rounds the panel's top-left whenever the active tab is not the
+first one, so selecting the second tab curves the panel away underneath the
+first — which reads fine when the tabs float above a transparent panel, and does
+not once the inactive tab is filled: the fill stays square while the panel
+beneath it curves, leaving a notch at the card's left edge. Pinned square, so
+the panel's left edge and the tab list's line up whichever tab is selected.
+
+The label is **"Generate with"** followed by an `AI` badge carrying
+`HiOutlineSparkles`. The badge keeps its colour when the tab is inactive, unlike
+the rest of the tab, because it is finishing the label rather than decorating it
+— and for the same reason the button carries an explicit
+`aria-label="Generate with AI"`: the accessible name computed from the contents
+comes back as the fragment *"Generate with"*.
+
+**The summary is a different job, not a shorter overview**, which is why it is a
+separate endpoint with its own brief rather than a length parameter. The overview
+is what the night *is*, in full, with the backline laid out; the summary is the
+one thing that would make someone stop scrolling, and it is told to pick one or
+two things and leave the rest out — a night whose notes list five pieces of
+backline is better sold by "full backline provided" than by the inventory. The
+two sit next to each other on the listing, so an overview restated in miniature
+above itself is wasted space. It is also **plain text**, because the summary is a
+plain textarea and the listing renders it as a bare paragraph: markdown there
+would show its own asterisks to every musician who saw the session.
+
+Both routes share `aiLimiter`, which is the honest arrangement — the quota is one
+quota, so ten summaries are ten fewer overviews.
+
+**The generated summary is length-checked against the jam session's own
+`min(10)`**, not just its maximum. That bound is reachable in a way the
+overview's isn't: "Open jazz jam." is nine characters and a perfectly sensible
+answer to a thin note, and it is one `POST /jam-sessions` refuses.
+
+The flow, modelled on Eventfrog's: Generate is disabled while the notes are
+empty. Clicking it keeps the venue on the AI tab with the button in a loading
+state; on success the step switches to the manual tab with the generated
+markdown in the editor. The notes stay on the AI tab, so re-generating is
+*switch back, tweak, click again*. That is also what settles the "what if there
+is already text there" question — a second generation overwrites, and that is
+fine, because it took a deliberate trip to the other tab. The case worth
+protecting against was silently clobbering hand-typed prose, and this flow
+cannot do it.
+
+Both the overview and the notes go in the sessionStorage draft. Eventfrog loses
+the description on going back, which is a flaw and not a feature: this wizard's
+whole premise is that walking back to step 3 leaves step 6 as you left it, and
+the overview is the longest thing anyone types.
+
+**The backend is done** — `POST /ai/overview` on `feature/ai-overview`:
+`aiLimiter` → `authenticate` → `requireRole('venue')` →
+`validateBody(overviewPromptSchema)`. `notes` in (≤1000 chars), `{ overview }`
+out. `MAX_OVERVIEW_BLOCK_CHARS` is now exported from `jamSessionSchema` and used
+by both the prompt and the validation of what came back, so an over-long
+generation fails on step 4 rather than as a 400 at the end of the wizard.
+`temperature: 0.9`, because a second click is a request for a different take.
+
+**What prompt tuning actually found**, since none of it is recoverable from the
+final string:
+
+- **Structured output flattens newlines.** The first version produced
+  `**What is provided:** * Backline including...` on one line — valid JSON,
+  unrenderable markdown. The model needed telling that line breaks are real
+  newline characters in the JSON string, with the blank line, the newline after
+  the bold label and the `- ` prefix all spelled out.
+- **A "no lists of one item" rule causes fabrication.** Told never to write a
+  one-item list, the model invented a second line — "Drumsticks if you prefer
+  your own", twice, from notes that never mentioned them. The rule was removed
+  and replaced with the opposite: a one-line list is fine.
+- **"At most one list" makes labels dishonest instead.** Constrained to a single
+  list, it filed *bring your own guitar* under **Provided on stage** rather than
+  splitting. Allowing a second labelled list fixed both the accuracy and the
+  scannability.
+- **A word count fights the no-invention rule, and wins.** "jazz jam" as the
+  entire notes produced a listing with an upright bass, a piano, a sign-up board
+  and two house rules, none of which exist — because 120 words cannot be written
+  from two without inventing. Making the length follow the notes dropped that
+  from every generation to roughly one in two.
+- **And that fix then caused the opposite bug.** *"Write what the notes support
+  and stop"* reads, to the model, as *a fluent paragraph is already finished* —
+  so a venue who pasted prose instead of bullets got their own text back with the
+  line breaks tidied. Bullets worked; paragraphs were a no-op, which is exactly
+  the case that looks like a broken button rather than a bad result.
+  The two rules had been conflated. Separating them fixed it: **rewriting is
+  unconditional** (the notes are raw material, "a fluent paragraph is still a
+  note"), and **length follows how much the notes *say*, not how long they are or
+  how well they are written**.
+- **The residual invention closed on a worked example, not another rule.**
+  Restating "do not invent" a fourth time did nothing; naming the actual case did
+  — *given only "jazz jam", the entire correct answer is a sentence or two … no
+  backline, no house band, no sign-up procedure, no start time*. Three of three
+  runs clean afterwards, with paragraphs and bullets unaffected.
+
+**Flash vs Lite, same notes, one sample each:** Flash structured the backline as
+a bullet list where Lite wrote prose — but Flash also opened with "Our *weekly*
+blues and soul night", inventing a frequency the notes never gave. The structure
+gap closed with the prompt change above; the fabrication was the same class of
+error in the more expensive model. Nothing found here argues for spending 25× the
+daily quota.
+
+Verified against the local API: anonymous 401, musician 403, venue 200 in ~1.4s,
+empty notes 400, missing `notes` 400, an unknown key 400, 1001 characters 400,
+1000 characters 200, and a key-less instance 503. Generated markdown renders
+inside the editor's five supported marks with no headings.
+
+**The front end**, and the two things in it worth knowing:
+
+`overviewNotes` is a field on the form rather than component state, so it rides
+the existing `subscribe` → sessionStorage mirror and survives a reload and a walk
+back to step 4 for free. It is dropped in `toJamSessionPayload` the way
+`toRegisterPayload` drops `confirmPassword` — the payload schema doesn't declare
+it and `z.object` strips what it doesn't declare. Which is the reason these
+adapters parse rather than cast: the API's schema *is* strict, so a client-only
+field reaching the wire would be a 400 for the whole request.
+
+The editor is keyed on a generation counter. `MarkdownEditor` seeds from
+`defaultValue` once at mount and never re-reads it — right for typing, and the
+reason text arriving from outside would otherwise never appear. Both tab panels
+stay mounted (daisyUI hides with CSS), so switching tabs leaves the editor and
+the caret alone; only a generation remounts it.
+
+**A second bug, found by the API rather than by me:** `summaryNotes` was first
+declared next to `summary` in `sharedFields` — which is spread into the *payload*
+schema as well as the form's. A client-only field added there is declared on the
+wire shape, survives the parse that was supposed to strip it, and comes back as
+`Unrecognized key: "summaryNotes"` — a 400 for the whole publish, at the last
+step of the wizard. Both notes fields belong in `jamFormFields` and nowhere else.
+Worth keeping because the earlier note in `toJamSessionPayload` says the stripping
+is automatic, and it is — but only for fields the payload schema doesn't declare,
+which is a condition that file's spread makes very easy to break.
+
+**A bug found in verification:** at 375px the two tab labels don't fit on one
+line, and a wrapped `tabs-lift` list puts the lifted tab on one row and the panel
+it is drawn as attached to under another — a broken border rather than two tabs.
+`flex-nowrap` is not the fix and is worse: daisyUI lays the panel out as a flex
+sibling that wraps onto its own row, so forbidding the wrap keeps the panel on
+the tabs' line and the whole card scrolls sideways. The fix is to make the labels
+fit — `tabs-sm` below `sm`, and the decorative **AI** badge hidden with it.
+
+Verified in the browser: Generate disabled while the notes are empty and enabled
+once they aren't; mid-flight the button reads "Writing…", the textarea is locked
+and the venue stays on the AI tab; on success it switches to the manual tab with
+the markdown in the editor, bold labels and bullets intact, while the notes stay
+on the AI tab with the button live. A second generation returns different text.
+A reload keeps the step, the overview and the notes. Publishing answers 201,
+which is itself the proof that `overviewNotes` never left — the API's input
+schema is strict. Signing out mid-step and generating shows the expired-session
+message, keeps the notes and stays on the tab. No console errors on a clean run;
+375px has no horizontal overflow and both tabs share a row.
 
 ---
 
