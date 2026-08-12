@@ -59,3 +59,61 @@
   --color-brand-pink: #ff7bca;
   --color-brand-green: #bfff0a;
 }
+
+/* Markdown, wherever it is shown: inside the overview editor in the jam builder,
+   and on the listing a musician reads.
+
+   Tailwind's preflight strips list markers, bold weights and italics from every
+   element on the page — which is what you want for UI built out of utilities,
+   and exactly wrong for a block of text whose formatting is the content. The
+   handful of elements our editor can actually produce get theirs back here.
+
+   Scoped to one class rather than reinstated globally: it applies where markdown
+   is, and the editor and the rendered listing wear the same one so they can't
+   drift into showing the same text two different ways. */
+.rich-text {
+  & p {
+    margin-block: 0.5rem;
+  }
+
+  & strong {
+    font-weight: 700;
+  }
+
+  & em {
+    font-style: italic;
+  }
+
+  & a {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  & ul,
+  & ol {
+    margin-block: 0.5rem;
+    padding-inline-start: 1.5rem;
+  }
+
+  & ul {
+    list-style: disc;
+  }
+
+  & ol {
+    list-style: decimal;
+  }
+
+  & li {
+    margin-block: 0.125rem;
+  }
+
+  /* No leading gap above the first paragraph or trailing gap under the last —
+     the container's own padding is doing that job. */
+  & > :first-child {
+    margin-top: 0;
+  }
+
+  & > :last-child {
+    margin-bottom: 0;
+  }
+}

@@ -82,14 +82,23 @@ const request = async (
     throw new ApiError('NEXT_PUBLIC_API_URL is not set', 0);
   }
 
+  /* One endpoint sends a file rather than JSON. FormData has to set its own
+     Content-Type, and it has to: the header carries the multipart boundary the
+     browser generates, so writing the header by hand produces a body the API
+     cannot parse at all. */
+  const isFormData = body instanceof FormData;
+
   const response = await fetch(`${BASE_URL}${path}`, {
     method,
     /* The session lives in httpOnly cookies on the API's domain. Cross-origin
        requests don't send those unless asked, and this is the asking — without
        it every authenticated call quietly comes back 401. */
     credentials: 'include',
-    headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers:
+      body === undefined || isFormData ? undefined : { 'Content-Type': 'application/json' },
+    /* The instanceof is repeated rather than reusing `isFormData` because only
+       the inline check narrows `unknown` down to something fetch will take. */
+    body: body instanceof FormData ? body : body === undefined ? undefined : JSON.stringify(body),
   });
 
   /* Expired is not the same as logged out. The 15-minute access token running
@@ -145,6 +154,16 @@ export const api = {
     request(path).then((data) => parse(schema, data, path)),
 
   post: <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
+    request(path, { method: 'POST', body }).then((data) => parse(schema, data, path)),
+
+  /* Multipart, for the one endpoint that takes a file. It goes through the same
+     `request` as everything else deliberately: an upload is a slow request, so
+     it is *more* likely than most to meet an access token that expired while it
+     was in flight, and the single-flight refresh is what stops the replay from
+     logging the venue out everywhere. Replaying is safe here — a FormData is
+     serialised afresh on each fetch, unlike a stream body, which could only be
+     read once. */
+  upload: <T>(path: string, body: FormData, schema: ZodType<T>): Promise<T> =>
     request(path, { method: 'POST', body }).then((data) => parse(schema, data, path)),
 
   patch: <T>(path: string, body: unknown, schema: ZodType<T>): Promise<T> =>
