@@ -40,10 +40,11 @@ export type JamListingLine = {
 export type JamListingView = {
   title: string;
   summary: string;
-  /* A Cloudinary delivery URL, or "" for a session with no photo — which both
-     sources can produce, so the listing draws the placeholder either way. The
-     form's copy is "" before anything is picked; the response simply omits the
-     field for every session posted before uploads existed. */
+  /* A Cloudinary delivery URL, a blob: URL, or "" for a session with no photo.
+     The blob: case is the builder's: the photo is still a File in the tab until
+     the venue publishes, so the preview step draws it straight from disk and
+     supplies it here itself. Anything rendering this has to cope with all three,
+     which in practice means not assuming there is a server behind the URL. */
   image: string;
   /* "YYYY-MM-DD" — a calendar day, not an instant. Kept as the string both
      sides speak so that formatting it is one job done in one place. Empty only
@@ -82,7 +83,12 @@ export const jamFormToListing = (values: JamFormValues): JamListingView => {
   return {
     title: values.title,
     summary: values.summary,
-    image: values.image,
+    /* Empty, always: the photo isn't in the form. It's a File held in
+       `JamImageContext` until publishing, and `PreviewStep` — which is the only
+       caller of this adapter, and the only place with access to that context —
+       fills it in. Reaching for the context here would make this function
+       depend on React, and it is a pure mapping used inside `useWatch`. */
+    image: '',
     date: values.date,
     startTime: values.startTime,
     endTime: values.endTime,

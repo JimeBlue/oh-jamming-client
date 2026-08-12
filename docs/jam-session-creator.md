@@ -365,11 +365,31 @@ Decisions, and the one that everything else follows from:
   accepting the file on the create route would mean the client JSON-encoding four
   fields and `jamSessionInputSchema` decoding them back — on `PATCH` too. Bytes
   in, URL out; the session itself stays JSON.
-- **The upload happens when the file is picked, not at publish.** The draft is
-  mirrored into sessionStorage and a `File` cannot survive that trip, so what the
-  form holds is the URL. The cost is that abandoning the wizard leaves an unused
-  asset in Cloudinary — cheaper than holding the file in memory for eight steps
-  and failing the upload at the moment the venue thought they were done.
+- **The upload happens on publish, not when the file is picked.** This was built
+  the other way first, and changed: uploading on pick meant every photo a venue
+  tried and rejected stayed in Cloudinary forever, because nothing ever goes back
+  to delete them. Now a venue who tries four images sends one, and an abandoned
+  wizard sends none.
+  What that costs is the reason it was built the other way to begin with: the
+  draft is JSON in sessionStorage and a `File` isn't JSON — writing one produces
+  `{}`, which the draft schema rejects, which would throw away the *whole* draft
+  on reload rather than just the photo. So the file lives outside the form, in
+  `JamImageContext`, and a reload loses the photo while keeping the other twelve
+  fields. That asymmetry is the deliberate trade, not an oversight. (IndexedDB
+  stores Blobs as themselves and would get reload-survival back, at the cost of a
+  storage lifetime that isn't the tab's and would need its own cleanup.)
+- **Both the step and the preview draw the pending photo from a `blob:` URL** —
+  the browser reading the file off the disk it came from. No network, and the same
+  bytes the API will get, which is what makes it a preview rather than a stand-in.
+  `jamFormToListing` therefore leaves `image` empty and `PreviewStep` supplies it,
+  since the adapter is a pure function inside `useWatch` and can't reach a React
+  context. `JamListing` passes `unoptimized` for `blob:` sources, keyed off the
+  scheme rather than off which caller it is: a file with no server behind it has
+  nothing for next/image's optimiser to fetch.
+- **A failed upload stops the publish.** The image goes up before
+  `POST /jam-sessions`, and if it fails the session is not created — a night that
+  quietly went live without the photo the venue chose is worse than one that
+  didn't go live at all. The message says so, and points at step 1.
 - **The stored URL's host is pinned** to `res.cloudinary.com` by the input
   schema. A listing is public, and an `<img>` pointed anywhere is a tracking
   pixel or an image whose contents can be swapped after the night was posted. The
@@ -421,12 +441,15 @@ a file sent under the wrong field name 400, and no temp files left behind.
 `image` on a Cloudinary URL is stored and echoed, on another host 400, over http
 400, omitted 201.
 
-End to end in the browser: a 2400px JPEG uploads from step 1, comes back stored
-at 1600×900 (the incoming transformation), renders through `/_next/image` at
-560px for the viewport, survives into the preview step's listing, and publishes
-onto the session — draft cleared, landed on `/my-backstage`. Before the
-credentials were set the same path produced the 503 as its own sentence, and a
-PDF and a 7MB file are both refused in the picker without a request.
+End to end in the browser, counting requests: three photos picked and changed on
+step 1 produce **zero** upload requests; the preview step draws the third from its
+`blob:` URL; clicking Publish produces exactly **one**, and the created session
+carries a URL that resolves 200. A 2400px source comes back stored at 1600×900
+(the incoming transformation) and is served through `/_next/image` at 560px for
+the viewport. Reloading mid-wizard keeps all twelve form fields and drops only the
+photo, with the step back to its empty prompt and no error. A PDF and a 7MB file
+are both refused in the picker without a request. Before the credentials were set,
+the 503 arrived as its own sentence.
 
 ### Phase 8 — AI description *(backend first)*
 

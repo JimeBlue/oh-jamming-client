@@ -97,10 +97,20 @@ knows which source it is drawing, the preview has stopped predicting the listing
 
 `services/uploads.ts` posts the file to `POST /uploads/image` (venue-only, rate
 limited, 5MB, images only) and gets back a `res.cloudinary.com` URL, which is all
-the app ever stores — `image` is a string field like any other. That's what keeps
-the account's API secret server-side, and it's why `api.upload` exists alongside
-`api.post`: the same `request` path, so an upload slow enough to outlive its
-access token still gets the single-flight refresh.
+the app ever stores. That's what keeps the account's API secret server-side, and
+it's why `api.upload` exists alongside `api.post`: the same `request` path, so an
+upload slow enough to outlive its access token still gets the single-flight
+refresh.
+
+**It happens once, in `JamWizard`'s publish handler** — not when the file is
+picked. Otherwise every photo a venue tried and rejected would sit in Cloudinary
+forever, since nothing ever goes back to delete them. The consequence is that the
+pending file can't be in the form: the draft is JSON in sessionStorage and a
+`File` isn't JSON, so it lives in `JamImageContext` and the step and the preview
+both draw it from a `blob:` URL. A reload therefore loses the photo and keeps
+everything else — the one asymmetry in the draft, and the price of the above.
+Anything rendering `JamListingView.image` has to handle a `blob:` URL, a
+Cloudinary URL, or `""`.
 
 It is a *separate* endpoint on purpose. `POST /jam-sessions` stays JSON because
 its body is nested — an address object, two arrays of objects, cross-field

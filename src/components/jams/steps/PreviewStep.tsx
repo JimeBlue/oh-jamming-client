@@ -3,6 +3,7 @@
 import { useWatch } from 'react-hook-form';
 import { FaRegEye } from 'react-icons/fa6';
 
+import { useJamImage } from '@/context/JamImageContext';
 import { useJamForm } from '@/hooks/useJamForm';
 import { jamFormToListing } from '@/lib/jamListing';
 import JamListing from '../listing/JamListing';
@@ -25,6 +26,12 @@ export default function PreviewStep() {
      unlike the bare `useWatch({ control })`, it hands over fully typed values
      instead of a deep-partial that has to be defaulted field by field. */
   const listing = useWatch({ control, compute: jamFormToListing });
+
+  /* The one field the form can't supply. The photo is still a File in this tab
+     until publishing, so `jamFormToListing` leaves `image` empty and the blob:
+     URL is put in here — the same bytes the API will be sent, so the frame shows
+     what will ship rather than a stand-in for it. */
+  const { previewUrl } = useJamImage();
 
   const spotsPerSlot = listing.lineUp.reduce(
     (total, { spotsTotal }) => total + spotsTotal,
@@ -60,7 +67,7 @@ export default function PreviewStep() {
 
       {/* No slot handler: there is nothing to book on a session that doesn't
           exist yet, so the slots render as the list of times they are. */}
-      <JamListing listing={listing} />
+      <JamListing listing={{ ...listing, image: previewUrl ?? '' }} />
     </div>
   );
 }

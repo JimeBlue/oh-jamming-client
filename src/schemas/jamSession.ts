@@ -167,13 +167,10 @@ const jamFormFields = z.object({
   ...sharedFields,
   address: addressSchema,
 
-  /* The Cloudinary URL that `POST /uploads/image` gave back, or "" for a session
-     with no photo. A URL rather than the File itself, which is the whole reason
-     the upload happens when the file is picked rather than at publish: the draft
-     is mirrored into sessionStorage, and a File cannot survive that trip. Any
-     rules about what a valid image URL looks like belong to the API — this only
-     ever holds a string the API itself produced. */
-  image: z.string(),
+  /* No `image` here, deliberately. The photo is a File until the venue publishes,
+     and a File cannot be written to the draft as JSON — it would come back `{}`
+     and take the whole draft down with it. It lives in `JamImageContext` and
+     joins the payload at the last moment. See `toJamSessionPayload`. */
 
   /* One markdown string in the form, one text block on the wire. The API allows
      20 blocks of 2000 characters; the editor produces a single block, so the
@@ -351,7 +348,6 @@ export const DEFAULT_INSTRUMENT_ROWS: readonly { instrument: string; spotsTotal:
 export const emptyJamForm = (): JamFormValues => ({
   title: '',
   summary: '',
-  image: '',
   date: '',
   startTime: '',
   endTime: '',
@@ -401,19 +397,25 @@ const jamSessionPayloadSchema = z.object({
 
 export type JamSessionPayload = z.infer<typeof jamSessionPayloadSchema>;
 
-/* Form shape -> wire shape. Four fields change on the way through, and each one
+/* Form shape -> wire shape. Three fields change on the way through, and each one
    is a place the API would otherwise answer 400:
 
    - untouched instrument rows are dropped, because the API's minimum is 1 spot
    - the markdown overview becomes a text block, and disappears entirely when
      it's blank (the field is optional, but an empty block is not)
    - coordinates go as a pair or not at all
-   - an unset image is absent rather than ""
+
+   `image` arrives as a second argument rather than out of the form, because it
+   does not exist until the moment of publishing: the wizard uploads the held
+   File first and passes back the URL the API answered with.
 
    Parsed rather than cast, following `toRegisterPayload`: the trims run, the
    unknown keys are stripped, and a mistake here throws in our own code instead
    of coming back as a rejected request. */
-export const toJamSessionPayload = (values: JamFormValues): JamSessionPayload => {
+export const toJamSessionPayload = (
+  values: JamFormValues,
+  image?: string,
+): JamSessionPayload => {
   const { lat, lng, formatted } = values.address;
   const overview = values.overview.trim();
 
@@ -421,7 +423,7 @@ export const toJamSessionPayload = (values: JamFormValues): JamSessionPayload =>
     ...values,
     address:
       lat === undefined || lng === undefined ? { formatted } : { formatted, lat, lng },
-    image: values.image || undefined,
+    image,
     overview: overview ? [{ type: 'text', content: overview }] : undefined,
     instrumentTemplate: values.instrumentTemplate.filter(({ spotsTotal }) => spotsTotal > 0),
   });

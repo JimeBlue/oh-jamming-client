@@ -2,37 +2,25 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { useController } from 'react-hook-form';
 import { FaRegImage, FaTrashCan } from 'react-icons/fa6';
 
-import { useJamForm } from '@/hooks/useJamForm';
-import { ApiError } from '@/services/api';
-import { MAX_IMAGE_MB, imageFileProblem, uploadJamImage } from '@/services/uploads';
+import { useJamImage } from '@/context/JamImageContext';
+import { MAX_IMAGE_MB, imageFileProblem } from '@/services/uploads';
 import JamField from './JamField';
 
 /* Step one: pick a photo of the room.
 
-   The upload happens the moment a file is chosen, not at publish, and that is
-   the decision the rest of this file follows from. The form is mirrored into
-   sessionStorage on every change, and a File object cannot survive that trip —
-   so what the form holds is the URL the API answered with, which is a string
-   like every other field. A venue who picks a photo, reloads, and comes back
-   finds it still there.
+   Nothing is uploaded here. The file is held in this tab — see JamImageContext
+   for why it can't live in the form — and goes to the API once, as part of
+   publishing. A venue who tries four photos before settling sends one.
 
-   It also means an abandoned wizard leaves an unused image in Cloudinary. That
-   is the cheaper of the two mistakes: the alternative is holding the file in
-   memory for eight steps and discovering the upload fails at the exact moment
-   the venue thought they were done. */
+   What the frame shows is therefore a blob: URL, the browser reading the file
+   off the disk it already came from. It costs no network and it is the same
+   bytes the API will get, which is what makes it a preview rather than a
+   promise. */
 export default function ImageStep() {
-  const { control } = useJamForm();
-  const { field } = useController({ control, name: 'image' });
+  const { previewUrl, setImage, clearImage } = useJamImage();
 
-  /* A blob: URL for the file just picked, shown while the upload is in flight so
-     the frame fills instantly instead of sitting empty over a slow connection.
-     Dropped on success — from then on the frame shows what the API actually
-     stored, which is the only version that proves the upload worked. */
-  const [preview, setPreview] = useState<string | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,15 +31,6 @@ export default function ImageStep() {
      icon inside the frame. Counting the pairs is what makes "still inside"
      answerable — the highlight only drops when the count returns to zero. */
   const dragDepth = useRef(0);
-
-  /* Every blob: URL pins its file in memory until it is revoked. The cleanup
-     runs both on unmount and whenever `preview` changes, which is what stops a
-     venue who tries four photos from holding all four. */
-  useEffect(() => {
-    if (!preview) return;
-
-    return () => URL.revokeObjectURL(preview);
-  }, [preview]);
 
   /* A file dropped anywhere *but* the frame is the browser's to handle, and what
      it does is navigate to it — the wizard replaced by a raw JPEG because
@@ -75,18 +54,19 @@ export default function ImageStep() {
   const clearInput = () => {
     /* Without this the same file can't be picked twice in a row: the input's
        value doesn't change, so no change event fires — which is exactly what
-       someone does after an upload fails. */
+       someone does after being told the file was too big. */
     if (inputRef.current) inputRef.current.value = '';
   };
 
-  const pick = async (file: File | undefined) => {
+  const pick = (file: File | undefined) => {
     clearInput();
 
     if (!file) return;
 
-    /* Type and size are knowable from the File alone, so they're answered here
-       rather than after five megabytes have crossed the network. The API checks
-       both again — this is a courtesy, not the rule. */
+    /* Type and size are knowable from the File alone, and now they are the only
+       check that happens before publishing — so getting them right here is what
+       stops a venue filling in seven more steps and being told about the photo
+       at the very end. The API checks both again on the way in. */
     const problem = imageFileProblem(file);
 
     if (problem) {
@@ -95,25 +75,13 @@ export default function ImageStep() {
     }
 
     setError(null);
-    setPreview(URL.createObjectURL(file));
-    setIsUploading(true);
-
-    try {
-      field.onChange(await uploadJamImage(file));
-      setPreview(null);
-    } catch (uploadError) {
-      setPreview(null);
-      setError(uploadFailureMessage(uploadError));
-    } finally {
-      setIsUploading(false);
-    }
+    setImage(file);
   };
 
   const remove = () => {
     clearInput();
-    setPreview(null);
     setError(null);
-    field.onChange('');
+    clearImage();
   };
 
   const dragHandlers = {
@@ -140,15 +108,9 @@ export default function ImageStep() {
       dragDepth.current = 0;
       setIsDragging(false);
 
-      /* Dropping a second file onto an upload in flight would leave two
-         responses racing to set one field. */
-      if (isUploading) return;
-
-      void pick(event.dataTransfer.files[0]);
+      pick(event.dataTransfer.files[0]);
     },
   };
-
-  const source = preview ?? field.value;
 
   return (
     <div className="space-y-4">
@@ -169,19 +131,19 @@ export default function ImageStep() {
             /* Only once there's a photo in it. An empty aspect-video box on a
                desktop card is 600px of dashed nothing, and the shape it would be
                previewing is a shape nobody can judge while it's empty. */
-            source ? 'aspect-video' : ''
+            previewUrl ? 'aspect-video' : ''
           } ${isDragging ? 'border-primary bg-primary/10' : 'border-base-300 bg-base-200/60'}`}
         >
-          {source ? (
+          {previewUrl ? (
             <Image
-              src={source}
+              src={previewUrl}
               alt="The photo musicians will see on your session"
               fill
-              /* A blob: URL has no server to optimise it — next/image would ask
-                 its own endpoint to fetch a URL that only exists in this tab. The
-                 uploaded one is already capped at 1600px and quality-auto by the
-                 API, so this costs nothing either way. */
-              unoptimized={Boolean(preview)}
+              /* Always: a blob: URL has no server to optimise it, and next/image
+                 would be asking its own endpoint to fetch a URL that exists only
+                 in this tab. The resizing the API does on upload is what keeps
+                 the published one small. */
+              unoptimized
               sizes="(min-width: 640px) 42rem, 100vw"
               className="object-cover"
             />
@@ -196,13 +158,13 @@ export default function ImageStep() {
               two steps but never hides anything. Dropping a file straight onto an
               existing photo still works — the handlers are on the frame, not on
               this label — it just isn't advertised. */}
-          {!source && !isUploading && (
+          {!previewUrl && (
             <label className="flex cursor-pointer flex-col items-center justify-center gap-3 px-6 py-12 text-center">
               <input
                 ref={inputRef}
                 type="file"
                 accept="image/*"
-                onChange={(event) => void pick(event.target.files?.[0])}
+                onChange={(event) => pick(event.target.files?.[0])}
                 className="sr-only"
               />
 
@@ -219,16 +181,10 @@ export default function ImageStep() {
             </label>
           )}
 
-          {isUploading && (
-            <div className="absolute inset-0 flex items-center justify-center gap-3 bg-base-100/70">
-              <span className="loading loading-spinner text-primary" />
-              <span className="text-sm font-bold">Uploading…</span>
-            </div>
-          )}
         </div>
       </JamField>
 
-      {field.value && !isUploading && (
+      {previewUrl && (
         <button type="button" onClick={remove} className="btn btn-outline btn-sm gap-2">
           <FaTrashCan className="size-4" />
           Remove photo
@@ -237,19 +193,3 @@ export default function ImageStep() {
     </div>
   );
 }
-
-/* The 503 is worth its own sentence: it means the server has no image host
-   configured, which no amount of picking a different photo will fix, and a venue
-   told only "upload failed" would keep trying. */
-const uploadFailureMessage = (error: unknown): string => {
-  if (!(error instanceof ApiError)) {
-    return 'That upload didn’t go through. Check your connection and try again.';
-  }
-
-  if (error.status === 503) {
-    return 'Image upload isn’t available right now — you can publish without a photo and add one later.';
-  }
-
-  /* 400, 413 and 429 all arrive with a message written for this screen. */
-  return error.message;
-};

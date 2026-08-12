@@ -7,6 +7,7 @@ import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 
 import { JAM_STEPS, JAM_STEP_FIELDS, type JamStepId } from '@/config/jamSteps';
+import { JamImageProvider, useJamImage } from '@/context/JamImageContext';
 import { clearJamDraft, readJamDraft, writeJamDraft } from '@/lib/jamDraft';
 import {
   emptyJamForm,
@@ -16,6 +17,7 @@ import {
 } from '@/schemas/jamSession';
 import { ApiError } from '@/services/api';
 import { createJamSession } from '@/services/jamSessions';
+import { uploadJamImage } from '@/services/uploads';
 import JamStepBar from './JamStepBar';
 import BasicsStep from './steps/BasicsStep';
 import ImageStep from './steps/ImageStep';
@@ -38,9 +40,23 @@ import WhenStep from './steps/WhenStep';
    One form, too, not eight. Every step registers into the same react-hook-form
    instance, which is what makes the last step able to show a preview of fields
    entered six steps earlier, and what makes the final submit a single object
-   rather than a merge of eight partial ones. */
+   rather than a merge of eight partial ones.
+
+   The photo is the one thing outside that form, because a File can't be written
+   to the draft as JSON — `JamImageProvider` holds it, and this wraps the form so
+   that step 1, the preview and the publish handler are all looking at the same
+   picked file. */
 export default function JamWizard() {
+  return (
+    <JamImageProvider>
+      <JamWizardForm />
+    </JamImageProvider>
+  );
+}
+
+function JamWizardForm() {
   const router = useRouter();
+  const { file: imageFile } = useJamImage();
 
   /* Read once, in the initialiser, so the restored step is on screen from the
      very first paint. Doing it in an effect instead would render step 1 and then
@@ -117,8 +133,29 @@ export default function JamWizard() {
   };
 
   const onValid = async (values: JamFormValues) => {
+    /* The photo goes up here and nowhere else, which is the point: a venue who
+       tries four images before settling on one sends a single file, and a wizard
+       abandoned on step 5 sends none. Uploading as each file was picked would be
+       kinder to this handler and would litter the image host with every photo
+       anyone ever changed their mind about, with nothing to go back and remove
+       them.
+
+       Separated from the try below so that a failed upload can say so. Publishing
+       stops here: a session that quietly went live without the photo the venue
+       chose is worse than one that didn't go live at all. */
+    let image: string | undefined;
+
+    if (imageFile) {
+      try {
+        image = await uploadJamImage(imageFile);
+      } catch (error) {
+        setError('root', { message: imageErrorMessage(error) });
+        return;
+      }
+    }
+
     try {
-      await createJamSession(toJamSessionPayload(values));
+      await createJamSession(toJamSessionPayload(values, image));
 
       /* Only once the session exists. Clearing before the request would lose the
          draft on a failure, which is the one moment it's most needed. */
@@ -243,6 +280,26 @@ export default function JamWizard() {
     </div>
   );
 }
+
+/* Every one of these ends the same way — nothing was published — because that is
+   the fact the venue needs before they decide whether to remove the photo and try
+   again. The 503 gets its own sentence: no amount of picking a different image
+   will fix a server with no image host configured. */
+const imageErrorMessage = (error: unknown): string => {
+  if (!(error instanceof ApiError)) {
+    return 'Your photo couldn’t be uploaded, so nothing was published. Check your connection and try again.';
+  }
+
+  if (error.status === 503) {
+    return 'Image upload isn’t available right now, so nothing was published. Remove the photo on step 1 to publish without one.';
+  }
+
+  if (error.status === 401) {
+    return 'Your session has expired. Please log in again — your draft is saved in this tab.';
+  }
+
+  return `${error.message}. Nothing was published — fix the photo on step 1 and try again.`;
+};
 
 const publishErrorMessage = (error: unknown): string => {
   if (!(error instanceof ApiError)) {

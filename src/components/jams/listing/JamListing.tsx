@@ -87,6 +87,11 @@ export default function JamListing({
               src={image}
               alt={title ? `${title} at ${venueName}` : 'The room this session runs in'}
               fill
+              /* A blob: URL — the builder's not-yet-published photo — exists only
+                 in this tab, so there is nothing for next/image's optimiser to
+                 fetch. Keyed off the scheme rather than off which caller this is,
+                 because that is the actual reason: the file has no server. */
+              unoptimized={image.startsWith('blob:')}
               sizes="(min-width: 1024px) 34rem, (min-width: 640px) 42rem, 100vw"
               className="object-cover"
             />
