@@ -35,6 +35,9 @@ const jamDraftSchema: z.ZodType<JamDraft> = z.object({
   values: z.object({
     title: z.string(),
     summary: z.string(),
+    /* Already uploaded by the time it lands here — this is a URL, which is what
+       makes the photo survive a reload at all. A File would not. */
+    image: z.string(),
     date: z.string(),
     startTime: z.string(),
     endTime: z.string(),

@@ -40,6 +40,11 @@ export type JamListingLine = {
 export type JamListingView = {
   title: string;
   summary: string;
+  /* A Cloudinary delivery URL, or "" for a session with no photo — which both
+     sources can produce, so the listing draws the placeholder either way. The
+     form's copy is "" before anything is picked; the response simply omits the
+     field for every session posted before uploads existed. */
+  image: string;
   /* "YYYY-MM-DD" — a calendar day, not an instant. Kept as the string both
      sides speak so that formatting it is one job done in one place. Empty only
      while the builder is still being filled in. */
@@ -77,6 +82,7 @@ export const jamFormToListing = (values: JamFormValues): JamListingView => {
   return {
     title: values.title,
     summary: values.summary,
+    image: values.image,
     date: values.date,
     startTime: values.startTime,
     endTime: values.endTime,
@@ -112,6 +118,10 @@ export const jamFormToListing = (values: JamFormValues): JamListingView => {
 export const jamSessionToListing = (session: JamSession): JamListingView => ({
   title: session.title,
   summary: session.summary,
+  /* Optional on the wire, "" in the view model — one of the two adapters' jobs
+     is exactly this, so the component never has to ask which source it is
+     drawing from. */
+  image: session.image ?? '',
   /* Stored as midnight UTC, so it is read in UTC. Local getters would show the
      day before for anyone west of Greenwich. */
   date: session.date.toISOString().slice(0, 10),

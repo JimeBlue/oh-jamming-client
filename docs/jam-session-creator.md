@@ -15,11 +15,11 @@ Branch: `feature/jam-session-creator`.
 | # | Decision | Notes |
 |---|---|---|
 | 1 | **8 steps**, single route, client state | Not a route per step: there is no draft endpoint, nothing is stored until the final POST, so `/jams/new/step-5` would advertise resumability the API can't back |
-| 2 | Step 1 (image) ships with **placeholder copy** | The API has no image field yet. Real upload is phase 7 |
+| 2 | ~~Step 1 (image) ships with **placeholder copy**~~ | Superseded in phase 7 — the step uploads for real |
 | 3 | AI generation is **deferred**; manual text entry works from the start | Needs a backend endpoint — the key can't live in the browser. Phase 8 |
 | 4 | Overview stored as **markdown** inside `content` | No backend change, real formatting, no HTML sanitisation. TipTap + `tiptap-markdown` chosen in phase 5 — the editor is WYSIWYG, the stored value is still markdown |
 | 5 | Genres and skill levels use **the API's lists**, not the mockup's | See the constraint table below |
-| 6 | Image storage decided **later**, at phase 7 | The user has requirements to bring to that conversation |
+| 6 | Image goes **browser → API → Cloudinary** | Decided at phase 7. Not an unsigned browser-direct preset: that name ships in the bundle. See the phase for the full reasoning |
 | 7 | Submit lands on **`/my-backstage`** | Built as a placeholder in phase 1 so the address is already correct |
 | 8 | Signed-out on a protected page → **`/login?next=…`**, returning to the page they wanted | Role home stays the fallback when there's no `next` |
 | 9 | Wrong role → **explanatory message**, never a 404 | They aren't lost, they hold the other kind of account |
@@ -57,6 +57,7 @@ design sketches — which is why they're written down rather than rediscovered.
 | **Date** | `YYYY-MM-DD`, not in the past; if today, `startTime` must still be ahead |
 | **Address** | Only `formatted` is required. `lat`/`lng` come **as a pair or not at all** |
 | **Overview** | `[{ type: 'text', content }]`, ≤2000 chars per block, ≤20 blocks |
+| **Image** | Optional, and an https URL on `res.cloudinary.com` — anything else is a 400. It only ever comes from `POST /uploads/image` |
 | **Server-generated** | `slots`, `spotId`, `label`, `bookingId`, `venueId`, `status`. The input schema is a `strictObject`, so sending any of them is a 400 rather than being ignored |
 
 Endpoint: `POST /jam-sessions`, `authenticate` then `requireRole('venue')` — so
@@ -337,12 +338,95 @@ and an empty draft degrades to "Untitled session" / "Date to be confirmed" /
 temporarily passing a handler — buttons, `aria-pressed`, indigo selection, no
 form submit — and then reverted; nothing ships wired to it.
 
-### Phase 7 — Image *(backend first)*
+### Phase 7 — Image ✅ done *(backend first)*
 
-Add the field to the API, then step 1. Storage approach to be decided at the
-time; the repo already talks to Cloudinary for the hero video
-(`src/lib/cloudinary.ts`), so an unsigned browser-direct upload storing only the
-returned URL is the cheap path.
+API, on branch `feature/jam-session-image`: `middleware/parseImageUpload.ts`
+(formidable), `middleware/uploadLimiter.ts`, `utils/cloudinary.ts`,
+`controllers/uploads.ts`, `routes/uploadRoutes.ts`, `image` on
+`jamSessionFields` / `JamSessionSchema` / `jamSessionOutputSchema`, three
+optional `CLOUDINARY_*` variables in `config.ts`.
+
+Client: `services/uploads.ts`, `api.upload` in `services/api.ts`, a real
+`ImageStep`, `image` through `jamFormSchema` → payload → response →
+`jamDraftSchema` → `JamListingView` and both adapters, `remotePatterns` in
+`next.config.ts`.
+
+Decisions, and the one that everything else follows from:
+
+- **The file goes to the API, not straight to Cloudinary.** The alternative — an
+  unsigned upload preset called from the browser — is fewer moving parts, but the
+  preset name ships in the JS bundle and anyone who reads it can upload to the
+  account. Going through the API keeps the secret server-side and makes the
+  upload venue-only and rate-limited like every other write.
+- **It is its own endpoint, not multipart on `POST /jam-sessions`.** This is
+  where the class exercise doesn't transfer: there the target was four flat
+  scalar fields, here the body is an address object, two arrays of objects and
+  numbers with cross-field rules. Formidable flattens all of it to strings, so
+  accepting the file on the create route would mean the client JSON-encoding four
+  fields and `jamSessionInputSchema` decoding them back — on `PATCH` too. Bytes
+  in, URL out; the session itself stays JSON.
+- **The upload happens when the file is picked, not at publish.** The draft is
+  mirrored into sessionStorage and a `File` cannot survive that trip, so what the
+  form holds is the URL. The cost is that abandoning the wizard leaves an unused
+  asset in Cloudinary — cheaper than holding the file in memory for eight steps
+  and failing the upload at the moment the venue thought they were done.
+- **The stored URL's host is pinned** to `res.cloudinary.com` by the input
+  schema. A listing is public, and an `<img>` pointed anywhere is a tracking
+  pixel or an image whose contents can be swapped after the night was posted. The
+  *output* schema is a plain optional string — re-running the rule on read would
+  turn a session stored before it existed into a 500.
+- **The `CLOUDINARY_*` variables are optional**, unlike every other one in
+  `config.ts`. A deploy that forgets them loses image upload — a 503 on that one
+  route — rather than refusing to boot.
+- **A 1600px incoming transformation**, so the 6000px original a phone produced
+  is never stored. Narrower crops stay available on delivery by editing the URL.
+- The temp file is deleted in a `finally`. Render's disk is ephemeral but not
+  infinite, and a temp file per upload with nothing removing them is a leak that
+  only shows up weeks later.
+- **The drop zone is the control**, and there is no visible file input. The zone
+  is a `<label>` wrapping a visually hidden `<input type="file">`, so clicking it
+  opens the picker the way a label always has — no click handler — and the input
+  keeps its place in the tab order and its "Session photo" name for a screen
+  reader. A styled `<div>` calling `input.click()` looks identical and is
+  reachable by mouse only. Drag-and-drop can be neither tabbed to nor announced,
+  so it rides on top of a control that can be both.
+  Two details that are easy to get wrong: `dragenter`/`dragleave` fire again for
+  every child element crossed, so the highlight needs a depth counter rather than
+  a boolean, and a `preventDefault` on `dragover` specifically is what makes the
+  drop fire at all. A window-level guard swallows drops that miss the zone, which
+  would otherwise replace the wizard with the raw image file.
+- **Once there's a photo, the frame shows the photo and nothing else.** A first
+  pass faded a "drop another photo" panel in on hover; it covers the one thing
+  the venue came to this step to look at, and it covers it exactly when they lean
+  in to check it. Replacing is *Remove photo, then choose another* — two steps
+  that never hide anything. Dropping straight onto an existing photo still works,
+  since the handlers are on the frame rather than on the prompt, it just isn't
+  advertised.
+- **The frame is only `aspect-video` once there is a photo in it.** The first
+  pass fixed the ratio either way, on the reasoning that the venue should see the
+  shape the listing crops to — but an empty aspect-video box on a desktop card is
+  600px of dashed nothing, and the shape it previews is one nobody can judge
+  while it is empty.
+
+**One bug found in verification, worth keeping:** formidable's `maxTotalFileSize`
+defaults to `maxFileSize` and is checked against a running total as the bytes
+arrive, so a single oversized file trips `biggerThanTotalMaxFileSize` and never
+reaches the per-file `biggerThanMaxFileSize`. Matching only the latter gave the
+case that actually happens the generic message. Both codes now map to "larger
+than the 5MB limit".
+
+Verified against the local API: anonymous 401, musician 403, venue-without-
+credentials 503, a real PNG 201, a PDF 400, a 7MB JPEG 413 with the size message,
+a file sent under the wrong field name 400, and no temp files left behind.
+`image` on a Cloudinary URL is stored and echoed, on another host 400, over http
+400, omitted 201.
+
+End to end in the browser: a 2400px JPEG uploads from step 1, comes back stored
+at 1600×900 (the incoming transformation), renders through `/_next/image` at
+560px for the viewport, survives into the preview step's listing, and publishes
+onto the session — draft cleared, landed on `/my-backstage`. Before the
+credentials were set the same path produced the 503 as its own sentence, and a
+PDF and a 7MB file are both refused in the picker without a request.
 
 ### Phase 8 — AI description *(backend first)*
 

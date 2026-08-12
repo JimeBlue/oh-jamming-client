@@ -93,6 +93,20 @@ where their differences are reconciled. Add a field by extending the view model
 and both adapters, not by handing the component a second shape; the moment it
 knows which source it is drawing, the preview has stopped predicting the listing.
 
+### Images go through the API, never straight to Cloudinary
+
+`services/uploads.ts` posts the file to `POST /uploads/image` (venue-only, rate
+limited, 5MB, images only) and gets back a `res.cloudinary.com` URL, which is all
+the app ever stores — `image` is a string field like any other. That's what keeps
+the account's API secret server-side, and it's why `api.upload` exists alongside
+`api.post`: the same `request` path, so an upload slow enough to outlive its
+access token still gets the single-flight refresh.
+
+It is a *separate* endpoint on purpose. `POST /jam-sessions` stays JSON because
+its body is nested — an address object, two arrays of objects, cross-field
+numeric rules — and multipart would flatten all of it to strings. New remote
+image hosts need adding to `remotePatterns` in `next.config.ts`.
+
 ### Theme
 
 daisyUI 5 with a custom `ohjamming` theme in `globals.css`, forced via

@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import { FaLocationDot, FaRegCalendar, FaRegImage } from 'react-icons/fa6';
 
@@ -47,6 +48,7 @@ export default function JamListing({
   const {
     title,
     summary,
+    image,
     date,
     startTime,
     endTime,
@@ -72,14 +74,28 @@ export default function JamListing({
           {title || 'Untitled session'}
         </h2>
 
-        {/* Phase 7. Kept as a framed space rather than left out, because the
-            listing's proportions change the day an image lands in it and the
-            venue should be approving the layout they'll actually get. */}
-        <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-box border border-base-300 bg-base-200 px-6 text-center">
-          <FaRegImage className="size-8 opacity-30" />
-          <p className="text-xs opacity-60">
-            A photo of the room goes here once image upload is built.
-          </p>
+        {/* The frame is there whether or not a photo is, so the listing's
+            proportions are the same either way — a venue approving this layout
+            without a photo gets the layout they approved.
+
+            `sizes` is what stops next/image serving a 1600px file to a phone: it
+            describes the rendered width, not the source, and the left column is
+            three fifths of a 56rem card once the grid kicks in. */}
+        <div className="relative aspect-video w-full overflow-hidden rounded-box border border-base-300 bg-base-200">
+          {image ? (
+            <Image
+              src={image}
+              alt={title ? `${title} at ${venueName}` : 'The room this session runs in'}
+              fill
+              sizes="(min-width: 1024px) 34rem, (min-width: 640px) 42rem, 100vw"
+              className="object-cover"
+            />
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+              <FaRegImage className="size-8 opacity-30" />
+              <p className="text-xs opacity-60">No photo for this session</p>
+            </div>
+          )}
         </div>
 
         {summary && <p className="text-base opacity-80">{summary}</p>}

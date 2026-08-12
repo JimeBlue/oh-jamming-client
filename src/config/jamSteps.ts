@@ -90,7 +90,9 @@ export const JAM_STEP_COUNT = JAM_STEPS.length;
    even though the times it depends on were entered two steps earlier. That's the
    right place: the slot length is what the venue can change from there. */
 export const JAM_STEP_FIELDS: Record<JamStepId, readonly (keyof JamFormValues)[]> = {
-  /* Nothing to validate — the field doesn't exist on the API yet. */
+  /* Nothing to validate: the photo is optional, and the only value `image` can
+     hold is a URL the API produced. Listing it here would run a rule that has
+     already been enforced by the one thing that can write to the field. */
   image: [],
   basics: ['title', 'summary'],
   when: ['date', 'startTime', 'endTime', 'venueName', 'address'],
