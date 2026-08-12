@@ -83,6 +83,16 @@ Root `app/layout.tsx` holds only `<AuthProvider>` and the fonts.
   hoping they're ignored.
 - Dates arrive as ISO strings; coerce with `z.coerce.date()`.
 
+### One listing, two sources
+
+`components/jams/listing/JamListing.tsx` is the musician-facing session view, and
+it renders both as the builder's last step and (once that page exists) as the
+page a musician books from. Neither the form nor the API response is passed to it
+directly — both go through `JamListingView` in `src/lib/jamListing.ts`, which is
+where their differences are reconciled. Add a field by extending the view model
+and both adapters, not by handing the component a second shape; the moment it
+knows which source it is drawing, the preview has stopped predicting the listing.
+
 ### Theme
 
 daisyUI 5 with a custom `ohjamming` theme in `globals.css`, forced via

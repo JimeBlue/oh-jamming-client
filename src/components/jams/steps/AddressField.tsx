@@ -23,7 +23,7 @@ import JamField from './JamField';
    plenty of real rooms — a workshop behind a courtyard, a bar that changed its
    name last month — simply aren't in OpenStreetMap. */
 
-const VenueMap = dynamic(() => import('./VenueMap'), {
+const VenueMap = dynamic(() => import('../VenueMap'), {
   /* Leaflet touches `window` at import time; see the note in VenueMap. */
   ssr: false,
   loading: () => (

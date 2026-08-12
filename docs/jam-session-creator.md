@@ -115,8 +115,8 @@ the wizard publishes for real.
   a product of two numbers entered three steps apart
 - The **overview step** is a plain textarea; the value is already markdown, so
   phase 5 adds a toolbar rather than a migration
-- The **preview step** is a recap, not the musician-facing listing — that's
-  phase 6, and it needs the browse card to exist first
+- The **preview step** was a recap, not the musician-facing listing — replaced
+  in phase 6
 
 Decisions taken while building:
 
@@ -269,13 +269,73 @@ showing raw `**asterisks**` the moment the editor could produce them. No
 sanitiser needed: it builds React elements, never an HTML string, so raw HTML in
 the source is escaped and `javascript:` hrefs are dropped.
 
-### Phase 6 — Preview step
+### Phase 6 — Preview step ✅ done
 
-Renders the assembled session as a musician will see it, replacing phase 3's
-recap. Wants the browse card design to exist first, so the preview and the real
-listing are the same component rather than two drawings of one thing. The
-markdown renderer it needs is already here — `react-markdown` inside
-`.rich-text`, see phase 5.
+The recap is gone. Step 8 now renders `JamListing` — the same component the
+musician's page will render — with a strip above it carrying the one thing a
+listing can't say: what publishing will *create*.
+
+- `src/lib/jamListing.ts` — `JamListingView`, and both adapters that fill it
+- `src/components/jams/listing/JamListing.tsx` — the listing itself
+- `src/components/jams/listing/JamSlotList.tsx` — the bookable slots
+- `VenueMap` moved up to `src/components/jams/` — it is no longer a step's
+
+The layout follows the wireframe: what the session **is** on the left (image,
+pitch, overview, where), what a musician has to **decide** on the right (genre,
+level, which slot). Three columns to two rather than the sketch's even split —
+the right side is chips and a list of times, and given half a desktop page it
+reads as mostly empty.
+
+Decisions and traps:
+
+- **A view model in the middle, not two components.** The builder's form and the
+  API's response have almost nothing in common — markdown against text blocks, a
+  slot *length* against generated slots, instrument rows sitting at zero against
+  spots with bookings on them. Without something between them, "the same
+  listing" quietly becomes two, and the layout a venue approved is not the one
+  that ships.
+- **Both adapters were written now**, though only `jamFormToListing` has a caller
+  yet. A shape only one source has ever been fitted to is a promise nobody has
+  checked; `jamSessionToListing` typechecks against `jamSessionSchema`'s output,
+  so a field the response can't supply is a build error today rather than a
+  redesign when the musician's page is built.
+- **Availability is counted, never stored** — the API's model has no counter,
+  only spots carrying a `bookingId` or not. In the preview every spot is free,
+  which is exactly what a session nobody has posted has.
+- **The slot list is interactive only when handed an `onSelect`.** That isn't a
+  flag, it's the difference between the two places it renders: there is nothing
+  to book on a session that doesn't exist yet, and rows that highlight under the
+  pointer would promise the venue an action leading nowhere. Without a handler
+  they are list items rather than disabled buttons — the same distinction said
+  to a screen reader.
+- **The map only mounts with coordinates.** The opposite call to the address
+  field, where an empty country-scale map is what explains the autocomplete;
+  here it would be a picture of Germany under someone's address.
+- `useWatch({ control, compute })` rather than watching the whole form: the
+  result is deep-compared, so a keystroke that doesn't change the listing doesn't
+  re-render it, and unlike the bare `useWatch({ control })` it hands over fully
+  typed values instead of a deep-partial defaulted field by field.
+
+**Fixed here, but dating from phase 3:** clicking "Go to the next step" on step 7
+published the session. React saw one `<button>` in one place across the step
+change and reused the DOM node, so the click's own handler flipped that node's
+`type` from `"button"` to `"submit"` — and the browser then ran the click's
+default action on it. The preview appeared for a single frame on the way to
+`/my-backstage`. The two buttons now carry `key="next"` and `key="publish"`,
+which is the truth about them: different buttons that share a corner. React
+unmounts one and mounts the other, and a click landing on a node no longer in the
+document submits nothing. Confirmed against `e1a4d31` — the bug reproduces
+there too, so nothing in phase 6 caused it; a complete form reaching step 7 is
+simply what it takes to see it (an incomplete one is sent back by `onInvalid`
+before anything is posted).
+
+Verified in the browser against a restored draft: 4 slots × 8 spots read back as
+"32 bookable spots", the markdown overview renders with its lists and link, the
+pin lands on the address, zero-spot instrument rows are absent from the line-up,
+and an empty draft degrades to "Untitled session" / "Date to be confirmed" /
+"Not chosen yet" with no map. The interactive slot branch was exercised by
+temporarily passing a handler — buttons, `aria-pressed`, indigo selection, no
+form submit — and then reverted; nothing ships wired to it.
 
 ### Phase 7 — Image *(backend first)*
 

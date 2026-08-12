@@ -204,8 +204,21 @@ export default function JamWizard() {
               </button>
             )}
 
+            {/* The keys are load-bearing, and this is the bug they prevent:
+                without them React sees one <button> in one place and reuses the
+                DOM node, so the click that moves from step 7 to step 8 flips that
+                very node's type from "button" to "submit" mid-dispatch — and the
+                browser then runs the click's default action on it and publishes
+                the session the venue was on their way to previewing. The preview
+                appears for one frame on the way to /my-backstage.
+
+                Two keys say what is actually true: these are different buttons
+                that happen to sit in the same corner. React unmounts one and
+                mounts the other, and a click that lands on a node no longer in
+                the document submits nothing. */}
             {isLastStep ? (
               <button
+                key="publish"
                 type="submit"
                 disabled={isSubmitting}
                 className="btn btn-primary gap-2 font-bold"
@@ -215,6 +228,7 @@ export default function JamWizard() {
               </button>
             ) : (
               <button
+                key="next"
                 type="button"
                 onClick={goNext}
                 className="btn btn-primary gap-2 font-bold"

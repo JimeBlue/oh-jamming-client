@@ -5,15 +5,18 @@ import { useEffect, useRef } from 'react';
 
 import 'leaflet/dist/leaflet.css';
 
-/* The map under the address field, from the first paint onwards.
+/* The map: under the address field while a session is being written, and in the
+   listing a musician reads.
 
-   It is on screen before there is anything to point at — no pin, the country in
-   view — because an empty map is what tells the venue that picking an address
-   from the list does something. Rendering it only once coordinates exist means
-   the one moment it would explain itself is the one moment it isn't there.
+   Under the address field it is on screen before there is anything to point at —
+   no pin, the country in view — because an empty map is what tells the venue
+   that picking an address from the list does something. Rendering it only once
+   coordinates exist means the one moment it would explain itself is the one
+   moment it isn't there. The listing is the opposite case and mounts it only
+   with coordinates in hand; there, an empty map explains nothing.
 
    Leaflet reads `window` and `document` the moment it is imported, so this file
-   must never be evaluated on the server — AddressField pulls it in through
+   must never be evaluated on the server — every caller pulls it in through
    next/dynamic with `ssr: false`, which is what keeps the build from crashing on
    `window is not defined`.
 

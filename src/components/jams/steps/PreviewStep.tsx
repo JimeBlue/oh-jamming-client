@@ -1,156 +1,66 @@
 'use client';
 
 import { useWatch } from 'react-hook-form';
-import ReactMarkdown from 'react-markdown';
+import { FaRegEye } from 'react-icons/fa6';
 
-import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import { useJamForm } from '@/hooks/useJamForm';
-import { buildSlotPlan } from '@/lib/slotPlan';
-import JamField from './JamField';
+import { jamFormToListing } from '@/lib/jamListing';
+import JamListing from '../listing/JamListing';
 
-/* The last look before it goes live.
+/* The last look before it goes live — and the real listing, not a recap of the
+   fields that produced it. A summary of what was typed can only tell the venue
+   that they typed it; this tells them whether the night reads well, which is the
+   question the step is actually for. `JamListing` is the component the musician's
+   page renders too, so approving it here means approving what ships.
 
-   A recap of what was typed, not yet the listing a musician will see — that's
-   phase 6, and it needs the browse card design to exist first. What this does
-   have to do is show the two things the venue never typed and can't otherwise
-   check: how many slots came out of the times they chose, and how many bookable
-   spots that multiplies into. */
+   The one thing the listing can't say is what publishing will *create*, because
+   a musician has no reason to care: the slot count and the spot total are a
+   product of numbers entered three steps apart, and the strip above the preview
+   is the only place they appear together. */
 export default function PreviewStep() {
   const { control } = useJamForm();
-  const values = useWatch({ control });
 
-  const {
-    title,
-    summary,
-    date,
-    startTime,
-    endTime,
-    venueName,
-    address,
-    overview,
-    slotDurationMinutes = 0,
-    instrumentTemplate = [],
-    genres = [],
-    skillLevel = [],
-  } = values;
+  /* `compute` rather than watching the whole form: the result is deep-compared,
+     so a keystroke that doesn't change the listing doesn't re-render it — and
+     unlike the bare `useWatch({ control })`, it hands over fully typed values
+     instead of a deep-partial that has to be defaulted field by field. */
+  const listing = useWatch({ control, compute: jamFormToListing });
 
-  const lineUp = instrumentTemplate.filter((row) => (row?.spotsTotal ?? 0) > 0);
-  const plan = buildSlotPlan(startTime ?? '', endTime ?? '', slotDurationMinutes);
-  const spotsPerSlot = lineUp.reduce((total, row) => total + (row?.spotsTotal ?? 0), 0);
+  const spotsPerSlot = listing.lineUp.reduce(
+    (total, { spotsTotal }) => total + spotsTotal,
+    0,
+  );
+  const bookableSpots = spotsPerSlot * listing.slots.length;
 
   return (
     <div className="space-y-6">
-      <div className="rounded-box border border-base-300 p-5">
-        <h2 className="font-heading text-xl">{title || 'Untitled session'}</h2>
-        <p className="mt-2 text-sm opacity-80">{summary}</p>
-
-        <dl className="mt-5 grid gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Row label="When">
-            {formatDate(date)}
-            {startTime && endTime && (
-              <span className="tabular-nums">
-                {' · '}
-                {startTime} – {endTime}
-              </span>
-            )}
-          </Row>
-
-          <Row label="Where">
-            {venueName}
-            {address?.formatted && (
-              <span className="block opacity-70">{address.formatted}</span>
-            )}
-          </Row>
-
-          <Row label="Slots">
-            {plan
-              ? `${plan.slots.length} × ${slotDurationMinutes} minutes`
-              : 'Not set yet'}
-          </Row>
-
-          <Row label="Bookable spots">
-            {plan ? spotsPerSlot * plan.slots.length : 'Not set yet'}
-          </Row>
-        </dl>
+      {/* Same tinted panel as the image step, and for the same reason: this
+          theme's --color-info is the brand indigo, so `alert-info` would shout a
+          quiet sentence. */}
+      <div
+        role="note"
+        className="flex gap-3 rounded-box border border-primary/40 bg-primary/10 p-4"
+      >
+        <FaRegEye className="mt-0.5 size-5 shrink-0 text-primary" />
+        <p className="text-sm">
+          This is your session as musicians will see it.{' '}
+          {bookableSpots > 0 ? (
+            <>
+              Publishing it opens{' '}
+              <span className="font-bold tabular-nums">{listing.slots.length}</span>{' '}
+              slots and{' '}
+              <span className="font-bold tabular-nums">{bookableSpots}</span>{' '}
+              bookable spots.
+            </>
+          ) : (
+            <>Go back and check the times and the line-up — nothing is bookable yet.</>
+          )}
+        </p>
       </div>
 
-      <JamField label="Line-up">
-        <ul className="flex flex-wrap gap-2">
-          {lineUp.length === 0 && (
-            <li className="text-sm opacity-60">No instruments yet</li>
-          )}
-          {lineUp.map((row, index) => (
-            <li
-              key={`${row?.instrument}-${index}`}
-              className="rounded-field bg-base-200 px-3 py-1 text-sm"
-            >
-              {row?.instrument}{' '}
-              <span className="font-bold tabular-nums">×{row?.spotsTotal}</span>
-            </li>
-          ))}
-        </ul>
-      </JamField>
-
-      <JamField label="Genres & levels">
-        <ul className="flex flex-wrap gap-2">
-          {genres.map((genre) => (
-            <li
-              key={genre}
-              className="rounded-field bg-primary/15 px-3 py-1 text-sm"
-            >
-              {genre && GENRE_LABELS[genre]}
-            </li>
-          ))}
-          {skillLevel.map((level) => (
-            <li
-              key={level}
-              className="rounded-field bg-accent/25 px-3 py-1 text-sm"
-            >
-              {level && SKILL_LEVEL_LABELS[level]}
-            </li>
-          ))}
-        </ul>
-      </JamField>
-
-      {overview?.trim() && (
-        <JamField label="Overview">
-          {/* Rendered, not raw: the editor two steps back produces markdown, and
-              a last look that shows `**asterisks**` isn't a preview of anything
-              a musician will ever see.
-
-              react-markdown rather than dangerouslySetInnerHTML — it never
-              builds an HTML string, so there is nothing to sanitise. Raw HTML in
-              the source is escaped and `javascript:` hrefs are dropped, which
-              matters the moment this content comes back from the API rather than
-              from the editor beside it. */}
-          <div className="rich-text text-sm opacity-80">
-            <ReactMarkdown>{overview}</ReactMarkdown>
-          </div>
-        </JamField>
-      )}
+      {/* No slot handler: there is nothing to book on a session that doesn't
+          exist yet, so the slots render as the list of times they are. */}
+      <JamListing listing={listing} />
     </div>
   );
 }
-
-const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div>
-    <dt className="text-xs uppercase tracking-wide opacity-60">{label}</dt>
-    <dd className="mt-0.5 text-sm">{children}</dd>
-  </div>
-);
-
-/* The stored value is a plain calendar day, so it's formatted in UTC — reading
-   it with local getters would show the day before for anyone west of Greenwich. */
-const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-});
-
-const formatDate = (date: string | undefined): string => {
-  if (!date) return 'No date yet';
-
-  return dateFormatter.format(new Date(`${date}T00:00:00Z`));
-};
