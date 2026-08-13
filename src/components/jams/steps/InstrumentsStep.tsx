@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useFieldArray, useWatch } from 'react-hook-form';
-import { FaMinus, FaPlus, FaTrash } from 'react-icons/fa6';
+import { FaMinus, FaPlus } from 'react-icons/fa6';
 
 import { useJamForm } from '@/hooks/useJamForm';
 import { buildSlotPlan } from '@/lib/slotPlan';
@@ -30,7 +30,13 @@ export default function InstrumentsStep() {
     formState: { errors },
   } = useJamForm();
 
-  const { fields, append, remove } = useFieldArray({
+  /* No `remove`. A row can be taken out of the line-up by setting it to zero,
+     which is reversible; deleting it isn't — the preset names aren't listed
+     anywhere else in the step, so a venue who removed "Saxophone" and changed
+     their mind would have to know to type it back. Zero and gone mean the same
+     thing to the payload (see `toJamSessionPayload`), so the destructive one
+     buys nothing. */
+  const { fields, append } = useFieldArray({
     control,
     name: 'instrumentTemplate',
   });
@@ -145,18 +151,6 @@ export default function InstrumentsStep() {
                     <FaPlus className="size-3" />
                   </button>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    remove(index);
-                    void trigger('instrumentTemplate');
-                  }}
-                  aria-label={`Remove ${name || 'this instrument'}`}
-                  className="btn btn-square btn-ghost btn-sm text-error"
-                >
-                  <FaTrash className="size-4" />
-                </button>
               </li>
             );
           })}
