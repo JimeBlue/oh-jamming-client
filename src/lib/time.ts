@@ -63,3 +63,14 @@ export const nowInAppTimezone = (): { date: string; time: string } => {
     time: `${parts.hour}:${parts.minute}`,
   };
 };
+
+/* A stored jam date back to the "YYYY-MM-DD" the rest of the app compares on —
+   the mirror of the API's `utcMidnightToDateString`.
+
+   Read in UTC rather than with local getters, and that is the whole point of
+   having it named. The value marks a calendar day pinned to midnight UTC, so
+   `getDate()` in a browser west of Greenwich hands back the day before: a
+   session on the 19th shows as the 18th, and "is it today?" answers wrong once
+   a day, for the users least likely to report it. */
+export const utcMidnightToDateString = (date: Date): string =>
+  date.toISOString().slice(0, 10);

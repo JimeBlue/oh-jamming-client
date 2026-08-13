@@ -1,4 +1,5 @@
 import { buildSlotPlan } from '@/lib/slotPlan';
+import { utcMidnightToDateString } from '@/lib/time';
 import type {
   Genre,
   JamFormValues,
@@ -128,9 +129,7 @@ export const jamSessionToListing = (session: JamSession): JamListingView => ({
      is exactly this, so the component never has to ask which source it is
      drawing from. */
   image: session.image ?? '',
-  /* Stored as midnight UTC, so it is read in UTC. Local getters would show the
-     day before for anyone west of Greenwich. */
-  date: session.date.toISOString().slice(0, 10),
+  date: utcMidnightToDateString(session.date),
   startTime: session.startTime,
   endTime: session.endTime,
   venueName: session.venueName,

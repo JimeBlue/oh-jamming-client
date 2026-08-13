@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import {
   jamSessionSchema,
   type JamSession,
@@ -20,3 +22,26 @@ import { api } from '@/services/api';
    implementation of the slot maths is a second answer waiting to disagree. */
 export const createJamSession = (payload: JamSessionPayload): Promise<JamSession> =>
   api.post('/jam-sessions', payload, jamSessionSchema);
+
+/* The venue's own board: every session it has posted, cancelled and long past
+   ones included, newest first.
+
+   Its own endpoint rather than `GET /jam-sessions?venueId=…`, because the browse
+   answers a musician's question and is shaped by it — active only, today
+   onwards. Getting a whole board out of it would take an arbitrary `from` far
+   enough in the past plus a second request for the cancelled ones, since
+   `status` takes one value and not a list. This also can't be pointed at another
+   venue: the identity comes from the session cookie, not the query string. */
+export const getMyJamSessions = (): Promise<JamSession[]> =>
+  api.get('/jam-sessions/mine', z.array(jamSessionSchema));
+
+/* DELETE, but the API cancels rather than deletes (JS11) — the row stays so the
+   bookings hanging off it still resolve, and every confirmed one of them is
+   cancelled with it.
+
+   `api.del` reads no response, which is fine here for a reason worth stating:
+   the outcome is not in doubt. A 2xx means the session is now cancelled and its
+   date hasn't moved, so the caller already knows the new row without being told.
+   Throws `ApiError` on 403 (not yours) and 409 (already gone). */
+export const cancelJamSession = (id: string): Promise<void> =>
+  api.del(`/jam-sessions/${id}`);
