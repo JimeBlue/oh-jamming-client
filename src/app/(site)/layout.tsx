@@ -1,8 +1,7 @@
 import Header from '@/components/layout/Header';
 
-/* Everything that wears the public header: home, login, register, and the
-   venue's backstage. A route group, so `(site)` shapes the layout without
-   showing up in a single URL.
+/* Everything that wears the public header: home, login and register. A route
+   group, so `(site)` shapes the layout without showing up in a single URL.
 
    It exists because the jam builder needs a *different* header, and a child
    layout can't switch off one its parent rendered. Moving the header down one

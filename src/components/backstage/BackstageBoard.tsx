@@ -137,7 +137,13 @@ export default function BackstageBoard() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-heading text-3xl sm:text-4xl">My backstage</h1>
-          <p className="mt-2 opacity-70">
+          {/* `text-base-content/80` rather than `opacity-70`. Both dim text, but
+              opacity dims the *element* — every icon inside it goes pale with the
+              words — while the alpha modifier only touches the colour. Which
+              matters on the rows below, where the pins and calendars are meant
+              to stay indigo. Kept the same here so the page has one muted grey
+              and not two that nearly match. */}
+          <p className="mt-2 text-base-content/80">
             Manage your jam sessions. Check what&apos;s coming up, and call off a
             night if you have to.
           </p>
@@ -189,12 +195,23 @@ export default function BackstageBoard() {
                 be labelling something that isn't there. `aria-hidden` because
                 the headings are decorative: each row already says its own venue,
                 date and status in words. */}
+            {/* base-300, not base-200: the page itself is base-200, so a header
+                tinted with it was the same colour as the space around the board
+                and read as a gap rather than a heading. */}
+            {/* Three columns, and the third has no heading — the buttons label
+                themselves. It is still declared, as an empty span of the width
+                the actions occupy, because that is what holds "Status" over the
+                badges: the heading row and every jam row now end with the same
+                two fixed widths and the same gap, so their flex-1 columns stop
+                at the same x and everything to the right of it lines up. Drop
+                the spacer and "Status" slides over the buttons. */}
             <div
               aria-hidden
-              className="hidden bg-base-200/60 px-6 py-4 font-bold lg:flex"
+              className="hidden gap-5 bg-base-300 px-6 py-4 font-bold lg:flex"
             >
               <span className="flex-1">Jam sessions</span>
-              <span className="w-72">Status</span>
+              <span className="w-40">Status</span>
+              <span className="w-48" />
             </div>
 
             <ul>

@@ -14,7 +14,7 @@ export default function BackstageEmpty() {
     <div className="mt-8 grid place-items-center rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
       <p className="font-heading text-xl">No jam session published yet</p>
 
-      <p className="mt-2 text-sm opacity-70">
+      <p className="mt-2 text-sm text-base-content/80">
         Insert your first jam session to get started.
       </p>
 

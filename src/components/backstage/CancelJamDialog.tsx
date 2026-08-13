@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { FaTriangleExclamation } from 'react-icons/fa6';
+import { IoIosPeople } from 'react-icons/io';
+import { RiAlertFill } from 'react-icons/ri';
 
 import type { JamSession } from '@/schemas/jamSession';
 
@@ -68,12 +69,16 @@ export default function CancelJamDialog({
       }}
     >
       <div className="modal-box max-w-md text-center">
-        <div className="mx-auto grid size-16 place-items-center rounded-full bg-error/10">
+        <div className="mx-auto grid size-16 place-items-center rounded-full bg-caution/10">
           {/* Decorative — the heading below says the same thing in words. */}
-          <FaTriangleExclamation aria-hidden className="size-8 text-error" />
+          <RiAlertFill aria-hidden className="size-8 text-caution" />
         </div>
 
-        <h3 className="mt-5 font-heading text-2xl">
+        {/* The content font, not `font-heading`. Changa One is a display face
+            built for three or four words; set at two lines of a question it is
+            harder to read than the sentence deserves, and this is the one piece
+            of text on the screen that has to be understood before a click. */}
+        <h3 className="mt-5 text-2xl font-bold">
           Are you sure you want to cancel this jam session?
         </h3>
 
@@ -81,23 +86,35 @@ export default function CancelJamDialog({
             call off the one they meant — the board can have several nights on it
             with the same shape. */}
         {session && (
-          <p className="mt-2 font-bold">&ldquo;{session.title}&rdquo;</p>
-        )}
-
-        <p className="mt-3 opacity-70">This can&apos;t be undone.</p>
-
-        {/* Only when there are any. A flat "0 bookings will be cancelled" on a
-            night nobody booked is noise, and noise is what teaches people to
-            click through warnings without reading them. */}
-        {session && countBookedSpots(session) > 0 && (
-          <p className="mt-4 rounded-box border border-error/40 bg-error/5 p-3 text-sm">
-            <span className="font-bold tabular-nums">
-              {countBookedSpots(session)}
-            </span>{' '}
-            booked {countBookedSpots(session) === 1 ? 'spot' : 'spots'} will be
-            cancelled too.
+          <p className="mt-3 font-bold text-primary">
+            &ldquo;{session.title}&rdquo;
           </p>
         )}
+
+        {/* One panel now, holding both the warning and its consequence. They
+            were two separate lines and the consequence read as a footnote — the
+            number of people this reaches is the whole reason to stop and think,
+            so it belongs inside the thing that says stop. */}
+        <div className="mt-5 flex items-start gap-3 rounded-box border border-caution/40 bg-caution/8 p-4 text-left">
+          <IoIosPeople aria-hidden className="size-6 shrink-0 text-caution" />
+
+          <div>
+            <p className="font-bold text-caution">This can&apos;t be undone.</p>
+
+            {/* Only when there are any. A flat "0 booked spots will be cancelled"
+                on a night nobody booked is noise, and noise is what teaches
+                people to click through warnings without reading them. */}
+            {session && countBookedSpots(session) > 0 && (
+              <p className="mt-1 text-sm text-base-content/80">
+                <span className="font-bold tabular-nums">
+                  {countBookedSpots(session)}
+                </span>{' '}
+                booked {countBookedSpots(session) === 1 ? 'spot' : 'spots'} will
+                be cancelled too.
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Rendered here rather than closing on failure: a dialog that vanishes
             leaves the venue guessing whether the night is off. */}
@@ -110,11 +127,14 @@ export default function CancelJamDialog({
         {/* justify-center overrides modal-action's right alignment — the
             SweetAlert shape the design is after is a centred pair. */}
         <div className="modal-action justify-center">
+          {/* The board's pink rather than daisyUI's `btn-error` red, so the
+              button that finishes the job is the same colour as the one that
+              started it — the venue clicked a pink Cancel to get here. */}
           <button
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="btn btn-error font-bold"
+            className="btn border-0 bg-status-cancelled font-bold text-white hover:bg-status-cancelled/90"
           >
             {pending && <span className="loading loading-spinner loading-sm" />}
             Cancel session
@@ -129,7 +149,10 @@ export default function CancelJamDialog({
                first that would put Enter one keystroke from calling off a jam
                the venue only came here to look at. */
             autoFocus
-            className="btn btn-ghost font-bold"
+            /* Outline rather than ghost: a ghost button is only a label until
+               you hover it, and the safe way out of a destructive dialog should
+               look like a button without being hunted for. */
+            className="btn btn-outline btn-primary font-bold"
           >
             Back
           </button>
