@@ -58,6 +58,37 @@
   --color-brand-indigo: #5546ff;
   --color-brand-pink: #ff7bca;
   --color-brand-green: #bfff0a;
+
+  /* The backstage board's status colours, as their own tokens rather than by
+     bending daisyUI's semantic ones. `--color-error` is the red that marks an
+     invalid form field, and repainting it this pink to suit one badge would
+     repaint every validation message in the app with it.
+
+     Named for the state rather than the hue, so "what colour is cancelled?" has
+     one answer and it lives here.
+
+     Only three states need a token. Today is the brand's own indigo and lime
+     straight from the palette above, so it has none.
+
+     Upcoming is the brand lime, darkened. `--color-brand-green` scores 1.20:1
+     as text on white, which is not a label so much as a rumour of one; this is
+     the same hue taken down to 4.9:1 against the lime-tinted pill it sits in, so
+     the badge still reads as the brand's green rather than as some other green.
+     The lime survives untouched on Today, where the pill behind it is dark. */
+  --color-status-cancelled: #ff2f6d;
+  --color-status-upcoming: #5c7600;
+
+  /* Past is the one state with a surface that isn't a tint of its own text —
+     a neutral grey pill, not a wash of the label's colour — so it takes two
+     tokens rather than one. */
+  --color-status-past: #6b7280;
+  --color-status-past-surface: #f1f1f5;
+
+  /* The cancel confirmation's orange. Not daisyUI's `warning`, which is the
+     theme's yellow (#facc15) and belongs to form-level notices — this is the
+     colour of one dialog, and giving it a name keeps the two from being
+     "improved" into each other later. */
+  --color-caution: #f97316;
 }
 
 /* Markdown, wherever it is shown: inside the overview editor in the jam builder,
