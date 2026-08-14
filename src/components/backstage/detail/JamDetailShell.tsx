@@ -100,6 +100,12 @@ export default function JamDetailShell({
   const notMine =
     state.status === 'ready' && viewerId !== null && state.session.venueId !== viewerId;
 
+  /* The guest list is the one section that doesn't wear the shared furniture: it
+     takes the full width, and it carries its own header rather than the session
+     card. Both follow from the same thing — it is a working table rather than a
+     page about a session, so it wants the room and it names itself. */
+  const isGuestList = pathname === `/my-backstage/${id}/guests`;
+
   return (
     /* The rail has to reach the bottom of the window even when the panel beside
        it is short, and it can only do that against a definite height — `h-full`
@@ -114,15 +120,10 @@ export default function JamDetailShell({
         {/* The guest list gets the whole width; the other two keep a reading
             measure. Nine columns of names, spots and timestamps are worth every
             pixel of a wide screen, while the cockpit is cards and the listing is
-            prose — both of which get worse the wider they run.
-
-            Decided here rather than inside the panel because the session card
-            above it has to move too. A panel that widened alone would sit under a
-            header still stopped at 72rem, which reads as a layout bug rather
-            than as a choice. */}
+            prose — both of which get worse the wider they run. */}
         <div
           className={`mx-auto flex w-full flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 ${
-            pathname === `/my-backstage/${id}/guests` ? '' : 'max-w-6xl'
+            isGuestList ? '' : 'max-w-6xl'
           }`}
         >
           {state.status === 'loading' && (
@@ -144,7 +145,7 @@ export default function JamDetailShell({
               />
             ) : (
               <>
-                <JamDetailHeader session={state.session} />
+                {!isGuestList && <JamDetailHeader session={state.session} />}
 
                 <JamDetailProvider
                   value={{ session: state.session, bookings: state.bookings }}

@@ -1,10 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
-import { FaMagnifyingGlass } from 'react-icons/fa6';
+import { AiFillClockCircle } from 'react-icons/ai';
+import { FaArrowLeftLong, FaMagnifyingGlass, FaRegCalendar } from 'react-icons/fa6';
 
 import { guestGroups, type GuestGroupStatus } from '@/lib/guestList';
-import { APP_TIMEZONE } from '@/lib/time';
+import { formatListingDate } from '@/lib/jamListing';
+import { APP_TIMEZONE, utcMidnightToDateString } from '@/lib/time';
 import { useJamDetail } from './JamDetailContext';
 
 /* Who is playing, one row per booking.
@@ -38,6 +41,22 @@ const stamp = new Intl.DateTimeFormat('en-GB', {
 
 const ALL = 'all';
 
+/* The two facts a venue needs while reading a roster — which night, and what
+   time. Filled indigo rather than the tinted pills used for status, because
+   these are not a state anything is in: they are the page's subject, standing in
+   for the session card this route doesn't render.
+
+   `rounded-field` rather than `rounded-full`, which is the theme's own 0.5rem
+   and the same radius daisyUI gives every `.btn` — so these sit at the top of
+   the page in the same shape as the header's buttons directly above them. The
+   pill is left to the status badges, where the roundness is what marks them as
+   labels rather than controls. */
+const Fact = ({ children }: { children: React.ReactNode }) => (
+  <span className="badge h-auto gap-2 rounded-field border-0 bg-primary px-4 py-2 text-sm font-bold whitespace-nowrap text-primary-content">
+    {children}
+  </span>
+);
+
 const Dash = () => (
   <span aria-hidden className="text-base-content/30">
     —
@@ -69,6 +88,7 @@ export default function GuestListPanel() {
 
   const needle = query.trim().toLowerCase();
   const groups = guestGroups(bookings);
+  const when = formatListingDate(utcMidnightToDateString(session.date));
 
   /* Not memoised. The cap is 300 spots per session (MAX_SPOTS_PER_SESSION), so
      this is a few hundred comparisons per keystroke on an array already in
@@ -99,12 +119,40 @@ export default function GuestListPanel() {
        and a panel with its own border and 1.5rem of inset was spending 3rem of
        them on a frame around a table that is already visually one thing. */
     <section className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
-        <h2 className="shrink-0 font-heading text-xl">Guest list</h2>
-        <p className="max-w-prose text-sm text-base-content/80">
-          One row per booking — a band that took four spots is one row, not four.
-        </p>
-      </div>
+      {/* This route's own header, in place of the session card the other two
+          wear. `h1`, not `h2`: with the card gone the page has no other heading,
+          and the session it is about is the line underneath rather than the
+          title — a venue that got here already knows which night they clicked. */}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl sm:text-3xl">Guest list</h1>
+          <p className="mt-1 text-base-content/80">{session.title}</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {when && (
+            <Fact>
+              <FaRegCalendar aria-hidden className="size-4 shrink-0" />
+              {when}
+            </Fact>
+          )}
+
+          <Fact>
+            <AiFillClockCircle aria-hidden className="size-4 shrink-0" />
+            <span className="tabular-nums">
+              {session.startTime} – {session.endTime}
+            </span>
+          </Fact>
+
+          <Link
+            href="/my-backstage"
+            className="flex items-center gap-2 font-bold text-primary hover:text-secondary"
+          >
+            <FaArrowLeftLong aria-hidden className="size-4" />
+            My backstage
+          </Link>
+        </div>
+      </header>
 
       {bookings.length === 0 ? (
         <p className="rounded-box bg-base-100 p-8 text-center text-base-content/70">
@@ -113,17 +161,11 @@ export default function GuestListPanel() {
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-3">
-            {/* The four controls wrap among themselves, inside one item that
-                takes whatever the count doesn't. Left flat in a single
-                container, `ml-auto` on the count pushes it only to the end of
-                *its own line* — so the last filter drops below it and the count
-                ends up sitting mid-row. */}
-            <div className="flex flex-1 flex-wrap items-center gap-3">
-              {/* The options come from the *session*, not from the bookings, so
-                  every slot and every instrument is listed whether or not anyone
-                  took it. Filtering to one and being told nobody is there is an
-                  answer; a dropdown that quietly omits the empty ones can't give
-                  it. */}
+            {/* The options come from the *session*, not from the bookings, so
+                every slot and every instrument is listed whether or not anyone
+                took it. Filtering to one and being told nobody is there is an
+                answer; a dropdown that quietly omits the empty ones can't give
+                it. */}
               <label className="input input-bordered flex min-w-48 flex-1 items-center gap-2 bg-base-100">
                 <FaMagnifyingGlass aria-hidden className="size-4 text-base-content/40" />
                 <input
@@ -177,16 +219,17 @@ export default function GuestListPanel() {
                 <option value="confirmed">Confirmed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
-            </div>
-
-            {/* aria-live, so changing a filter is announced — the table below it
-                updates silently otherwise. */}
-            <p aria-live="polite" className="ml-auto text-sm tabular-nums text-base-content/60">
-              {filtered
-                ? `${rows.length} of ${groups.length} shown`
-                : `${groups.length} booking${groups.length === 1 ? '' : 's'}`}
-            </p>
           </div>
+
+          {/* Announced but not shown. The count came off the page, and for
+              anyone reading it that would leave filtering with no feedback at
+              all — the table below reshuffles silently. Sighted users watch the
+              rows change; this is the same information for people who can't. */}
+          <p aria-live="polite" className="sr-only">
+            {filtered
+              ? `${rows.length} of ${groups.length} bookings shown`
+              : `${groups.length} booking${groups.length === 1 ? '' : 's'}`}
+          </p>
 
           {rows.length === 0 ? (
             <p className="rounded-box bg-base-100 p-8 text-center text-base-content/70">
