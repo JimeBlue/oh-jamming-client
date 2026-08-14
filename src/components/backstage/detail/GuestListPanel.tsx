@@ -1,20 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { AiFillClockCircle } from 'react-icons/ai';
 import { BiSolidGuitarAmp } from 'react-icons/bi';
 import { FaUserAlt } from 'react-icons/fa';
 import {
   FaArrowLeftLong,
   FaArrowsRotate,
+  FaClockRotateLeft,
   FaMagnifyingGlass,
+  FaPeopleGroup,
   FaRegCalendar,
+  FaRegCalendarCheck,
+  FaRegEnvelope,
   FaRegFlag,
   FaUsers,
 } from 'react-icons/fa6';
 
-import { guestGroups, type GuestGroupStatus } from '@/lib/guestList';
+import { guestGroups, type GuestGroup, type GuestGroupStatus } from '@/lib/guestList';
 import { formatListingDate } from '@/lib/jamListing';
 import { APP_TIMEZONE, utcMidnightToDateString } from '@/lib/time';
 import { useJamDetail } from './JamDetailContext';
@@ -70,6 +74,82 @@ const Dash = () => (
   <span aria-hidden className="text-base-content/30">
     —
   </span>
+);
+
+/* The musician, in the card layout: a glyph in a tinted disc with the name under
+   it, in place of a "Musician:" line.
+
+   The disc holds the same one-or-several icon the table uses in its first cell,
+   not initials — initials would be a second thing to read and would say nothing
+   the name beside them doesn't. `aria-hidden`, because it is decorative twice
+   over: the name is right there, and how many spots there are is spelled out two
+   lines down. */
+const MusicianAvatar = ({ group }: { group: GuestGroup }) => {
+  const Who = group.spots.length > 1 ? FaUsers : FaUserAlt;
+
+  return (
+    /* A fixed width from `sm`, which is the whole reason the rule beside it lines
+       up. Sized to its content, this column is as wide as the name in it — so
+       "Jane Doe" and "Marco Silva" put the divider in two different places and
+       the rows stop reading as a table. `shrink-0` because a wrapping flex row
+       will take it back off the widest item first. */
+    <div className="flex flex-col items-center gap-2 text-center sm:w-32 sm:shrink-0">
+      <span
+        aria-hidden
+        className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10"
+      >
+        <Who className="size-5 text-primary" />
+      </span>
+      <p className="font-bold">
+        {group.musician.firstName} {group.musician.lastName}
+      </p>
+    </div>
+  );
+};
+
+/* One labelled line in the card layout. The label carries the weight because it
+   is what the eye scans down; the value is the grey the table's cells use, so a
+   booking reads the same either side of the `xl` switch.
+
+   The glyph is indigo and set against the *first* line rather than centred, the
+   same treatment the header card gives its pin and clock — with six of these
+   stacked, an icon drifting to the middle of a wrapped value would break the
+   column they otherwise form down the left edge. */
+const Field = ({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <p className="flex items-start gap-2 text-sm">
+    {icon}
+    <span>
+      <span className="font-bold">{label}:</span>{' '}
+      <span className="text-base-content/70">{children}</span>
+    </span>
+  </p>
+);
+
+const FIELD_ICON = 'mt-1 size-3.5 shrink-0 text-primary';
+
+/* A group's spots on one line, cancelled ones struck through. The separator sits
+   *outside* the span so a cancelled spot doesn't drag the comma after it through
+   the strikethrough — the table stacks these instead, where no separator is
+   needed at all. */
+const SpotList = ({ spots }: { spots: GuestGroup['spots'] }) => (
+  <>
+    {spots.map((spot, index) => (
+      <Fragment key={spot.bookingId}>
+        {index > 0 && ', '}
+        <span className={spot.cancelled ? 'text-base-content/40 line-through' : ''}>
+          {spot.label}
+        </span>
+      </Fragment>
+    ))}
+  </>
 );
 
 const FILTER_ICON = 'size-4 shrink-0 text-primary';
@@ -365,116 +445,206 @@ export default function GuestListPanel() {
                   No bookings match those filters.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="table">
-                    <thead>
-                      {/* Tinted rather than left on the card's white, which is
-                          what separates the headings from the first row without
-                          a rule between them. A wash of the brand indigo rather
-                          than `base-200`: the page background is already that,
-                          so a header in it would read as a gap in the card
-                          instead of a band across it. */}
-                      {/* `text-base-content` on the row, not the cells: daisyUI
-                          sets a muted colour on `.table thead`, and a `<tr>`
-                          with its own `color` beats what its cells would
-                          otherwise inherit from it. */}
-                      <tr className="bg-primary/10 text-base-content">
-                        <th>Musician</th>
-                        <th>Band</th>
-                        <th>Spots</th>
-                        <th>Slot</th>
-                        <th>Status</th>
-                        <th>E-mail</th>
-                        <th>Booked</th>
-                        <th>Modified</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((group) => {
-                        /* One person or several, now the only thing that says so:
-                           the "Multiple spots" column is gone, and the spot list
-                           two cells over is what gives the number. `FaUsers` is
-                           the rail's own Guest list glyph, so the plural means
-                           the same thing in both places. */
-                        const Who = group.spots.length > 1 ? FaUsers : FaUserAlt;
+                <>
+                  {/* Two layouts of the same eight fields, not one table made to
+                      bend. Eight columns need roughly a laptop to be read
+                      without scrolling sideways, so below `xl` each booking is a
+                      block of labelled lines — the same shape the backstage
+                      board's rows use, so the two venue-facing lists read alike.
 
-                        return (
-                          <tr key={group.groupId} className="align-top">
-                            <td className="font-bold whitespace-nowrap text-base-content/70">
-                              <span className="flex items-center gap-2">
-                                <Who
-                                  aria-hidden
-                                  className="size-4 shrink-0 text-base-content/40"
-                                />
-                                {group.musician.firstName} {group.musician.lastName}
-                              </span>
-                            </td>
+                      The presentation is duplicated; the data is not. Both draw
+                      the same `rows`, so the two can differ in layout and never
+                      in content. */}
+                  <ul className="flex flex-col xl:hidden">
+                    {rows.map((group) => (
+                      <li
+                        key={group.groupId}
+                        className="flex flex-wrap items-start gap-4 border-b border-base-200 py-6 last:border-b-0 sm:gap-5"
+                      >
+                        {/* `basis-64` on the fields is what decides the phone
+                            layout: a wrapping flex row breaks on bases before
+                            anything shrinks, so asking for 16rem there is what
+                            pushes them under the name below `sm`. From `sm` it
+                            becomes `basis-0` — the three take their widths from
+                            the two fixed ends instead, and the row never wraps,
+                            which is the other half of keeping the rule in one
+                            place down the list. */}
+                        <MusicianAvatar group={group} />
 
-                            <td className="text-base-content/70">{group.bandName ?? <Dash />}</td>
+                        {/* The rule that makes the two a pair of columns rather
+                            than two things that happen to be side by side. Only
+                            once they *are* side by side: below `sm` the fields
+                            wrap under the name, where a left border would be a
+                            stray mark down the page. No `xl` reset needed — the
+                            whole list is `xl:hidden` by then. */}
+                        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-2.5 sm:basis-0 sm:border-l sm:border-base-300 sm:pl-5">
+                          {/* Two of these are borrowed rather than picked: the
+                              amp is the instruments filter's own glyph and the
+                              clock is the header's, so the same idea keeps the
+                              same mark wherever it appears on the page. */}
+                          <Field
+                            icon={<FaPeopleGroup aria-hidden className={FIELD_ICON} />}
+                            label="Band"
+                          >
+                            {group.bandName ?? <Dash />}
+                          </Field>
+                          <Field
+                            icon={<BiSolidGuitarAmp aria-hidden className={FIELD_ICON} />}
+                            label="Spots"
+                          >
+                            <SpotList spots={group.spots} />
+                          </Field>
+                          <Field
+                            icon={<AiFillClockCircle aria-hidden className={FIELD_ICON} />}
+                            label="Slot"
+                          >
+                            {group.slotStartTime}–{group.slotEndTime}
+                          </Field>
+                          <Field
+                            icon={<FaRegEnvelope aria-hidden className={FIELD_ICON} />}
+                            label="E-mail"
+                          >
+                            <a
+                              href={`mailto:${group.musician.email}`}
+                              className="break-all hover:underline"
+                            >
+                              {group.musician.email}
+                            </a>
+                          </Field>
+                          <Field
+                            icon={<FaRegCalendarCheck aria-hidden className={FIELD_ICON} />}
+                            label="Booked"
+                          >
+                            {stamp.format(group.bookedAt)}
+                          </Field>
+                          <Field
+                            icon={<FaClockRotateLeft aria-hidden className={FIELD_ICON} />}
+                            label="Modified"
+                          >
+                            {stamp.format(group.modifiedAt)}
+                          </Field>
+                        </div>
 
-                            {/* The row is as tall as the booking is wide — one line per
-                                spot, struck through where that one spot is gone. This
-                                is the whole reason the table groups: a cancelled spot
-                                inside a live booking has nowhere to show in a flat
-                                list. */}
-                            <td>
-                              <ul className="flex flex-col gap-0.5">
-                                {group.spots.map((spot) => (
-                                  <li
-                                    key={spot.bookingId}
-                                    className={
-                                      spot.cancelled
-                                        ? 'text-base-content/40 line-through'
-                                        : 'text-base-content/70'
-                                    }
-                                  >
-                                    {spot.label}
-                                  </li>
-                                ))}
-                              </ul>
-                            </td>
+                        {/* No heading — the badge says "Confirmed" in words, so a
+                            "Status:" in front of it would be the label twice. */}
+                        <div className="sm:w-40">
+                          <StatusChip status={group.status} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
 
-                            <td className="tabular-nums whitespace-nowrap text-base-content/70">
-                              {group.slotStartTime}–{group.slotEndTime}
-                            </td>
+                <div className="hidden overflow-x-auto xl:block">
+                    <table className="table">
+                      <thead>
+                        {/* Tinted rather than left on the card's white, which is
+                            what separates the headings from the first row without
+                            a rule between them. A wash of the brand indigo rather
+                            than `base-200`: the page background is already that,
+                            so a header in it would read as a gap in the card
+                            instead of a band across it. */}
+                        {/* `text-base-content` on the row, not the cells: daisyUI
+                            sets a muted colour on `.table thead`, and a `<tr>`
+                            with its own `color` beats what its cells would
+                            otherwise inherit from it. */}
+                        <tr className="bg-primary/10 text-base-content">
+                          <th>Musician</th>
+                          <th>Band</th>
+                          <th>Spots</th>
+                          <th>Slot</th>
+                          <th>Status</th>
+                          <th>E-mail</th>
+                          <th>Booked</th>
+                          <th>Modified</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((group) => {
+                          /* One person or several, now the only thing that says so:
+                             the "Multiple spots" column is gone, and the spot list
+                             two cells over is what gives the number. `FaUsers` is
+                             the rail's own Guest list glyph, so the plural means
+                             the same thing in both places. */
+                          const Who = group.spots.length > 1 ? FaUsers : FaUserAlt;
 
-                            <td>
-                              <StatusChip status={group.status} />
-                            </td>
+                          return (
+                            <tr key={group.groupId} className="align-top">
+                              <td className="font-bold whitespace-nowrap text-base-content/70">
+                                <span className="flex items-center gap-2">
+                                  <Who
+                                    aria-hidden
+                                    className="size-4 shrink-0 text-base-content/40"
+                                  />
+                                  {group.musician.firstName} {group.musician.lastName}
+                                </span>
+                              </td>
 
-                            {/* Still a link, because the column exists to be acted on
-                                — the venue reading this is the one who has to tell
-                                everybody the night moved — but in the same grey as
-                                the data around it rather than link indigo. Nine
-                                columns of rows with one coloured column down the
-                                middle reads as an alert; the underline on hover is
-                                what says it is clickable. `break-all` so a long
-                                address wraps in its cell instead of widening the
-                                table. */}
-                            <td>
-                              <a
-                                href={`mailto:${group.musician.email}`}
-                                className="break-all text-base-content/70 hover:underline"
-                              >
-                                {group.musician.email}
-                              </a>
-                            </td>
+                              <td className="text-base-content/70">{group.bandName ?? <Dash />}</td>
 
-                            <td className="tabular-nums whitespace-nowrap text-base-content/50">
-                              {stamp.format(group.bookedAt)}
-                            </td>
+                              {/* The row is as tall as the booking is wide — one line per
+                                  spot, struck through where that one spot is gone. This
+                                  is the whole reason the table groups: a cancelled spot
+                                  inside a live booking has nowhere to show in a flat
+                                  list. */}
+                              <td>
+                                <ul className="flex flex-col gap-0.5">
+                                  {group.spots.map((spot) => (
+                                    <li
+                                      key={spot.bookingId}
+                                      className={
+                                        spot.cancelled
+                                          ? 'text-base-content/40 line-through'
+                                          : 'text-base-content/70'
+                                      }
+                                    >
+                                      {spot.label}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </td>
 
-                            <td className="tabular-nums whitespace-nowrap text-base-content/50">
-                              {stamp.format(group.modifiedAt)}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              <td className="tabular-nums whitespace-nowrap text-base-content/70">
+                                {group.slotStartTime}–{group.slotEndTime}
+                              </td>
+
+                              <td>
+                                <StatusChip status={group.status} />
+                              </td>
+
+                              {/* Still a link, because the column exists to be acted on
+                                  — the venue reading this is the one who has to tell
+                                  everybody the night moved — but in the same grey as
+                                  the data around it rather than link indigo. Nine
+                                  columns of rows with one coloured column down the
+                                  middle reads as an alert; the underline on hover is
+                                  what says it is clickable. `break-all` so a long
+                                  address wraps in its cell instead of widening the
+                                  table. */}
+                              <td>
+                                <a
+                                  href={`mailto:${group.musician.email}`}
+                                  className="break-all text-base-content/70 hover:underline"
+                                >
+                                  {group.musician.email}
+                                </a>
+                              </td>
+
+                              <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                                {stamp.format(group.bookedAt)}
+                              </td>
+
+                              <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                                {stamp.format(group.modifiedAt)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
-          </div>
+            </div>
         </>
       )}
     </section>
