@@ -89,6 +89,24 @@
      colour of one dialog, and giving it a name keeps the two from being
      "improved" into each other later. */
   --color-caution: #f97316;
+
+  /* The cockpit's two verdicts about a line-up: this instrument is taken, and
+     nobody has touched this one all night.
+
+     Both deliberately reuse a hue that already has a name above, and the
+     duplication is the point of the convention rather than a lapse in it — the
+     tokens are named for the state, so "what colour is full?" has one answer
+     and it lives here. Reusing the values keeps the app to one green and one
+     pink; naming them separately means the day "nobody yet" wants its own
+     colour, it can have one without repainting every cancelled badge. */
+  --color-status-full: #5c7600;
+  --color-status-empty: #ff2f6d;
+
+  /* The detail page's rail. Darker than `--color-primary`, which is the header
+     directly above it — two panels of the same indigo read as one shape with a
+     seam through it, and the rail has to sit behind the header rather than
+     beside it. */
+  --color-brand-indigo-deep: #2a1f8f;
 }
 
 /* Markdown, wherever it is shown: inside the overview editor in the jam builder,

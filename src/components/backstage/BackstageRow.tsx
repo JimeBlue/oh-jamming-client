@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   FaEye,
   FaLocationDot,
@@ -93,16 +94,20 @@ export default function BackstageRow({
           indent isn't worth the arithmetic, and reset at `lg` where this stops
           being a row and becomes the third column. */}
       <div className="flex w-full items-center gap-2 sm:pl-25 lg:w-48 lg:pl-0">
-        {/* Live controls with nowhere to go yet — /jams/[id] and the edit route
-            don't exist. Left enabled rather than disabled so the row is already
-            the row it will be, and adding an href later moves nothing. */}
-        <button
-          type="button"
+        {/* A link, not a button: it goes somewhere, so it should middle-click
+            into a new tab and offer "copy link address" like anything else that
+            does. `btn` styles it as one either way.
+
+            Enabled on every status, cancelled included — the detail page is the
+            only place that says who was booked on a night that got called off,
+            and a venue asking that question is exactly who clicks this. */}
+        <Link
+          href={`/my-backstage/${session.id}`}
           aria-label={`View ${session.title}`}
           className="btn btn-square btn-outline btn-primary"
         >
           <FaEye className="size-5" />
-        </button>
+        </Link>
 
         {/* Off on a night that has already run, and off on a cancelled one too.
             The second half isn't in the design but is in the API: `PATCH
