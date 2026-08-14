@@ -123,6 +123,25 @@
   --color-brand-indigo-deep: #2a1f8f;
 }
 
+/* The open dropdown of the guest list's filters.
+
+   This has to be CSS rather than utilities because the parts being styled are
+   `::picker(select)` and `::checkmark` — the browser's own customizable-select
+   pseudo-elements, which Tailwind has no syntax for. daisyUI already opts these
+   selects into `appearance: base-select`, which is what makes them stylable at
+   all; left alone it gives the popup a `base-200` border and the tick the
+   inherited text colour.
+
+   Scoped to a class rather than applied to every `.select`, so the jam builder's
+   own selects keep the plain treatment until someone decides otherwise. */
+.filter-select select::picker(select) {
+  border-color: var(--color-primary);
+}
+
+.filter-select option:checked {
+  color: var(--color-primary);
+}
+
 /* Markdown, wherever it is shown: inside the overview editor in the jam builder,
    and on the listing a musician reads.
 

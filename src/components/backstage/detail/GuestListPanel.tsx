@@ -3,7 +3,16 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { AiFillClockCircle } from 'react-icons/ai';
-import { FaArrowLeftLong, FaMagnifyingGlass, FaRegCalendar } from 'react-icons/fa6';
+import { BiSolidGuitarAmp } from 'react-icons/bi';
+import { FaUserAlt } from 'react-icons/fa';
+import {
+  FaArrowLeftLong,
+  FaArrowsRotate,
+  FaMagnifyingGlass,
+  FaRegCalendar,
+  FaRegFlag,
+  FaUsers,
+} from 'react-icons/fa6';
 
 import { guestGroups, type GuestGroupStatus } from '@/lib/guestList';
 import { formatListingDate } from '@/lib/jamListing';
@@ -63,8 +72,57 @@ const Dash = () => (
   </span>
 );
 
+const FILTER_ICON = 'size-4 shrink-0 text-primary';
+
+/* daisyUI's `.select` as the wrapper, with the control nested — the arrangement
+   that sizes correctly, since `.select` carries the width clamp and the chevron.
+
+   The one declaration it makes that breaks a leading icon is on the nested
+   control: `margin-inline: -0.75rem -1.75rem`, which pulls the select 12px left
+   so it bleeds under the wrapper's own padding. That assumes the select is the
+   only child; with a glyph in front, the select slides over it and paints its
+   background on top — the icons were never clipped, they were covered.
+
+   `ms-0!` cancels exactly that one side. The `!` is doing real work: the rule is
+   `.select select`, an element-plus-class selector no plain utility can outrank.
+   The 12px it leaves on the right is swallowed by the wrapper's `overflow:
+   hidden`, and the control's own `padding-inline-end` still keeps its text clear
+   of the chevron. */
+const SelectField = ({
+  icon,
+  value,
+  onChange,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+  children: React.ReactNode;
+}) => (
+  /* `w-48` against daisyUI's own `clamp(3rem, 20rem, 100%)`. Three filters at
+     20rem each left the search box at 203px — narrow enough to clip its own
+     placeholder — and none of these ever needs 320px to say "All instruments". */
+  <label className="filter-select select select-bordered w-48 gap-2 border-primary/30 bg-base-100">
+    {icon}
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label={label}
+      className="ms-0!"
+    >
+      {children}
+    </select>
+  </label>
+);
+
+/* The same green and pink the cockpit's slot chips use, so a booking that is
+   still on and a spot that is still open read as one colour across the two
+   sections. Cancelled shares its treatment with Reset filters — a soft wash of
+   the same pink — because both are the page's one destructive-ish note. */
 const STATUS = {
-  confirmed: { label: 'Confirmed', className: 'bg-primary/10 text-primary' },
+  confirmed: { label: 'Confirmed', className: 'bg-brand-green/20 text-status-upcoming' },
   cancelled: { label: 'Cancelled', className: 'bg-status-taken/10 text-status-taken' },
 } as const satisfies Record<GuestGroupStatus, { label: string; className: string }>;
 
@@ -114,10 +172,27 @@ export default function GuestListPanel() {
 
   const filtered = rows.length !== groups.length;
 
+  /* Every filter at once. Four separate clearings is the thing a venue actually
+     wants after narrowing to one instrument in one slot and finding nobody. */
+  const resetFilters = () => {
+    setQuery('');
+    setSlotId(ALL);
+    setInstrument(ALL);
+    setStatus(ALL);
+  };
+
+  /* Off when there is nothing to undo. `disabled:pointer-events-auto` on the
+     button is what makes `cursor-not-allowed` visible at all — daisyUI kills
+     pointer events on a disabled `.btn`, so the cursor never meets it. */
+  const noFilters =
+    query === '' && slotId === ALL && instrument === ALL && status === ALL;
+
   return (
-    /* No card. The nine columns want every pixel the shell's own padding leaves,
-       and a panel with its own border and 1.5rem of inset was spending 3rem of
-       them on a frame around a table that is already visually one thing. */
+    /* Three bands down the page: the header on the page background, then the
+       filters, then the rows — the last two each in the lifted white panel the
+       cockpit's sections use. Split by what the parts *are*: the title and the
+       two facts name the page, the strip is a control panel, and the table is
+       what the controls act on. */
     <section className="flex flex-col gap-5">
       {/* This route's own header, in place of the session card the other two
           wear. `h1`, not `h2`: with the card gone the page has no other heading,
@@ -126,7 +201,7 @@ export default function GuestListPanel() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl">Guest list</h1>
-          <p className="mt-1 text-base-content/80">{session.title}</p>
+          <p className="mt-1 font-bold text-base-content/80">{session.title}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -155,19 +230,30 @@ export default function GuestListPanel() {
       </header>
 
       {bookings.length === 0 ? (
-        <p className="rounded-box bg-base-100 p-8 text-center text-base-content/70">
-          Nobody has booked a spot on this night yet.
-        </p>
+        <div className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
+          <p className="py-8 text-center text-base-content/70">
+            Nobody has booked a spot on this night yet.
+          </p>
+        </div>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-3">
-            {/* The options come from the *session*, not from the bookings, so
-                every slot and every instrument is listed whether or not anyone
-                took it. Filtering to one and being told nobody is there is an
-                answer; a dropdown that quietly omits the empty ones can't give
-                it. */}
-              <label className="input input-bordered flex min-w-48 flex-1 items-center gap-2 bg-base-100">
-                <FaMagnifyingGlass aria-hidden className="size-4 text-base-content/40" />
+          {/* Two cards, not one. The filters are a control panel and the rows are
+              the result — separating them is what says the top strip acts on the
+              thing below rather than being part of it, and it keeps the table's
+              own header the first line inside its own box. */}
+          <div className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* The options come from the *session*, not from the bookings, so
+                  every slot and every instrument is listed whether or not anyone
+                  took it. Filtering to one and being told nobody is there is an
+                  answer; a dropdown that quietly omits the empty ones can't give
+                  it. */}
+              {/* `shrink-0` on every one of these glyphs. The daisyUI `.input`
+                  and `.select` wrappers are flex containers whose control grows,
+                  so an SVG without it is the thing that gives way — which is
+                  what was squashing the icons to a sliver. */}
+              <label className="input input-bordered flex min-w-48 flex-1 items-center gap-2 border-primary/30 bg-base-100">
+                <FaMagnifyingGlass aria-hidden className="size-4 shrink-0 text-primary" />
                 <input
                   type="search"
                   value={query}
@@ -181,11 +267,28 @@ export default function GuestListPanel() {
                 />
               </label>
 
-              <select
+              {/* daisyUI 5 lets `.select` be the *container* with the control
+                  nested inside, which is the only way to get a glyph in front of
+                  a native select — an `<option>` can't hold an icon, and an
+                  absolutely positioned one has to be kept clear of the chevron by
+                  hand. Same shape as the search field beside it. */}
+              {/* The icon sits *over* the select rather than beside it inside a
+                  `.select` wrapper, which is the arrangement `.input` supports
+                  and `.select` does not: daisyUI gives a nested select
+                  `margin-inline: -0.75rem -1.75rem` so it bleeds under the
+                  wrapper's padding, on the assumption that it is the only child.
+                  With a glyph in front, the select slides 12px left and paints
+                  its own background over it — the icons were not clipped, they
+                  were covered.
+
+                  So `.select` goes on the control itself, where daisyUI expects
+                  it, the icon is absolutely positioned, and `pl-10` opens the
+                  room. `pointer-events-none` keeps the whole field clickable. */}
+              <SelectField
+                icon={<FaRegCalendar aria-hidden className={FILTER_ICON} />}
                 value={slotId}
-                onChange={(event) => setSlotId(event.target.value)}
-                aria-label="Filter by slot"
-                className="select select-bordered bg-base-100"
+                onChange={setSlotId}
+                label="Filter by slot"
               >
                 <option value={ALL}>All slots</option>
                 {session.slots.map((slot) => (
@@ -193,13 +296,13 @@ export default function GuestListPanel() {
                     {slot.startTime}–{slot.endTime}
                   </option>
                 ))}
-              </select>
+              </SelectField>
 
-              <select
+              <SelectField
+                icon={<BiSolidGuitarAmp aria-hidden className={FILTER_ICON} />}
                 value={instrument}
-                onChange={(event) => setInstrument(event.target.value)}
-                aria-label="Filter by instrument"
-                className="select select-bordered bg-base-100"
+                onChange={setInstrument}
+                label="Filter by instrument"
               >
                 <option value={ALL}>All instruments</option>
                 {session.instrumentTemplate.map((line) => (
@@ -207,117 +310,171 @@ export default function GuestListPanel() {
                     {line.instrument}
                   </option>
                 ))}
-              </select>
+              </SelectField>
 
-              <select
+              <SelectField
+                icon={<FaRegFlag aria-hidden className={FILTER_ICON} />}
                 value={status}
-                onChange={(event) => setStatus(event.target.value)}
-                aria-label="Filter by status"
-                className="select select-bordered bg-base-100"
+                onChange={setStatus}
+                label="Filter by status"
               >
                 <option value={ALL}>All statuses</option>
                 <option value="confirmed">Confirmed</option>
                 <option value="cancelled">Cancelled</option>
-              </select>
+              </SelectField>
+
+              {/* Pink in both states — off is not the same as greyed out here.
+                  The button is the page's one splash of that colour and it reads
+                  as part of the filter strip; draining it when there is nothing
+                  to reset makes the strip look half-broken rather than idle. The
+                  cursor is what reports the state.
+
+                  The colours are restated behind `disabled:` because daisyUI's
+                  `.btn:is(:disabled,…)` is more specific than a plain utility and
+                  would otherwise grey it. `hover:` is added conditionally rather
+                  than as `enabled:hover:` — that variant loses to `.btn` on
+                  background, which is what left this button grey when it was
+                  live. */}
+              <button
+                type="button"
+                onClick={resetFilters}
+                disabled={noFilters}
+                className={`btn ml-auto border-0 bg-status-taken/10 font-bold text-status-taken disabled:pointer-events-auto disabled:cursor-not-allowed disabled:bg-status-taken/10 disabled:text-status-taken ${
+                  noFilters ? '' : 'hover:bg-status-taken/20'
+                }`}
+              >
+                <FaArrowsRotate aria-hidden className="size-4" />
+                Reset filters
+              </button>
+            </div>
+
+            {/* Announced but not shown. The count came off the page, and for
+                anyone reading it that would leave filtering with no feedback at
+                all — the table below reshuffles silently. Sighted users watch
+                the rows change; this is the same for people who can't. */}
+            <p aria-live="polite" className="sr-only">
+              {filtered
+                ? `${rows.length} of ${groups.length} bookings shown`
+                : `${groups.length} booking${groups.length === 1 ? '' : 's'}`}
+            </p>
           </div>
 
-          {/* Announced but not shown. The count came off the page, and for
-              anyone reading it that would leave filtering with no feedback at
-              all — the table below reshuffles silently. Sighted users watch the
-              rows change; this is the same information for people who can't. */}
-          <p aria-live="polite" className="sr-only">
-            {filtered
-              ? `${rows.length} of ${groups.length} bookings shown`
-              : `${groups.length} booking${groups.length === 1 ? '' : 's'}`}
-          </p>
+          <div className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
+              {rows.length === 0 ? (
+                <p className="py-8 text-center text-base-content/70">
+                  No bookings match those filters.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="table">
+                    <thead>
+                      {/* Tinted rather than left on the card's white, which is
+                          what separates the headings from the first row without
+                          a rule between them. A wash of the brand indigo rather
+                          than `base-200`: the page background is already that,
+                          so a header in it would read as a gap in the card
+                          instead of a band across it. */}
+                      {/* `text-base-content` on the row, not the cells: daisyUI
+                          sets a muted colour on `.table thead`, and a `<tr>`
+                          with its own `color` beats what its cells would
+                          otherwise inherit from it. */}
+                      <tr className="bg-primary/10 text-base-content">
+                        <th>Musician</th>
+                        <th>Band</th>
+                        <th>Spots</th>
+                        <th>Slot</th>
+                        <th>Status</th>
+                        <th>E-mail</th>
+                        <th>Booked</th>
+                        <th>Modified</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((group) => {
+                        /* One person or several, now the only thing that says so:
+                           the "Multiple spots" column is gone, and the spot list
+                           two cells over is what gives the number. `FaUsers` is
+                           the rail's own Guest list glyph, so the plural means
+                           the same thing in both places. */
+                        const Who = group.spots.length > 1 ? FaUsers : FaUserAlt;
 
-          {rows.length === 0 ? (
-            <p className="rounded-box bg-base-100 p-8 text-center text-base-content/70">
-              No bookings match those filters.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Musician</th>
-                    <th>Multiple spots</th>
-                    <th>Band</th>
-                    <th>Spots</th>
-                    <th>Slot</th>
-                    <th>Status</th>
-                    <th>E-mail</th>
-                    <th>Booked</th>
-                    <th>Modified</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((group) => (
-                    <tr key={group.groupId} className="align-top">
-                      <td className="font-bold whitespace-nowrap">
-                        {group.musician.firstName} {group.musician.lastName}
-                      </td>
+                        return (
+                          <tr key={group.groupId} className="align-top">
+                            <td className="font-bold whitespace-nowrap text-base-content/70">
+                              <span className="flex items-center gap-2">
+                                <Who
+                                  aria-hidden
+                                  className="size-4 shrink-0 text-base-content/40"
+                                />
+                                {group.musician.firstName} {group.musician.lastName}
+                              </span>
+                            </td>
 
-                      <td>{group.spots.length > 1 ? 'Yes' : 'No'}</td>
+                            <td className="text-base-content/70">{group.bandName ?? <Dash />}</td>
 
-                      <td className="text-base-content/70">{group.bandName ?? <Dash />}</td>
+                            {/* The row is as tall as the booking is wide — one line per
+                                spot, struck through where that one spot is gone. This
+                                is the whole reason the table groups: a cancelled spot
+                                inside a live booking has nowhere to show in a flat
+                                list. */}
+                            <td>
+                              <ul className="flex flex-col gap-0.5">
+                                {group.spots.map((spot) => (
+                                  <li
+                                    key={spot.bookingId}
+                                    className={
+                                      spot.cancelled
+                                        ? 'text-base-content/40 line-through'
+                                        : 'text-base-content/70'
+                                    }
+                                  >
+                                    {spot.label}
+                                  </li>
+                                ))}
+                              </ul>
+                            </td>
 
-                      {/* The row is as tall as the booking is wide — one line per
-                          spot, struck through where that one spot is gone. This
-                          is the whole reason the table groups: a cancelled spot
-                          inside a live booking has nowhere to show in a flat
-                          list. */}
-                      <td>
-                        <ul className="flex flex-col gap-0.5">
-                          {group.spots.map((spot) => (
-                            <li
-                              key={spot.bookingId}
-                              className={
-                                spot.cancelled
-                                  ? 'text-base-content/40 line-through'
-                                  : 'text-base-content/70'
-                              }
-                            >
-                              {spot.label}
-                            </li>
-                          ))}
-                        </ul>
-                      </td>
+                            <td className="tabular-nums whitespace-nowrap text-base-content/70">
+                              {group.slotStartTime}–{group.slotEndTime}
+                            </td>
 
-                      <td className="tabular-nums whitespace-nowrap text-base-content/70">
-                        {group.slotStartTime}–{group.slotEndTime}
-                      </td>
+                            <td>
+                              <StatusChip status={group.status} />
+                            </td>
 
-                      <td>
-                        <StatusChip status={group.status} />
-                      </td>
+                            {/* Still a link, because the column exists to be acted on
+                                — the venue reading this is the one who has to tell
+                                everybody the night moved — but in the same grey as
+                                the data around it rather than link indigo. Nine
+                                columns of rows with one coloured column down the
+                                middle reads as an alert; the underline on hover is
+                                what says it is clickable. `break-all` so a long
+                                address wraps in its cell instead of widening the
+                                table. */}
+                            <td>
+                              <a
+                                href={`mailto:${group.musician.email}`}
+                                className="break-all text-base-content/70 hover:underline"
+                              >
+                                {group.musician.email}
+                              </a>
+                            </td>
 
-                      {/* A link, because the column exists to be acted on — the
-                          venue reading this is the one who has to tell everybody
-                          the night moved. `break-all` so a long address wraps
-                          inside its cell instead of widening the table. */}
-                      <td>
-                        <a
-                          href={`mailto:${group.musician.email}`}
-                          className="break-all text-primary hover:underline"
-                        >
-                          {group.musician.email}
-                        </a>
-                      </td>
+                            <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                              {stamp.format(group.bookedAt)}
+                            </td>
 
-                      <td className="tabular-nums whitespace-nowrap text-base-content/50">
-                        {stamp.format(group.bookedAt)}
-                      </td>
-
-                      <td className="tabular-nums whitespace-nowrap text-base-content/50">
-                        {stamp.format(group.modifiedAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                            <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                              {stamp.format(group.modifiedAt)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+          </div>
         </>
       )}
     </section>

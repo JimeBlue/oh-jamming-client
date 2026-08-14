@@ -30,7 +30,7 @@ export default function JamDetailNav({ id }: { id: string }) {
   return (
     <nav
       aria-label="Jam session sections"
-      className="shrink-0 bg-brand-indigo-deep lg:w-60"
+      className="shrink-0 bg-brand-indigo-deep lg:w-60 xl:w-auto"
     >
       {/* Left-aligned at every width. As a horizontal strip this is the only
           thing on its row, so centring floated it away from the page's own left
@@ -47,7 +47,12 @@ export default function JamDetailNav({ id }: { id: string }) {
               <Link
                 href={href}
                 aria-current={active ? 'page' : undefined}
-                className={`font-bold ${
+                /* The tooltip stands in for the label wherever the word is
+                   hidden, so it is scoped to exactly those widths — below `sm`,
+                   and again from `xl`. In between the word is right there and a
+                   tooltip repeating it would be noise. */
+                data-tip={label}
+                className={`max-sm:tooltip max-sm:tooltip-bottom font-bold xl:tooltip xl:tooltip-right ${
                   active
                     ? 'bg-base-100 text-primary hover:bg-base-100'
                     : 'text-primary-content/75 hover:bg-white/10 hover:text-primary-content'
@@ -57,12 +62,17 @@ export default function JamDetailNav({ id }: { id: string }) {
                     phone has no hover, so the glyph carries the meaning and the
                     tap target on its own. */}
                 <Icon aria-hidden className="size-6 shrink-0 sm:size-5" />
-                {/* `sr-only` rather than `hidden` below `sm`: the icon is
-                    decorative, so hiding the words outright would leave the link
-                    with no accessible name at all — three unlabelled buttons to
-                    anyone using a screen reader. This way the name survives at
-                    every width and only the pixels go. */}
-                <span className="max-sm:sr-only">{label}</span>
+                {/* `sr-only` rather than `hidden`: the icon is decorative, so
+                    hiding the words outright would leave the link with no
+                    accessible name at all — three unlabelled buttons to anyone
+                    using a screen reader. This way the name survives at every
+                    width and only the pixels go.
+
+                    Gone below `sm` for room, and gone again from `xl` for the
+                    opposite reason — there the rail gives its width back to the
+                    guest list's nine columns rather than spending it on three
+                    words. */}
+                <span className="max-sm:sr-only xl:sr-only">{label}</span>
               </Link>
             </li>
           );
