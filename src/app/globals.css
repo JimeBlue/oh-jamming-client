@@ -59,6 +59,14 @@
   --color-brand-pink: #ff7bca;
   --color-brand-green: #bfff0a;
 
+  /* The brand lime taken down until it reads as a *shape* rather than a tint.
+     Its own token because it is a fill, not a label: `--color-status-upcoming`
+     below is the same hue darkened for text, and the two answer different
+     questions — one has to survive being read at 14px, this one has to be
+     distinguishable in length from the track behind it, which the raw lime is
+     not at 1.08:1. */
+  --color-brand-green-deep: #6e9400;
+
   /* The backstage board's status colours, as their own tokens rather than by
      bending daisyUI's semantic ones. `--color-error` is the red that marks an
      invalid form field, and repainting it this pink to suit one badge would
@@ -101,6 +109,12 @@
      colour, it can have one without repainting every cancelled badge. */
   --color-status-full: #5c7600;
   --color-status-empty: #ff2f6d;
+
+  /* The slot timeline's verdict about one instrument in one slot: there is
+     nothing left to book here. A third token on the same pink, for the reason
+     given above — the states are what get named, and this one is neither a
+     cancelled session nor an instrument nobody has touched. */
+  --color-status-taken: #ff2f6d;
 
   /* The detail page's rail. Darker than `--color-primary`, which is the header
      directly above it — two panels of the same indigo read as one shape with a

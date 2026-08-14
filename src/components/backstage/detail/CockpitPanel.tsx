@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { AiFillClockCircle } from 'react-icons/ai';
 
 import { guestTally, jamReport, type InstrumentTally } from '@/lib/jamReport';
 import { useJamDetail } from './JamDetailContext';
@@ -13,13 +14,24 @@ import { useJamDetail } from './JamDetailContext';
    written out there. The three people counts are the exception and come from
    `guestTally`, because a spot knows it is taken and not by whom. */
 
-/* Full and empty are the only two verdicts worth a colour: one means stop
-   worrying about this instrument, the other means nobody has touched it. Every
-   value in between is a percentage, which says more than a shade would. */
-const toneFor = (booked: number, total: number): string =>
-  booked === 0 ? 'bg-status-empty' : booked === total ? 'bg-status-full' : 'bg-primary';
+/* The two sections read the same bar in opposite directions, so the colour is
+   passed in rather than worked out here.
 
-const FillBar = ({ booked, total }: { booked: number; total: number }) => {
+   In the instrument table it grades the venue's own worry: green once an
+   instrument is full, pink while nobody has touched it. In the slot timeline
+   below it answers a musician's question instead — green while there is still a
+   way in, pink once the door is shut — which is the same green and the same pink
+   meaning the opposite things two sections apart. Worth knowing before either is
+   changed. */
+const FillBar = ({
+  booked,
+  total,
+  tone,
+}: {
+  booked: number;
+  total: number;
+  tone: string;
+}) => {
   const percent = total === 0 ? 0 : Math.round((booked / total) * 100);
 
   return (
@@ -29,16 +41,41 @@ const FillBar = ({ booked, total }: { booked: number; total: number }) => {
           track alone reads as a rendering failure. Sizing it in percent would
           have made it a measurement, and it isn't one. */}
       {booked === 0 ? (
-        <span className="block size-2 rounded-full bg-status-empty" />
+        <span className={`block size-2 rounded-full ${tone}`} />
       ) : (
         <span
-          className={`block h-full rounded-full ${toneFor(booked, total)}`}
+          className={`block h-full rounded-full ${tone}`}
           style={{ width: `${percent}%` }}
         />
       )}
     </div>
   );
 };
+
+/* Full and empty are the only two verdicts worth a colour in the instrument
+   table: one means stop worrying about this instrument, the other means nobody
+   has touched it. Every value in between is a percentage, which says more than a
+   shade would. */
+const instrumentTone = (booked: number, total: number): string =>
+  booked === 0 ? 'bg-status-empty' : booked === total ? 'bg-status-full' : 'bg-primary';
+
+/* The slot timeline's, and it only has the two: a slot is either still open or
+   it is sold out. There is no third state to grade, because "how full" is
+   already the length of the bar.
+
+   The open bar takes the deepened lime rather than either the raw brand green or
+   the label green. A bar is a filled shape against a track, so what has to be
+   legible is its *length* — and the raw lime is 1.08:1 against `base-300`, close
+   enough in lightness that a half-full slot and a quarter-full one read as the
+   same bar in a different colour. */
+const slotTone = (booked: number, total: number): string =>
+  booked === total ? 'bg-status-taken' : 'bg-brand-green-deep';
+
+/* The count under each time reads as the same verdict as the bar beside it, in
+   the label colours rather than the bar's — this one *is* text, so the lime
+   would be a rumour of a number. */
+const slotCountTone = (booked: number, total: number): string =>
+  booked === total ? 'text-status-taken' : 'text-status-upcoming';
 
 const Verdict = ({ booked, total }: { booked: number; total: number }) => {
   if (total > 0 && booked === total) {
@@ -64,13 +101,20 @@ const Verdict = ({ booked, total }: { booked: number; total: number }) => {
   );
 };
 
-/* An instrument inside one slot: "Voice 3/3". Pink when nobody has taken it,
-   which is the whole reason the chips are here rather than a second bar — a slot
-   at 7/12 says nothing about *which* seven. */
+/* An instrument inside one slot: "Voice 3/3". Green while a spot is still going,
+   pink once the last one is gone — which is the whole reason the chips are here
+   rather than a second bar, because a slot at 7/12 says nothing about *which*
+   seven are left.
+
+   The green pair is the Upcoming badge's exactly, brand lime at low alpha under
+   the darkened lime it is named for: the raw token is 1.2:1 on white and would
+   be a rumour of a label rather than one. */
 const SlotChip = ({ instrument, booked, total }: InstrumentTally) => (
   <li
     className={`rounded-field px-3 py-1 text-sm tabular-nums ${
-      booked === 0 ? 'bg-status-empty/10 text-status-empty' : 'bg-base-200'
+      booked === total
+        ? 'bg-status-taken/10 text-status-taken'
+        : 'bg-brand-green/20 text-status-upcoming'
     }`}
   >
     {instrument} <span className="font-bold">{booked}/{total}</span>
@@ -80,15 +124,18 @@ const SlotChip = ({ instrument, booked, total }: InstrumentTally) => (
 const Section = ({
   title,
   note,
+  /* Left off, the heading is the page's ordinary near-black. */
+  titleTone = '',
   children,
 }: {
   title: string;
   note: string;
+  titleTone?: string;
   children: React.ReactNode;
 }) => (
   <section className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
     <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
-      <h2 className="shrink-0 font-heading text-xl">{title}</h2>
+      <h2 className={`shrink-0 font-heading text-xl ${titleTone}`}>{title}</h2>
       <p className="max-w-prose text-sm text-base-content/80">{note}</p>
     </div>
     <div className="mt-5">{children}</div>
@@ -233,7 +280,11 @@ export default function CockpitPanel() {
                   </td>
                   <td className="tabular-nums text-base-content/70">{total - booked}</td>
                   <td>
-                    <FillBar booked={booked} total={total} />
+                    <FillBar
+                      booked={booked}
+                      total={total}
+                      tone={instrumentTone(booked, total)}
+                    />
                   </td>
                   <td>
                     <Verdict booked={booked} total={total} />
@@ -247,6 +298,7 @@ export default function CockpitPanel() {
 
       <Section
         title="By slot"
+        titleTone="text-primary"
         note="The view to read on the night itself, in order, at the door. A quiet late slot is invisible in the totals above."
       >
         <ul className="flex flex-col">
@@ -255,17 +307,30 @@ export default function CockpitPanel() {
               key={slotId}
               className="grid gap-3 border-b border-base-200 py-4 last:border-b-0 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-5"
             >
-              <div>
-                <p className="font-bold tabular-nums">
-                  {startTime}–{endTime}
-                </p>
-                <p className="text-sm tabular-nums text-base-content/60">
-                  {booked} / {total} booked
-                </p>
+              {/* The clock sits against the time rather than centred across
+                  both lines, and the count is indented under it — the same
+                  arrangement as the header card's address and date blocks, so
+                  the page has one way of pairing an icon with two lines.
+
+                  No colour on the icon: it inherits, so it is the time's own
+                  colour by construction rather than by a second class that has
+                  to be kept in step with it. */}
+              <div className="flex items-start gap-2">
+                <AiFillClockCircle aria-hidden className="mt-1 size-4 shrink-0" />
+                <div>
+                  <p className="font-bold tabular-nums">
+                    {startTime}–{endTime}
+                  </p>
+                  <p
+                    className={`text-sm font-bold tabular-nums ${slotCountTone(booked, total)}`}
+                  >
+                    {booked} / {total} booked
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-col gap-3">
-                <FillBar booked={booked} total={total} />
+                <FillBar booked={booked} total={total} tone={slotTone(booked, total)} />
                 <ul className="flex flex-wrap gap-2">
                   {byInstrument.map((line) => (
                     <SlotChip key={line.instrument} {...line} />
