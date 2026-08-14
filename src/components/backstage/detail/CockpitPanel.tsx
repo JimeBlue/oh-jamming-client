@@ -52,12 +52,17 @@ const FillBar = ({
   );
 };
 
-/* Full and empty are the only two verdicts worth a colour in the instrument
-   table: one means stop worrying about this instrument, the other means nobody
-   has touched it. Every value in between is a percentage, which says more than a
-   shade would. */
+/* Full is the only verdict in the instrument table worth a colour of its own:
+   it means stop worrying about this instrument. Everything short of it is the
+   ordinary indigo, and nothing at all is grey — an instrument nobody has taken
+   has no bar to colour, so its marker sits back into the track rather than
+   raising an alarm the "Nobody yet" badge beside it already raises in words. */
 const instrumentTone = (booked: number, total: number): string =>
-  booked === 0 ? 'bg-status-empty' : booked === total ? 'bg-status-full' : 'bg-primary';
+  booked === 0
+    ? 'bg-base-content/20'
+    : booked === total
+      ? 'bg-status-full'
+      : 'bg-primary';
 
 /* The slot timeline's, and it only has the two: a slot is either still open or
    it is sold out. There is no third state to grade, because "how full" is
@@ -88,7 +93,7 @@ const Verdict = ({ booked, total }: { booked: number; total: number }) => {
 
   if (booked === 0) {
     return (
-      <span className="badge h-auto border-0 bg-status-empty/10 px-3 py-1 font-bold text-status-empty">
+      <span className="badge h-auto border-0 bg-primary/10 px-3 py-1 font-bold text-primary">
         Nobody yet
       </span>
     );
@@ -124,18 +129,15 @@ const SlotChip = ({ instrument, booked, total }: InstrumentTally) => (
 const Section = ({
   title,
   note,
-  /* Left off, the heading is the page's ordinary near-black. */
-  titleTone = '',
   children,
 }: {
   title: string;
   note: string;
-  titleTone?: string;
   children: React.ReactNode;
 }) => (
   <section className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
     <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
-      <h2 className={`shrink-0 font-heading text-xl ${titleTone}`}>{title}</h2>
+      <h2 className="shrink-0 font-heading text-xl">{title}</h2>
       <p className="max-w-prose text-sm text-base-content/80">{note}</p>
     </div>
     <div className="mt-5">{children}</div>
@@ -152,8 +154,12 @@ const Tile = ({
   note: string;
 }) => (
   <div className="rounded-box bg-base-100 p-5 shadow-xl">
-    <p className="font-heading text-4xl tabular-nums">{value}</p>
-    <p className="mt-1 font-bold">{label}</p>
+    {/* Figure and label in indigo, the explanation left in the page's ordinary
+        grey — these three tiles sit beside the filled indigo one, and carrying
+        its colour through the numbers is what makes the four read as one set
+        rather than as one card and three footnotes. */}
+    <p className="font-heading text-4xl tabular-nums text-primary">{value}</p>
+    <p className="mt-1 font-bold text-primary">{label}</p>
     <p className="mt-1 text-sm text-base-content/70">{note}</p>
   </div>
 );
@@ -260,7 +266,54 @@ export default function CockpitPanel() {
         title="By instrument"
         note="Totalled across the whole night — an instrument nobody has taken is the one thing here you can still do something about."
       >
-        <div className="overflow-x-auto">
+        {/* Two layouts of the same five numbers, not one table made to bend.
+
+            Five columns will not fit a phone, and the usual fix — reflowing the
+            table to blocks with `display: block` — strips the row and column
+            association out of the accessibility tree, leaving fifteen unrelated
+            cells. So a phone gets a real list with the column headings restated
+            as labels beside each value, and the table starts at `sm` where it
+            fits without scrolling.
+
+            The presentation is duplicated; the numbers are not. Both draw the
+            same `report.byInstrument`, so the two can disagree about layout and
+            never about data. */}
+        <ul className="flex flex-col sm:hidden">
+          {report.byInstrument.map(({ instrument, booked, total }) => (
+            <li
+              key={instrument}
+              className="border-b border-base-200 py-4 first:pt-0 last:border-b-0 last:pb-0"
+            >
+              <p className="font-bold">{instrument}</p>
+
+              {/* A description list because that is what these are — three
+                  labels and their values — and a two-column grid so the labels
+                  line up down the card rather than each row finding its own
+                  indent. */}
+              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-sm">
+                <dt className="text-base-content/60">Booked</dt>
+                <dd className="tabular-nums">
+                  {booked} <span className="text-base-content/40">/ {total}</span>
+                </dd>
+
+                <dt className="text-base-content/60">Free</dt>
+                <dd className="tabular-nums">{total - booked}</dd>
+
+                <dt className="text-base-content/60">Fill</dt>
+                <dd className="flex items-center gap-3">
+                  <FillBar
+                    booked={booked}
+                    total={total}
+                    tone={instrumentTone(booked, total)}
+                  />
+                  <Verdict booked={booked} total={total} />
+                </dd>
+              </dl>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden overflow-x-auto sm:block">
           <table className="table">
             <thead>
               <tr>
@@ -298,7 +351,6 @@ export default function CockpitPanel() {
 
       <Section
         title="By slot"
-        titleTone="text-primary"
         note="The view to read on the night itself, in order, at the door. A quiet late slot is invisible in the totals above."
       >
         <ul className="flex flex-col">
