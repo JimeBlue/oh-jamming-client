@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthContext';
@@ -53,6 +54,7 @@ export default function JamDetailShell({
   children: React.ReactNode;
 }) {
   const { status: authStatus, user } = useAuth();
+  const pathname = usePathname();
   const [state, setState] = useState<DetailState>({ status: 'loading' });
 
   useEffect(() => {
@@ -109,7 +111,20 @@ export default function JamDetailShell({
       <JamDetailNav id={id} />
 
       <div className="min-w-0 flex-1">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+        {/* The guest list gets the whole width; the other two keep a reading
+            measure. Nine columns of names, spots and timestamps are worth every
+            pixel of a wide screen, while the cockpit is cards and the listing is
+            prose — both of which get worse the wider they run.
+
+            Decided here rather than inside the panel because the session card
+            above it has to move too. A panel that widened alone would sit under a
+            header still stopped at 72rem, which reads as a layout bug rather
+            than as a choice. */}
+        <div
+          className={`mx-auto flex w-full flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 ${
+            pathname === `/my-backstage/${id}/guests` ? '' : 'max-w-6xl'
+          }`}
+        >
           {state.status === 'loading' && (
             <div className="flex justify-center py-24">
               <span className="loading loading-spinner loading-lg text-primary" />

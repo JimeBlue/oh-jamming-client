@@ -3,47 +3,61 @@
 import { useState } from 'react';
 import { FaMagnifyingGlass } from 'react-icons/fa6';
 
-import { inGuestOrder } from '@/lib/jamReport';
+import { guestGroups, type GuestGroupStatus } from '@/lib/guestList';
 import { APP_TIMEZONE } from '@/lib/time';
-import type { Booking } from '@/schemas/booking';
 import { useJamDetail } from './JamDetailContext';
 
-/* Who is playing, one row per booked spot.
+/* Who is playing, one row per booking.
 
-   Flat rather than grouped by band, which is the one thing this doesn't inherit
-   from the way the API stores it: a band's four spots share a `groupId` and read
-   naturally as one card, but a card can't be sorted by instrument or filtered to
-   one slot, and those are the questions a venue actually brings here. The band
-   survives as a column, so nothing is lost — a group is four adjacent rows with
-   the same name in it.
+   The API stores one document per spot; this reads one row per *submission*, so
+   a trio that claimed three spots is one row three spots tall rather than three
+   rows that have to be de-duplicated by eye. The grouping and everything derived
+   across a group — the status, the two dates — is in `lib/guestList`.
 
-   Cancelled bookings are in the same table, marked, rather than in a list of
-   their own. They are the record of who dropped out, and the reason they can sit
-   here safely is that nothing on this screen is counted: the occupancy numbers
-   live on the cockpit and read the session's spots, so a row here can never
-   inflate them. */
+   Cancelled bookings stay in the same table, marked, rather than in a list of
+   their own. They are the record of who dropped out, and they can sit here
+   safely because nothing on this screen is counted: the occupancy numbers live
+   on the cockpit and read the session's spots, so a row here can never inflate
+   them. */
 
-/* Formatted in the venue's own city rather than the reader's, matching every
-   other time in the app — `createdAt` is a real instant, so it is the one value
-   on this page a timezone can move. Built once at module load. */
-const bookedOn = new Intl.DateTimeFormat('en-GB', {
+/* Both date columns carry a time, and `Modified` is the reason: a submission
+   made and then partly cancelled on the same afternoon shows the same day in
+   both columns, and the column exists to say that something changed.
+
+   Formatted in the venue's own city rather than the reader's, matching every
+   other time in the app — these are real instants, so they are the values a
+   timezone can move. Built once at module load. */
+const stamp = new Intl.DateTimeFormat('en-GB', {
   timeZone: APP_TIMEZONE,
   day: 'numeric',
   month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
 });
 
 const ALL = 'all';
 
-const StatusChip = ({ status }: { status: Booking['status'] }) =>
-  status === 'cancelled' ? (
-    <span className="badge h-auto border-0 bg-status-empty/10 px-3 py-1 font-bold text-status-empty">
-      Dropped out
-    </span>
-  ) : (
-    <span className="badge h-auto border-0 bg-primary/10 px-3 py-1 font-bold text-primary">
-      Booked
+const Dash = () => (
+  <span aria-hidden className="text-base-content/30">
+    —
+  </span>
+);
+
+const STATUS = {
+  confirmed: { label: 'Confirmed', className: 'bg-primary/10 text-primary' },
+  cancelled: { label: 'Cancelled', className: 'bg-status-taken/10 text-status-taken' },
+} as const satisfies Record<GuestGroupStatus, { label: string; className: string }>;
+
+const StatusChip = ({ status }: { status: GuestGroupStatus }) => {
+  const { label, className } = STATUS[status];
+
+  return (
+    <span className={`badge h-auto border-0 px-3 py-1 font-bold whitespace-nowrap ${className}`}>
+      {label}
     </span>
   );
+};
 
 export default function GuestListPanel() {
   const { session, bookings } = useJamDetail();
@@ -54,40 +68,51 @@ export default function GuestListPanel() {
   const [status, setStatus] = useState<string>(ALL);
 
   const needle = query.trim().toLowerCase();
+  const groups = guestGroups(bookings);
 
   /* Not memoised. The cap is 300 spots per session (MAX_SPOTS_PER_SESSION), so
-     this is a few hundred string comparisons per keystroke on an array that is
-     already in memory — cheaper than the bookkeeping to avoid it. */
-  const rows = inGuestOrder(bookings).filter(
-    (booking) =>
-      (slotId === ALL || booking.slotId === slotId) &&
-      (instrument === ALL || booking.instrument === instrument) &&
-      (status === ALL || booking.status === status) &&
+     this is a few hundred comparisons per keystroke on an array already in
+     memory — cheaper than the bookkeeping to avoid it. */
+  const rows = groups.filter(
+    (group) =>
+      (slotId === ALL || group.slotId === slotId) &&
+      /* A group matches an instrument if any spot in it does — a trio is findable
+         under all three. Status is the group's own, so filtering to "Cancelled"
+         returns the bookings the Status column calls cancelled and nothing else.
+         Matching per spot instead would list a booking that is still coming under
+         a filter for the ones that aren't. */
+      (instrument === ALL || group.spots.some((spot) => spot.instrument === instrument)) &&
+      (status === ALL || group.status === status) &&
+      /* Name, band and address in one haystack rather than three tests, so
+         "jane@" and "Jane" and "Nightowls" all reach the same rows without the
+         venue having to say which kind of thing they are typing. */
       (needle === '' ||
-        `${booking.musician.firstName} ${booking.musician.lastName} ${booking.bandName ?? ''}`
+        `${group.musician.firstName} ${group.musician.lastName} ${group.bandName ?? ''} ${group.musician.email}`
           .toLowerCase()
           .includes(needle)),
   );
 
-  const filtered = rows.length !== bookings.length;
+  const filtered = rows.length !== groups.length;
 
   return (
-    <section className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
+    /* No card. The nine columns want every pixel the shell's own padding leaves,
+       and a panel with its own border and 1.5rem of inset was spending 3rem of
+       them on a frame around a table that is already visually one thing. */
+    <section className="flex flex-col gap-5">
       <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
         <h2 className="shrink-0 font-heading text-xl">Guest list</h2>
         <p className="max-w-prose text-sm text-base-content/80">
-          One row per spot, so a band taking four of them is four rows sharing a
-          name.
+          One row per booking — a band that took four spots is one row, not four.
         </p>
       </div>
 
       {bookings.length === 0 ? (
-        <p className="mt-8 rounded-box bg-base-200 p-8 text-center text-base-content/70">
+        <p className="rounded-box bg-base-100 p-8 text-center text-base-content/70">
           Nobody has booked a spot on this night yet.
         </p>
       ) : (
         <>
-          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-box bg-base-200 p-3">
+          <div className="flex flex-wrap items-center gap-3">
             {/* The four controls wrap among themselves, inside one item that
                 takes whatever the count doesn't. Left flat in a single
                 container, `ml-auto` on the count pushes it only to the end of
@@ -105,11 +130,11 @@ export default function GuestListPanel() {
                   type="search"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search by name or band"
+                  placeholder="Search by name, band or e-mail"
                   /* The placeholder is doing the labelling, so this repeats it
                      rather than adding a second name — a field with both is read
                      out twice. */
-                  aria-label="Search by name or band"
+                  aria-label="Search by name, band or e-mail"
                   className="grow"
                 />
               </label>
@@ -149,8 +174,8 @@ export default function GuestListPanel() {
                 className="select select-bordered bg-base-100"
               >
                 <option value={ALL}>All statuses</option>
-                <option value="confirmed">Booked</option>
-                <option value="cancelled">Dropped out</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
@@ -158,59 +183,94 @@ export default function GuestListPanel() {
                 updates silently otherwise. */}
             <p aria-live="polite" className="ml-auto text-sm tabular-nums text-base-content/60">
               {filtered
-                ? `${rows.length} of ${bookings.length} shown`
-                : `${bookings.length} spot${bookings.length === 1 ? '' : 's'}`}
+                ? `${rows.length} of ${groups.length} shown`
+                : `${groups.length} booking${groups.length === 1 ? '' : 's'}`}
             </p>
           </div>
 
           {rows.length === 0 ? (
-            <p className="mt-6 rounded-box bg-base-200 p-8 text-center text-base-content/70">
+            <p className="rounded-box bg-base-100 p-8 text-center text-base-content/70">
               No bookings match those filters.
             </p>
           ) : (
-            <div className="mt-5 overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="table">
                 <thead>
                   <tr>
-                    <th>#</th>
                     <th>Musician</th>
+                    <th>Multiple spots</th>
                     <th>Band</th>
-                    <th>Spot</th>
+                    <th>Spots</th>
                     <th>Slot</th>
                     <th>Status</th>
+                    <th>E-mail</th>
                     <th>Booked</th>
+                    <th>Modified</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((booking, index) => {
-                    const gone = booking.status === 'cancelled';
+                  {rows.map((group) => (
+                    <tr key={group.groupId} className="align-top">
+                      <td className="font-bold whitespace-nowrap">
+                        {group.musician.firstName} {group.musician.lastName}
+                      </td>
 
-                    return (
-                      <tr key={booking.id} className={gone ? 'text-base-content/50' : ''}>
-                        <td className="tabular-nums text-base-content/40">{index + 1}</td>
-                        <td className={`font-bold ${gone ? 'line-through' : ''}`}>
-                          {booking.musician.firstName} {booking.musician.lastName}
-                        </td>
-                        <td className="text-base-content/70">
-                          {booking.bandName ?? (
-                            <span aria-hidden className="text-base-content/30">
-                              —
-                            </span>
-                          )}
-                        </td>
-                        <td className="text-base-content/70">{booking.label}</td>
-                        <td className="tabular-nums text-base-content/70">
-                          {booking.slotStartTime}–{booking.slotEndTime}
-                        </td>
-                        <td>
-                          <StatusChip status={booking.status} />
-                        </td>
-                        <td className="tabular-nums text-base-content/50">
-                          {bookedOn.format(booking.createdAt)}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      <td>{group.spots.length > 1 ? 'Yes' : 'No'}</td>
+
+                      <td className="text-base-content/70">{group.bandName ?? <Dash />}</td>
+
+                      {/* The row is as tall as the booking is wide — one line per
+                          spot, struck through where that one spot is gone. This
+                          is the whole reason the table groups: a cancelled spot
+                          inside a live booking has nowhere to show in a flat
+                          list. */}
+                      <td>
+                        <ul className="flex flex-col gap-0.5">
+                          {group.spots.map((spot) => (
+                            <li
+                              key={spot.bookingId}
+                              className={
+                                spot.cancelled
+                                  ? 'text-base-content/40 line-through'
+                                  : 'text-base-content/70'
+                              }
+                            >
+                              {spot.label}
+                            </li>
+                          ))}
+                        </ul>
+                      </td>
+
+                      <td className="tabular-nums whitespace-nowrap text-base-content/70">
+                        {group.slotStartTime}–{group.slotEndTime}
+                      </td>
+
+                      <td>
+                        <StatusChip status={group.status} />
+                      </td>
+
+                      {/* A link, because the column exists to be acted on — the
+                          venue reading this is the one who has to tell everybody
+                          the night moved. `break-all` so a long address wraps
+                          inside its cell instead of widening the table. */}
+                      <td>
+                        <a
+                          href={`mailto:${group.musician.email}`}
+                          className="break-all text-primary hover:underline"
+                        >
+                          {group.musician.email}
+                        </a>
+                      </td>
+
+                      <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                        {stamp.format(group.bookedAt)}
+                      </td>
+
+                      <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                        {stamp.format(group.modifiedAt)}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

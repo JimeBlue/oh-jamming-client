@@ -27,14 +27,19 @@ const jamSessionSummarySchema = z.object({
   status: z.string(),
 });
 
-/* BK18 — a name and nothing else. The API projects `firstName lastName` at the
-   query, so the email is not omitted here so much as never fetched: there is no
-   field on the response for a careless render to leak. Anything in this app that
-   wants to contact a musician has to be a feature the API grows first. */
+/* BK18 — a name and an email, and nothing else. The API projects exactly these
+   three fields at the query, so what is absent here is absent from the response
+   too: there is no field for a careless render to leak.
+
+   The email is what a venue needs to reach the people playing at its night, and
+   the booking is what earns it. There is still no way to turn a name into an
+   account — `GET /users/:id` is self-only and there is no users index — so this
+   never reaches a musician the caller has no booking with. */
 const musicianSummarySchema = z.object({
   id: z.string(),
   firstName: z.string(),
   lastName: z.string(),
+  email: z.string(),
 });
 
 export const bookingSchema = z.object({

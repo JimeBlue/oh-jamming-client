@@ -133,19 +133,6 @@ export const guestTally = (bookings: readonly Booking[]): GuestTally => {
   };
 };
 
-/* The guest list's order: through the night, and within a slot the people who
-   committed first at the top.
-
-   `slotStartTime` is "HH:mm" and sorts lexicographically in the same order it
-   sorts chronologically — the reason lib/time keeps times as strings at all.
-   `createdAt` breaks the tie so a band's spots stay together and in the order
-   they were claimed, rather than shuffling on every render. `label` is the last
-   resort, since `insertMany` can write a group's documents in the same
-   millisecond. */
-export const inGuestOrder = (bookings: readonly Booking[]): Booking[] =>
-  [...bookings].sort(
-    (a, b) =>
-      a.slotStartTime.localeCompare(b.slotStartTime) ||
-      Number(a.createdAt) - Number(b.createdAt) ||
-      a.label.localeCompare(b.label),
-  );
+/* Ordering and grouping for the guest list live in `lib/guestList` — this file
+   is the cockpit's arithmetic, and the two answer different questions off the
+   same array. */
