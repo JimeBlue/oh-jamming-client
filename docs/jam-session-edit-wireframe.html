@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Edit page wireframe</title>
+<style>
+  :root {
+    --line: #999;
+    --line-soft: #ccc;
+    --fill: #f4f4f4;
+    --fill-2: #e9e9e9;
+    --ink: #222;
+    --muted: #777;
+    --note: #b45309;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px 24px 80px;
+    background: #fff;
+    color: var(--ink);
+    font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 {
+    font-size: 14px;
+    margin: 48px 0 4px;
+    padding-top: 20px;
+    border-top: 2px solid var(--ink);
+  }
+  .sub { color: var(--muted); margin: 0 0 20px; max-width: 70ch; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* ---------- generic wireframe boxes ---------- */
+  .box {
+    border: 1px solid var(--line);
+    background: var(--fill);
+    padding: 10px;
+  }
+  .box.dashed { border-style: dashed; background: #fff; }
+  .box.solid  { background: var(--fill-2); }
+  .lbl {
+    font-size: 10px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .txt { height: 8px; background: var(--line-soft); margin: 6px 0; }
+  .txt.w40 { width: 40%; } .txt.w60 { width: 60%; }
+  .txt.w75 { width: 75%; } .txt.w90 { width: 90%; }
+  .imgbox {
+    background:
+      linear-gradient(to top right, transparent 49.5%, var(--line-soft) 49.5%, var(--line-soft) 50.5%, transparent 50.5%),
+      linear-gradient(to bottom right, transparent 49.5%, var(--line-soft) 49.5%, var(--line-soft) 50.5%, transparent 50.5%),
+      var(--fill);
+    border: 1px solid var(--line-soft);
+  }
+  .btn {
+    display: inline-block;
+    border: 1px solid var(--line);
+    padding: 4px 10px;
+    background: #fff;
+    font-size: 11px;
+  }
+  .btn.primary { background: var(--fill-2); font-weight: 700; }
+  .chip {
+    display: inline-block;
+    border: 1px solid var(--line-soft);
+    background: #fff;
+    padding: 2px 8px;
+    font-size: 11px;
+    margin: 0 4px 4px 0;
+  }
+
+  /* ---------- app chrome ---------- */
+  .screen { border: 2px solid var(--ink); background: #fff; }
+  .appbar {
+    border-bottom: 1px solid var(--line);
+    background: var(--fill-2);
+    padding: 12px;
+    font-weight: 700;
+  }
+  .body { display: flex; min-height: 560px; }
+  .navrail {
+    width: 132px;
+    flex: none;
+    border-right: 1px solid var(--line);
+    background: var(--fill);
+    padding: 12px 8px;
+  }
+  .navrail div {
+    border: 1px solid var(--line-soft);
+    background: #fff;
+    padding: 6px;
+    margin-bottom: 6px;
+    font-size: 11px;
+  }
+  .navrail div.active { background: var(--fill-2); font-weight: 700; }
+  .navrail div.new { border-style: dashed; border-color: var(--note); color: var(--note); }
+  .content { flex: 1; padding: 16px; min-width: 0; }
+
+  /* ---------- the two columns ---------- */
+  .cols { display: flex; gap: 16px; align-items: flex-start; }
+  .editrail { width: 250px; flex: none; }
+  .preview  { flex: 1; min-width: 0; }
+
+  .sectionrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+  }
+  .sectionrow .name { flex: 1; font-size: 12px; }
+  .sectionrow .pencil {
+    border: 1px solid var(--line);
+    width: 24px; height: 24px;
+    display: grid; place-items: center;
+    font-size: 11px;
+    flex: none;
+  }
+  .sectionrow.locked { background: var(--fill); color: var(--muted); border-style: dashed; }
+  .sectionrow.locked .pencil { border-style: dashed; color: var(--line-soft); }
+  .lockmsg { font-size: 10px; color: var(--muted); margin: -2px 0 10px 10px; max-width: 22ch; }
+
+  /* ---------- listing mini-render ---------- */
+  .listing { display: flex; gap: 12px; }
+  .listing .main { flex: 3; min-width: 0; }
+  .listing .side { flex: 2; min-width: 0; }
+  .panel { border: 1px solid var(--line-soft); padding: 8px; margin-bottom: 8px; }
+
+  /* ---------- modal ---------- */
+  .modalstage { position: relative; }
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
+  .modal {
+    position: absolute;
+    top: 48px; left: 50%; transform: translateX(-50%);
+    width: 460px;
+    border: 2px solid var(--ink);
+    background: #fff;
+    padding: 14px;
+  }
+
+  /* ---------- annotations ---------- */
+  .note {
+    color: var(--note);
+    font-size: 11px;
+    margin: 6px 0 0;
+    padding-left: 14px;
+    position: relative;
+  }
+  .note::before { content: "▸"; position: absolute; left: 0; }
+  ol.notes { margin: 14px 0 0; padding-left: 20px; color: var(--muted); font-size: 12px; }
+  ol.notes li { margin-bottom: 6px; }
+  ol.notes b { color: var(--ink); }
+  .tag {
+    display: inline-block;
+    border: 1px dashed var(--note);
+    color: var(--note);
+    font-size: 10px;
+    padding: 1px 5px;
+    margin-left: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>/my-backstage/[id]/edit — wireframe</h1>
+<p class="sub">
+  Boxes and labels only. Nothing here is a design decision — spacing, colour and type
+  are all still open. The point is what sits where and what happens on a click.
+</p>
+
+<!-- ============================================================ -->
+<h2>1 · Default state — nothing booked yet</h2>
+<p class="sub">Every section is editable, because the API only freezes date / times / slots / line-up once a spot has a booking.</p>
+
+<div class="screen">
+  <div class="appbar">JamBuilderHeader (existing)</div>
+  <div class="body">
+
+    <div class="navrail">
+      <span class="lbl">JamDetailNav</span>
+      <div>Cockpit</div>
+      <div>Guest list</div>
+      <div>Listing</div>
+      <div class="active new">Edit &nbsp;← new</div>
+    </div>
+
+    <div class="content">
+      <div class="box dashed" style="margin-bottom:14px">
+        <span class="lbl">JamDetailHeader (existing, unchanged)</span>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="imgbox" style="width:70px;height:50px"></div>
+          <div style="flex:1">
+            <div class="txt w40"></div>
+            <div class="txt w60"></div>
+          </div>
+          <div class="box solid" style="padding:6px 10px;font-size:11px">Sun 16 Aug</div>
+        </div>
+      </div>
+
+      <div class="cols">
+
+        <!-- EDIT RAIL -->
+        <div class="editrail">
+          <div class="box" style="padding:12px">
+            <span class="lbl">Edit rail</span>
+            <div style="font-weight:700;margin-bottom:2px">What you can change</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+              Pick a section. Changes save one at a time.
+            </div>
+
+            <div class="sectionrow"><span class="name">Photo</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Title &amp; pitch</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Overview</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Where</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Genres</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Skill level</span><span class="pencil">✎</span></div>
+
+            <div style="border-top:1px solid var(--line-soft);margin:12px 0 10px"></div>
+
+            <div class="sectionrow"><span class="name">Date &amp; time</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Slot length</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Line-up</span><span class="pencil">✎</span></div>
+            <p class="note" style="margin-left:0">These three are live only while<br>nothing is booked. See screen 3.</p>
+          </div>
+        </div>
+
+        <!-- LISTING -->
+        <div class="preview">
+          <div class="box dashed">
+            <span class="lbl">JamListing — the existing component, not touched</span>
+            <div class="listing">
+              <div class="main">
+                <div class="txt w60" style="height:12px"></div>
+                <div class="imgbox" style="height:110px;margin:8px 0"></div>
+                <div class="txt w90"></div>
+                <div class="panel">
+                  <span class="lbl">Overview</span>
+                  <div class="txt w90"></div><div class="txt w75"></div><div class="txt w60"></div>
+                </div>
+                <div class="panel">
+                  <span class="lbl">Where</span>
+                  <div class="txt w60"></div>
+                  <div class="imgbox" style="height:56px;margin-top:6px"></div>
+                </div>
+              </div>
+              <div class="side">
+                <div class="panel"><span class="lbl">Genres</span>
+                  <span class="chip">jazz</span><span class="chip">funk</span></div>
+                <div class="panel"><span class="lbl">Skill level</span>
+                  <span class="chip">all levels</span></div>
+                <div class="panel"><span class="lbl">Date &amp; time</span>
+                  <div class="txt w75"></div>
+                  <div class="box" style="padding:6px;margin-top:6px"><div class="txt w60"></div></div>
+                  <div class="box" style="padding:6px;margin-top:4px"><div class="txt w60"></div></div>
+                </div>
+                <div class="panel"><span class="lbl">In every slot</span>
+                  <span class="chip">Guitar ×2</span><span class="chip">Bass ×1</span></div>
+              </div>
+            </div>
+          </div>
+          <p class="note">Read-only. It redraws after each save — that <em>is</em> the confirmation.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2 · A section open — "Title &amp; pitch"</h2>
+<p class="sub">The modal holds the existing wizard step component, unchanged. One save = one PATCH carrying only what changed.</p>
+
+<div class="screen modalstage">
+  <div class="appbar">JamBuilderHeader</div>
+  <div class="body">
+    <div class="navrail">
+      <span class="lbl">JamDetailNav</span>
+      <div>Cockpit</div><div>Guest list</div><div>Listing</div><div class="active new">Edit</div>
+    </div>
+    <div class="content">
+      <div class="box dashed" style="margin-bottom:14px;height:70px">
+        <span class="lbl">JamDetailHeader</span>
+      </div>
+      <div class="cols">
+        <div class="editrail">
+          <div class="box" style="padding:12px">
+            <span class="lbl">Edit rail</span>
+            <div class="sectionrow"><span class="name">Photo</span><span class="pencil">✎</span></div>
+            <div class="sectionrow solid" style="background:var(--fill-2);font-weight:700">
+              <span class="name">Title &amp; pitch</span><span class="pencil">✎</span>
+            </div>
+            <div class="sectionrow"><span class="name">Overview</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Where</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Genres</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Skill level</span><span class="pencil">✎</span></div>
+          </div>
+        </div>
+        <div class="preview">
+          <div class="box dashed" style="height:340px"><span class="lbl">JamListing</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scrim"></div>
+  <div class="modal">
+    <div style="display:flex;align-items:baseline;gap:8px">
+      <strong style="flex:1">Title &amp; pitch</strong>
+      <span class="btn">✕</span>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin:4px 0 12px">
+      The two lines a musician reads before opening the session.
+    </p>
+
+    <div class="box" style="background:#fff;border-style:dashed;margin-bottom:10px">
+      <span class="lbl">&lt;BasicsStep /&gt; — the existing wizard step, as-is</span>
+      <div style="font-size:11px;margin-bottom:4px">Session title*</div>
+      <div class="box" style="background:#fff;height:26px"></div>
+      <div style="font-size:11px;margin:10px 0 4px">Short description* &nbsp;
+        <span class="chip">Write it myself</span><span class="chip">Let AI draft it</span>
+      </div>
+      <div class="box" style="background:#fff;height:52px"></div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <span class="btn">Cancel</span>
+      <span class="btn primary">Save changes</span>
+    </div>
+
+    <p class="note">Seeded from the stored session, so it opens with the current values already in it.</p>
+    <p class="note">Save → PATCH { title, summary } → the listing behind redraws → modal closes.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>3 · Same page, but musicians have booked</h2>
+<p class="sub">The bottom three sections lock. This mirrors the API exactly — it refuses those five fields with a 409 once any spot is taken.</p>
+
+<div class="screen">
+  <div class="appbar">JamBuilderHeader</div>
+  <div class="body">
+    <div class="navrail">
+      <span class="lbl">JamDetailNav</span>
+      <div>Cockpit</div><div>Guest list</div><div>Listing</div><div class="active new">Edit</div>
+    </div>
+    <div class="content">
+      <div class="box dashed" style="margin-bottom:14px;height:70px"><span class="lbl">JamDetailHeader</span></div>
+      <div class="cols">
+        <div class="editrail">
+          <div class="box" style="padding:12px">
+            <span class="lbl">Edit rail</span>
+            <div class="sectionrow"><span class="name">Photo</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Title &amp; pitch</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Overview</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Where</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Genres</span><span class="pencil">✎</span></div>
+            <div class="sectionrow"><span class="name">Skill level</span><span class="pencil">✎</span></div>
+
+            <div style="border-top:1px solid var(--line-soft);margin:12px 0 10px"></div>
+            <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px">
+              Locked — 3 musicians have booked
+            </div>
+
+            <div class="sectionrow locked"><span class="name">Date &amp; time</span><span class="pencil">✎</span></div>
+            <div class="sectionrow locked"><span class="name">Slot length</span><span class="pencil">✎</span></div>
+            <div class="sectionrow locked"><span class="name">Line-up</span><span class="pencil">✎</span></div>
+            <p class="lockmsg" style="margin-left:0">
+              Somebody booked a Tuesday at 20:00. Changing it would break what they booked.
+              Cancel the night instead if it can't go ahead.
+            </p>
+          </div>
+        </div>
+        <div class="preview">
+          <div class="box dashed" style="height:340px"><span class="lbl">JamListing</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="note">On a cancelled or past session there is no edit page at all — the pencil on the board is already disabled for both.</p>
+
+<!-- ============================================================ -->
+<h2>4 · Narrow screen</h2>
+<p class="sub">The rail stacks above the listing. Same rows, same modals — a dialog is full-width here.</p>
+
+<div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+
+  <div class="screen" style="width:300px">
+    <div class="appbar" style="padding:8px;font-size:11px">JamBuilderHeader</div>
+    <div style="border-bottom:1px solid var(--line);background:var(--fill);padding:6px;display:flex;gap:4px">
+      <span class="chip">Cockpit</span><span class="chip">Guests</span>
+      <span class="chip">Listing</span><span class="chip" style="border-color:var(--note);color:var(--note)">Edit</span>
+    </div>
+    <div style="padding:10px">
+      <div class="box dashed" style="height:56px;margin-bottom:10px"><span class="lbl">Header card</span></div>
+      <div class="box" style="padding:10px;margin-bottom:10px">
+        <span class="lbl">Edit rail — stacked</span>
+        <div class="sectionrow"><span class="name">Photo</span><span class="pencil">✎</span></div>
+        <div class="sectionrow"><span class="name">Title &amp; pitch</span><span class="pencil">✎</span></div>
+        <div class="sectionrow"><span class="name">Overview</span><span class="pencil">✎</span></div>
+        <div class="sectionrow"><span class="name">Where</span><span class="pencil">✎</span></div>
+        <div class="sectionrow"><span class="name">Genres</span><span class="pencil">✎</span></div>
+        <div class="sectionrow"><span class="name">Skill level</span><span class="pencil">✎</span></div>
+        <div class="sectionrow locked"><span class="name">Date &amp; time</span><span class="pencil">✎</span></div>
+      </div>
+      <div class="box dashed" style="height:200px"><span class="lbl">JamListing — one column</span></div>
+    </div>
+  </div>
+
+  <div style="flex:1;min-width:280px">
+    <p class="note" style="margin-top:0">
+      The listing below the rail rather than above it: the rail is what the venue came here to
+      use, and the listing is what they check afterwards.
+    </p>
+    <p class="note">
+      On a phone a <code>&lt;dialog&gt;</code> covers the listing entirely while it's open —
+      unavoidable, and the redraw on close is still the confirmation.
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>Open questions the wireframe doesn't answer</h2>
+<ol class="notes">
+  <li><b>Removing a photo needs an API change.</b> <code>image</code> is <code>.optional()</code>, so
+      in a partial PATCH <code>undefined</code> means "leave it alone" and <code>""</code> fails the
+      Cloudinary URL check. Replace works today; clear does not. Either widen the schema and
+      <code>$unset</code> in the controller, or make the Photo modal replace-only.</li>
+  <li><b>Is "Edit" a fourth rail item, or a button on the header card?</b> Drawn as a rail item
+      above — it's a place you go and come back from, so it deserves a URL and a spot in the nav.
+      A header button is the alternative and is less discoverable.</li>
+  <li><b>Where is "Cancel this jam"?</b> Not on this page in the wireframe. It lives on the board
+      and arguably on the cockpit — putting a destructive action at the bottom of an edit rail is
+      how it gets clicked by accident.</li>
+  <li><b>Does the pencil on the board go here, or to the cockpit?</b> Drawn as straight here —
+      that pencil currently goes nowhere at all.</li>
+  <li><b>Line-up and slot length aren't in your original list</b> but the API allows them while
+      nothing is booked. Shown as a second group; drop the group entirely if you'd rather keep
+      the scope to the six you named.</li>
+</ol>
+
+</div>
+</body>
+</html>

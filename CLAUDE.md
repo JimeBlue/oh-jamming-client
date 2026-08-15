@@ -136,6 +136,10 @@ table, and the phase plan for the venue-only wizard at `/jams/new`. Read it
 before touching anything under `src/components/jams/`. Update it when a decision
 changes — it exists because those decisions aren't recoverable from the code.
 
+`docs/jam-session-edit.md` is the same thing for `/my-backstage/[id]/edit`, the
+venue's edit flow. **Nothing there is built yet** — it is a plan, plus a
+wireframe beside it and the three flows that were rejected on the way to it.
+
 ## Conventions
 
 Comments in this codebase explain **why**, not what: the trade-off considered,
