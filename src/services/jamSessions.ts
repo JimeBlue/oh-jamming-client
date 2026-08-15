@@ -2,8 +2,10 @@ import { z } from 'zod';
 
 import {
   jamSessionSchema,
+  type Genre,
   type JamSession,
   type JamSessionPayload,
+  type SkillLevel,
 } from '@/schemas/jamSession';
 import { api } from '@/services/api';
 
@@ -22,6 +24,47 @@ import { api } from '@/services/api';
    implementation of the slot maths is a second answer waiting to disagree. */
 export const createJamSession = (payload: JamSessionPayload): Promise<JamSession> =>
   api.post('/jam-sessions', payload, jamSessionSchema);
+
+/* The browse filters. Every one of them optional, and the set is closed: the
+   API's query schema is a `strictObject`, so `?genr=jazz` is a 400 for the whole
+   request rather than a filter that quietly does nothing.
+
+   `status` is deliberately not offered. The browse defaults to active, and the
+   only other value is `cancelled` — a list of called-off nights is not a thing a
+   musician browses for, and the one place that wants them is the venue's own
+   board, which has its own endpoint. */
+export type JamSessionQuery = {
+  genre?: Genre;
+  skillLevel?: SkillLevel;
+  venueId?: string;
+  /* "YYYY-MM-DD". Omitted means today onwards (JS13) — the browse answers "what
+     can I still turn up to?", so the default is the one worth having. */
+  from?: string;
+  to?: string;
+};
+
+/* Every published session a musician can still turn up to: active only, today
+   onwards, soonest first.
+
+   Public — no cookie, and none of the three states `AuthContext` has apply here.
+   A visitor has to be able to read the board before deciding to register, which
+   is why this is the one list in the app that anonymous callers get in full. */
+export const getJamSessions = (query: JamSessionQuery = {}): Promise<JamSession[]> => {
+  const params = new URLSearchParams();
+
+  /* Empty strings dropped along with undefined: a cleared `<select>` reads as
+     "", and `?genre=` is an unknown genre to the API rather than no filter. */
+  for (const [key, value] of Object.entries(query)) {
+    if (value) params.set(key, value);
+  }
+
+  const search = params.toString();
+
+  return api.get(
+    `/jam-sessions${search ? `?${search}` : ''}`,
+    z.array(jamSessionSchema),
+  );
+};
 
 /* The venue's own board: every session it has posted, cancelled and long past
    ones included, newest first.

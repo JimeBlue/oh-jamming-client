@@ -167,12 +167,34 @@ const listingDateFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'UTC',
 });
 
-export const formatListingDate = (date: string): string | null => {
+/* "Wed, 16 Sept" — the same day, at badge size. No year: everything it labels is
+   in the next few months, and the browse never shows a date in the past at all.
+
+   Here rather than beside the card that uses it so that both ways of writing a
+   jam's date sit together. They have to agree about which day it is — same
+   value, same UTC reading, one place to look when they don't. */
+const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'UTC',
+});
+
+const formatWith = (
+  formatter: Intl.DateTimeFormat,
+  date: string,
+): string | null => {
   if (!date) return null;
 
   const parsed = new Date(`${date}T00:00:00Z`);
 
   /* A draft written by an older build could carry anything. An unreadable date
      is shown as no date rather than as "Invalid Date". */
-  return Number.isNaN(parsed.getTime()) ? null : listingDateFormatter.format(parsed);
+  return Number.isNaN(parsed.getTime()) ? null : formatter.format(parsed);
 };
+
+export const formatListingDate = (date: string): string | null =>
+  formatWith(listingDateFormatter, date);
+
+export const formatShortDate = (date: string): string | null =>
+  formatWith(shortDateFormatter, date);
