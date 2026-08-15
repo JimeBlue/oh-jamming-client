@@ -35,6 +35,20 @@ export const createJamSession = (payload: JamSessionPayload): Promise<JamSession
 export const getMyJamSessions = (): Promise<JamSession[]> =>
   api.get('/jam-sessions/mine', z.array(jamSessionSchema));
 
+/* One session, by id.
+
+   Public — no cookie needed, and no status filter either: a cancelled session
+   still resolves here. That is deliberate on the API's side (JS12 is a rule
+   about the *listing*), and it is what lets a musician holding a booking find
+   out the night was called off instead of meeting a 404 for something they know
+   exists. The venue's own detail page relies on the same thing.
+
+   404 is the only failure worth branching on; ownership isn't checked here
+   because there is nothing to own — this is the same document the browse hands
+   to anyone. */
+export const getJamSession = (id: string): Promise<JamSession> =>
+  api.get(`/jam-sessions/${id}`, jamSessionSchema);
+
 /* DELETE, but the API cancels rather than deletes (JS11) — the row stays so the
    bookings hanging off it still resolve, and every confirmed one of them is
    cancelled with it.

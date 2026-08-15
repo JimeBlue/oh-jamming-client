@@ -59,49 +59,46 @@
   --color-brand-pink: #ff7bca;
   --color-brand-green: #bfff0a;
 
-  /* The backstage board's status colours, as their own tokens rather than by
-     bending daisyUI's semantic ones. `--color-error` is the red that marks an
-     invalid form field, and repainting it this pink to suit one badge would
-     repaint every validation message in the app with it.
 
-     Named for the state rather than the hue, so "what colour is cancelled?" has
-     one answer and it lives here.
+  --color-brand-green-deep: #6e9400;
 
-     Only three states need a token. Today is the brand's own indigo and lime
-     straight from the palette above, so it has none.
+  /* The brand pink at the saturation it needs to be a glyph or a small bold
+     number. `--color-brand-pink` is a surface colour — a button fill, a tinted
+     disc — and at 16px on white it reads as a hint rather than a mark. */
+  --color-brand-pink-deep: #ff2f6d;
 
-     Upcoming is the brand lime, darkened. `--color-brand-green` scores 1.20:1
-     as text on white, which is not a label so much as a rumour of one; this is
-     the same hue taken down to 4.9:1 against the lime-tinted pill it sits in, so
-     the badge still reads as the brand's green rather than as some other green.
-     The lime survives untouched on Today, where the pill behind it is dark. */
+
   --color-status-cancelled: #ff2f6d;
   --color-status-upcoming: #5c7600;
 
-  /* Past is the one state with a surface that isn't a tint of its own text —
-     a neutral grey pill, not a wash of the label's colour — so it takes two
-     tokens rather than one. */
+
   --color-status-past: #6b7280;
   --color-status-past-surface: #f1f1f5;
 
-  /* The cancel confirmation's orange. Not daisyUI's `warning`, which is the
-     theme's yellow (#facc15) and belongs to form-level notices — this is the
-     colour of one dialog, and giving it a name keeps the two from being
-     "improved" into each other later. */
+
   --color-caution: #f97316;
+
+
+  --color-status-full: #5c7600;
+  --color-status-empty: #ff2f6d;
+
+
+  --color-status-taken: #ff2f6d;
+
+
+  --color-brand-indigo-deep: #2a1f8f;
 }
 
-/* Markdown, wherever it is shown: inside the overview editor in the jam builder,
-   and on the listing a musician reads.
 
-   Tailwind's preflight strips list markers, bold weights and italics from every
-   element on the page — which is what you want for UI built out of utilities,
-   and exactly wrong for a block of text whose formatting is the content. The
-   handful of elements our editor can actually produce get theirs back here.
+.filter-select select::picker(select) {
+  border-color: var(--color-primary);
+}
 
-   Scoped to one class rather than reinstated globally: it applies where markdown
-   is, and the editor and the rendered listing wear the same one so they can't
-   drift into showing the same text two different ways. */
+.filter-select option:checked {
+  color: var(--color-primary);
+}
+
+
 .rich-text {
   & p {
     margin-block: 0.5rem;
@@ -138,8 +135,7 @@
     margin-block: 0.125rem;
   }
 
-  /* No leading gap above the first paragraph or trailing gap under the last —
-     the container's own padding is doing that job. */
+
   & > :first-child {
     margin-top: 0;
   }

@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 
+import guitarPlayer from '@/assets/guitar-player.png';
+import MaskIcon from '@/components/ui/MaskIcon';
 import { JAM_STEPS, JAM_STEP_FIELDS, type JamStepId } from '@/config/jamSteps';
 import { JamImageProvider, useJamImage } from '@/context/JamImageContext';
 import { clearJamDraft, readJamDraft, writeJamDraft } from '@/lib/jamDraft';
@@ -260,8 +262,25 @@ function JamWizardForm() {
                 disabled={isSubmitting}
                 className="btn btn-primary gap-2 font-bold"
               >
-                {isSubmitting && <span className="loading loading-spinner" />}
-                {isSubmitting ? 'Publishing…' : 'Publish jam session'}
+                {/* Masked to white rather than dropped in as artwork, so the
+                    glyph tracks `btn-primary`'s own text colour instead of being
+                    a black silhouette that only works while the button is
+                    indigo. Swapped out entirely while submitting — the spinner
+                    is the thing to look at then. */}
+                {isSubmitting ? (
+                  <>
+                    <span className="loading loading-spinner" />
+                    Publishing…
+                  </>
+                ) : (
+                  <>
+                    Publish jam
+                    <MaskIcon
+                      src={guitarPlayer.src}
+                      className="size-5 bg-primary-content"
+                    />
+                  </>
+                )}
               </button>
             ) : (
               <button

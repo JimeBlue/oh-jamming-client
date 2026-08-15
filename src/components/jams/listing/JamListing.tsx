@@ -3,8 +3,11 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
-import { FaLocationDot, FaRegCalendar, FaRegImage } from 'react-icons/fa6';
+import { FaChartSimple, FaLocationDot, FaRegCalendar, FaRegImage, FaUsers } from 'react-icons/fa6';
+import { GrOverview } from 'react-icons/gr';
 
+import musicAlbum from '@/assets/music-album.png';
+import MaskIcon from '@/components/ui/MaskIcon';
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import { formatListingDate, type JamListingView } from '@/lib/jamListing';
 import JamSlotList from './JamSlotList';
@@ -106,8 +109,7 @@ export default function JamListing({
         {summary && <p className="text-base opacity-80">{summary}</p>}
 
         {overview.trim() && (
-          <section>
-            <h3 className="font-heading text-lg">About this session</h3>
+          <Section icon={<GrOverview aria-hidden className="size-5" />} title="Overview">
             {/* The stored value is markdown; `.rich-text` is what puts back the
                 list markers and bold weights Tailwind's preflight strips, and
                 it's the same class the editor wears so the two can't drift.
@@ -116,19 +118,14 @@ export default function JamListing({
             <div className="rich-text mt-2 text-sm opacity-80">
               <ReactMarkdown>{overview}</ReactMarkdown>
             </div>
-          </section>
+          </Section>
         )}
 
-        <section>
-          <h3 className="font-heading text-lg">Where</h3>
-
-          <p className="mt-2 flex items-start gap-2 text-sm">
-            <FaLocationDot className="mt-1 size-4 shrink-0 opacity-60" />
-            <span>
-              {venueName && <span className="block font-medium">{venueName}</span>}
-              <span className="opacity-70">
-                {address.formatted || 'Address to be confirmed'}
-              </span>
+        <Section icon={<FaLocationDot aria-hidden className="size-5" />} title="Where">
+          <p className="mt-2 text-sm">
+            {venueName && <span className="block font-bold">{venueName}</span>}
+            <span className="opacity-70">
+              {address.formatted || 'Address to be confirmed'}
             </span>
           </p>
 
@@ -140,38 +137,57 @@ export default function JamListing({
               <VenueMap lat={address.lat} lng={address.lng} label={address.formatted} />
             </div>
           )}
-        </section>
+        </Section>
       </div>
 
       <aside className="space-y-4 lg:col-span-2">
-        <Panel title="Genres">
+        {/* The one glyph on the page that isn't from react-icons, so it is drawn
+            through a mask rather than an `<img>`: the file is a black outline on
+            transparency, and painting the element's own `bg-primary` through its
+            alpha is what makes it indigo like every other icon here, instead of
+            committing a second copy of the artwork in a colour that can't follow
+            the theme. */}
+        <Panel
+          title="Genres"
+          icon={<MaskIcon src={musicAlbum.src} className="size-5 bg-primary" />}
+        >
           <ChipRow
-            values={genres.map((genre) => GENRE_LABELS[genre])}
-            tone="bg-primary/15"
+            items={genres.map((genre) => ({
+              label: GENRE_LABELS[genre],
+              catchAll: genre === 'all-genres',
+            }))}
           />
         </Panel>
 
-        <Panel title="Skill level">
+        <Panel
+          title="Skill level"
+          icon={<FaChartSimple aria-hidden className="size-5 text-brand-green-deep" />}
+        >
           <ChipRow
-            values={skillLevel.map((level) => SKILL_LEVEL_LABELS[level])}
-            tone="bg-accent/25"
+            items={skillLevel.map((level) => ({
+              label: SKILL_LEVEL_LABELS[level],
+              catchAll: level === 'all-levels',
+            }))}
           />
         </Panel>
 
-        <Panel title="Date & time">
-          <p className="flex items-center gap-2 text-sm">
-            <FaRegCalendar className="size-4 shrink-0 opacity-60" />
-            <span>
-              {formattedDate ?? 'Date to be confirmed'}
-              {startTime && endTime && (
-                <span className="block tabular-nums opacity-70">
-                  {startTime} – {endTime}
-                </span>
-              )}
-            </span>
+        <Panel
+          title="Date & time"
+          icon={<FaRegCalendar aria-hidden className="size-5 text-brand-pink-deep" />}
+        >
+          {/* No pin or calendar of its own — the panel heading carries the mark
+              now, and a second calendar two lines under the first one is the
+              same thing said twice. */}
+          <p className="text-sm">
+            {formattedDate ?? 'Date to be confirmed'}
+            {startTime && endTime && (
+              <span className="block tabular-nums opacity-70">
+                {startTime} – {endTime}
+              </span>
+            )}
           </p>
 
-          <p className="mt-4 mb-2 text-sm font-medium">
+          <p className="mt-4 mb-2 text-sm font-bold">
             {onSelectSlot
               ? 'Select a time slot to book a spot'
               : slotSummary(slots.length, slotDurationMinutes)}
@@ -184,18 +200,28 @@ export default function JamListing({
           />
         </Panel>
 
-        <Panel title="In every slot">
+        {/* The rail's own Guest list glyph. Both answer "who is in the room", so
+            the venue meets the same mark on the listing and on the roster. */}
+        <Panel
+          title="In every slot"
+          icon={<FaUsers aria-hidden className="size-5 text-primary" />}
+        >
           {lineUp.length === 0 ? (
             <p className="text-sm opacity-60">No instruments yet</p>
           ) : (
+            /* Two colours in one chip, because it holds two facts: what
+               instrument, and how many of it. The count is the thing a musician
+               scans for, so it takes the pink. */
             <ul className="flex flex-wrap gap-2">
               {lineUp.map(({ instrument, spotsTotal }) => (
                 <li
                   key={instrument}
-                  className="rounded-field bg-base-200 px-3 py-1 text-sm"
+                  className="rounded-field bg-primary/10 px-3 py-1 text-sm text-primary"
                 >
                   {instrument}{' '}
-                  <span className="font-bold tabular-nums">×{spotsTotal}</span>
+                  <span className="font-bold tabular-nums text-brand-pink-deep">
+                    ×{spotsTotal}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -206,23 +232,72 @@ export default function JamListing({
   );
 }
 
-const Panel = ({ title, children }: { title: string; children: React.ReactNode }) => (
+/* A section of the left column: the heading in a tinted disc, and everything
+   under it indented past the disc so the block reads as one thing rather than as
+   a title with loose text beneath it. Pink, which is the site's accent — the
+   aside opposite is where the indigo lives. */
+const Section = ({
+  icon,
+  title,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section className="flex gap-4 border-t border-base-200 pt-6">
+    <span
+      aria-hidden
+      className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-pink-deep/15 text-brand-pink-deep"
+    >
+      {icon}
+    </span>
+    <div className="min-w-0 flex-1">
+      <h3 className="font-heading text-lg">{title}</h3>
+      {children}
+    </div>
+  </section>
+);
+
+const Panel = ({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) => (
   <section className="rounded-box border border-base-300 p-4">
-    <h3 className="mb-3 text-xs font-bold uppercase tracking-wide opacity-60">
+    {/* No `opacity` on the row: it would take the icon down with it, and these
+        glyphs are meant to be at full strength. The label is small and uppercase
+        already — that is enough to make it a label without also draining it. */}
+    <h3 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide">
+      {icon}
       {title}
     </h3>
     {children}
   </section>
 );
 
-const ChipRow = ({ values, tone }: { values: string[]; tone: string }) =>
-  values.length === 0 ? (
+/* `catchAll` is the "All genres" / "All levels" option, and it gets the brand
+   green because it is a different kind of answer: the others narrow the night
+   down, and this one says nothing is being ruled out. Read off the stored value
+   rather than the label, so translating the copy can't quietly turn the colour
+   off. */
+const ChipRow = ({ items }: { items: { label: string; catchAll: boolean }[] }) =>
+  items.length === 0 ? (
     <p className="text-sm opacity-60">Not chosen yet</p>
   ) : (
     <ul className="flex flex-wrap gap-2">
-      {values.map((value) => (
-        <li key={value} className={`rounded-field px-3 py-1 text-sm ${tone}`}>
-          {value}
+      {items.map(({ label, catchAll }) => (
+        <li
+          key={label}
+          className={`rounded-field px-3 py-1 text-sm font-bold ${
+            catchAll ? 'bg-brand-green text-base-content' : 'bg-primary text-primary-content'
+          }`}
+        >
+          {label}
         </li>
       ))}
     </ul>

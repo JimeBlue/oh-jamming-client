@@ -61,15 +61,23 @@ export default function JamStatusBadge({ status }: { status: JamStatus }) {
        and against these soft fills it reads as a second, darker outline of the
        same shape rather than as an edge.
 
-       `h-auto` is what makes `py-2` mean anything: `.badge` sets an explicit
+       `h-auto` is what makes `py-1` mean anything: `.badge` sets an explicit
        `height: var(--size)`, so padding alone changes nothing and the pill stays
        the height daisyUI picked. Releasing the height lets the content set it.
 
+       The padding is deliberately lopsided — 1rem beside the words, 0.25rem
+       above and below. A pill wants to be wider than it is tall, and matching
+       the two turns it into a lozenge with a lot of dead colour in it.
+
        `rounded-full` over the theme's `--radius-selector` (0.5rem) — at this
        height that reads as a rounded rectangle, and the design's badges are
-       pills. */
+       pills.
+
+       No `badge-lg`: its only remaining job here was the font size, since
+       `h-auto` already gave the height away, and at that size the label competed
+       with the row's own heading. `text-sm` sets it directly. */
     <span
-      className={`badge badge-lg h-auto gap-2 rounded-full border-0 px-4 py-2 font-bold ${className}`}
+      className={`badge h-auto gap-2 rounded-full border-0 px-4 py-1 text-sm font-bold ${className}`}
     >
       {/* aria-hidden on the whole thing: it carries no meaning the label doesn't
           already, which is what makes the animation safe to hide outright below
