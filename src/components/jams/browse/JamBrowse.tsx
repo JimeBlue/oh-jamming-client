@@ -10,6 +10,7 @@ import type { JamSession } from '@/schemas/jamSession';
 import { ApiError } from '@/services/api';
 import { getJamSessions } from '@/services/jamSessions';
 import JamCard from './JamCard';
+import JamPagination from './JamPagination';
 
 /* Every published jam a musician can still turn up to.
 
@@ -116,16 +117,20 @@ export default function JamBrowse() {
             </Link>
           </div>
         ) : (
-          /* Up to five across, which the 110rem container has room for: at four
-              the cards were growing rather than the row, and a 400px-wide card
-              is mostly photo. `items-stretch` is the default and is what lets
-              them match heights so the buttons line up — see `mt-auto` in
-              JamCard. */
-          <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {state.sessions.map((session) => (
-              <JamCard key={session.id} session={session} />
-            ))}
-          </ul>
+          <>
+            {/* Four across at the widest, which is where the 7xl container tops
+                out — past `xl` the page stops growing, so a fifth column would
+                only make four cards narrower rather than fit more in.
+                `items-stretch` is the default and is what lets them match
+                heights so the buttons line up — see `mt-auto` in JamCard. */}
+            <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {state.sessions.map((session) => (
+                <JamCard key={session.id} session={session} />
+              ))}
+            </ul>
+
+            <JamPagination />
+          </>
         ))}
     </>
   );

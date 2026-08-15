@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import JamBrowse from '@/components/jams/browse/JamBrowse';
+import JamCta from '@/components/jams/browse/JamCta';
 
 export const metadata: Metadata = {
   title: 'All jams · Oh Jamming',
@@ -22,17 +23,22 @@ export default function JamsPage() {
   return (
     /* pt-28 clears the fixed header, which overlays every page under `(site)`.
        A tinted page because the cards are base-100 — on white they would need an
-       outline to be cards at all, and the design's are lifted, not drawn. */
-    <main className="min-h-screen flex-1 bg-brand-paper px-4 pb-20 pt-28 sm:px-6 lg:px-8">
-      {/* Wider than the 7xl the rest of the app caps at, and the grid is the
-          reason: four cards inside 80rem leaves each one narrow enough that a
-          two-line title is the normal case, while the page carries 18rem of
-          empty gutter either side on a laptop. Still capped rather than
-          full-bleed — past this the cards stop growing usefully and the row just
-          gets harder to read across. */}
-      <div className="mx-auto w-full max-w-[110rem]">
+       outline to be cards at all, and the design's are lifted, not drawn.
+
+       The horizontal padding is on the inner container rather than here, which
+       is what lets the band below run edge to edge: it sits outside that
+       container and carries its own. */
+    <main className="min-h-screen flex-1 bg-brand-paper pt-28">
+      {/* max-w-7xl with the same padding steps as the header's own bar, so the
+          first card starts where the logo does. */}
+      <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <JamBrowse />
       </div>
+
+      {/* Outside the container on purpose — full-bleed is the whole point of it,
+          and it constrains its own contents back to 7xl so the heading inside
+          still lines up with the grid above. */}
+      <JamCta />
     </main>
   );
 }

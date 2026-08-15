@@ -100,13 +100,12 @@ export default function JamCard({ session }: { session: JamSession }) {
                    — same call as `JamThumbnail`. */
                 alt=""
                 fill
-                /* Five across at the widest, four from xl, then three, two, one.
-                   Without this next/image assumes full-bleed and ships a 1600px
-                   file to fill a 320px card. The top entry covers xl and 2xl
-                   together because the two land within a few pixels of each
-                   other — five cards in the wider container is the same card
-                   width as four in the narrower one. */
-                sizes="(min-width: 1280px) 21rem, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
+                /* Four across at the widest, then three, two, one. Without this
+                   next/image assumes full-bleed and ships a 1600px file to fill
+                   a 290px card. The first entry is a width rather than a vw:
+                   past `xl` the container is capped at 7xl, so the card stops
+                   growing with the window. */
+                sizes="(min-width: 1280px) 18rem, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
                 className="object-cover"
               />
             ) : (
