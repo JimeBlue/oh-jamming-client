@@ -121,7 +121,7 @@ export default function JamBrowse() {
               is mostly photo. `items-stretch` is the default and is what lets
               them match heights so the buttons line up — see `mt-auto` in
               JamCard. */
-          <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <ul className="mt-8 grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {state.sessions.map((session) => (
               <JamCard key={session.id} session={session} />
             ))}
