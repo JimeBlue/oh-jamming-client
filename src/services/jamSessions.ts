@@ -37,6 +37,12 @@ export type JamSessionQuery = {
   genre?: Genre;
   skillLevel?: SkillLevel;
   venueId?: string;
+  /* Matched as a case-insensitive substring of the address line, because there
+     is no city on the model — the address is one free-text `formatted` string.
+     So "Berlin" finds a session on Oranienstraße, and would equally find one on
+     a street called Berliner Allee. Accents are literal: "Nurnberg" matches
+     nothing that "Nürnberg" matches. */
+  city?: string;
   /* "YYYY-MM-DD". Omitted means today onwards (JS13) — the browse answers "what
      can I still turn up to?", so the default is the one worth having. */
   from?: string;
@@ -65,6 +71,21 @@ export const getJamSessions = (query: JamSessionQuery = {}): Promise<JamSession[
     z.array(jamSessionSchema),
   );
 };
+
+/* The cities the city filter can actually find something in, soonest-relevant
+   rather than complete: active sessions from today onwards only, so every option
+   in the dropdown returns at least one night.
+
+   Its own request rather than being derived from the sessions already on screen,
+   which sounds cheaper and is circular — a list built from the current results
+   loses every other city the moment one is picked, so choosing Berlin would make
+   Leipzig unselectable. The options have to come from outside what they filter.
+
+   The API parses these back out of the free-text address line, so a room whose
+   address doesn't carry a postcode simply isn't represented here. One missing
+   option, rather than a wrong one. */
+export const getJamCities = (): Promise<string[]> =>
+  api.get('/jam-sessions/cities', z.array(z.string()));
 
 /* The venue's own board: every session it has posted, cancelled and long past
    ones included, newest first.

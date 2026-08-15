@@ -32,6 +32,11 @@ export default function JamsPage() {
       {/* max-w-7xl with the same padding steps as the header's own bar, so the
           first card starts where the logo does. */}
       <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
+        {/* The search bar is inside `JamBrowse`, not here, even though it renders
+            above the heading. It sets the filters the list is fetched with, so
+            the two are one piece of state — split across this boundary it would
+            need a third client component wrapping both to hold it, which is the
+            same coupling with an extra file in the way. */}
         <JamBrowse />
       </div>
 
