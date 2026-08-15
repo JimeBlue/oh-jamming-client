@@ -59,81 +59,37 @@
   --color-brand-pink: #ff7bca;
   --color-brand-green: #bfff0a;
 
-  /* The brand lime taken down until it reads as a *shape* rather than a tint.
-     Its own token because it is a fill, not a label: `--color-status-upcoming`
-     below is the same hue darkened for text, and the two answer different
-     questions — one has to survive being read at 14px, this one has to be
-     distinguishable in length from the track behind it, which the raw lime is
-     not at 1.08:1. */
+
   --color-brand-green-deep: #6e9400;
 
-  /* The backstage board's status colours, as their own tokens rather than by
-     bending daisyUI's semantic ones. `--color-error` is the red that marks an
-     invalid form field, and repainting it this pink to suit one badge would
-     repaint every validation message in the app with it.
+  /* The brand pink at the saturation it needs to be a glyph or a small bold
+     number. `--color-brand-pink` is a surface colour — a button fill, a tinted
+     disc — and at 16px on white it reads as a hint rather than a mark. */
+  --color-brand-pink-deep: #ff2f6d;
 
-     Named for the state rather than the hue, so "what colour is cancelled?" has
-     one answer and it lives here.
 
-     Only three states need a token. Today is the brand's own indigo and lime
-     straight from the palette above, so it has none.
-
-     Upcoming is the brand lime, darkened. `--color-brand-green` scores 1.20:1
-     as text on white, which is not a label so much as a rumour of one; this is
-     the same hue taken down to 4.9:1 against the lime-tinted pill it sits in, so
-     the badge still reads as the brand's green rather than as some other green.
-     The lime survives untouched on Today, where the pill behind it is dark. */
   --color-status-cancelled: #ff2f6d;
   --color-status-upcoming: #5c7600;
 
-  /* Past is the one state with a surface that isn't a tint of its own text —
-     a neutral grey pill, not a wash of the label's colour — so it takes two
-     tokens rather than one. */
+
   --color-status-past: #6b7280;
   --color-status-past-surface: #f1f1f5;
 
-  /* The cancel confirmation's orange. Not daisyUI's `warning`, which is the
-     theme's yellow (#facc15) and belongs to form-level notices — this is the
-     colour of one dialog, and giving it a name keeps the two from being
-     "improved" into each other later. */
+
   --color-caution: #f97316;
 
-  /* The cockpit's two verdicts about a line-up: this instrument is taken, and
-     nobody has touched this one all night.
 
-     Both deliberately reuse a hue that already has a name above, and the
-     duplication is the point of the convention rather than a lapse in it — the
-     tokens are named for the state, so "what colour is full?" has one answer
-     and it lives here. Reusing the values keeps the app to one green and one
-     pink; naming them separately means the day "nobody yet" wants its own
-     colour, it can have one without repainting every cancelled badge. */
   --color-status-full: #5c7600;
   --color-status-empty: #ff2f6d;
 
-  /* The slot timeline's verdict about one instrument in one slot: there is
-     nothing left to book here. A third token on the same pink, for the reason
-     given above — the states are what get named, and this one is neither a
-     cancelled session nor an instrument nobody has touched. */
+
   --color-status-taken: #ff2f6d;
 
-  /* The detail page's rail. Darker than `--color-primary`, which is the header
-     directly above it — two panels of the same indigo read as one shape with a
-     seam through it, and the rail has to sit behind the header rather than
-     beside it. */
+
   --color-brand-indigo-deep: #2a1f8f;
 }
 
-/* The open dropdown of the guest list's filters.
 
-   This has to be CSS rather than utilities because the parts being styled are
-   `::picker(select)` and `::checkmark` — the browser's own customizable-select
-   pseudo-elements, which Tailwind has no syntax for. daisyUI already opts these
-   selects into `appearance: base-select`, which is what makes them stylable at
-   all; left alone it gives the popup a `base-200` border and the tick the
-   inherited text colour.
-
-   Scoped to a class rather than applied to every `.select`, so the jam builder's
-   own selects keep the plain treatment until someone decides otherwise. */
 .filter-select select::picker(select) {
   border-color: var(--color-primary);
 }
@@ -142,17 +98,7 @@
   color: var(--color-primary);
 }
 
-/* Markdown, wherever it is shown: inside the overview editor in the jam builder,
-   and on the listing a musician reads.
 
-   Tailwind's preflight strips list markers, bold weights and italics from every
-   element on the page — which is what you want for UI built out of utilities,
-   and exactly wrong for a block of text whose formatting is the content. The
-   handful of elements our editor can actually produce get theirs back here.
-
-   Scoped to one class rather than reinstated globally: it applies where markdown
-   is, and the editor and the rendered listing wear the same one so they can't
-   drift into showing the same text two different ways. */
 .rich-text {
   & p {
     margin-block: 0.5rem;
@@ -189,8 +135,7 @@
     margin-block: 0.125rem;
   }
 
-  /* No leading gap above the first paragraph or trailing gap under the last —
-     the container's own padding is doing that job. */
+
   & > :first-child {
     margin-top: 0;
   }

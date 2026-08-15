@@ -41,10 +41,17 @@ export default function JamSlotList({
 
         const content = (
           <>
-            <span className="font-medium tabular-nums">
+            <span className="font-bold tabular-nums">
               {slot.startTime} – {slot.endTime}
             </span>
-            <span className={`text-sm ${isSelected ? 'opacity-80' : 'opacity-60'}`}>
+            {/* Pink, except on the one row that has gone indigo underneath it —
+                there the count would be the one unreadable thing on the card, so
+                it takes the row's own contrasting colour instead. */}
+            <span
+              className={`text-sm font-bold ${
+                isSelected ? 'opacity-80' : 'text-brand-pink-deep'
+              }`}
+            >
               {availability(slot)}
             </span>
           </>
