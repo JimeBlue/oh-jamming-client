@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fa6';
 
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
-import { formatShortDate } from '@/lib/jamListing';
+import { cityFromAddress, formatShortDate } from '@/lib/jamListing';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
 import { utcMidnightToDateString } from '@/lib/time';
@@ -57,6 +57,12 @@ export default function JamCard({ session }: { session: JamSession }) {
   const when = isToday ? 'Tonight' : formatShortDate(day);
 
   const cta = free === 0 ? 'See the night' : 'Book a spot';
+
+  /* The city, falling back to the venue's name when the address line has no
+     postcode to read it off. Which room it is matters once you're deciding
+     between two nights; which town it is decides whether you read the card at
+     all, and it is also the thing the filter above the grid searches by. */
+  const where = cityFromAddress(session.address.formatted) ?? session.venueName;
 
   return (
     <li>
@@ -139,9 +145,9 @@ export default function JamCard({ session }: { session: JamSession }) {
                 colour, which is what keeps the icons in step with the words
                 beside them.
 
-                min-w-0 on the venue half and nowhere else: a flex item refuses
-                to shrink below its content by default, so a long venue name
-                pushes the time off the row instead of truncating itself. */}
+                min-w-0 on the place half and nowhere else: a flex item refuses
+                to shrink below its content by default, so a long name pushes
+                the time off the row instead of truncating itself. */}
             <p className="flex items-center gap-4 text-sm font-bold">
               <span className="flex shrink-0 items-center gap-1.5">
                 <FaRegClock aria-hidden className="size-3.5" />
@@ -149,7 +155,7 @@ export default function JamCard({ session }: { session: JamSession }) {
               </span>
               <span className="flex min-w-0 items-center gap-1.5">
                 <FaLocationDot aria-hidden className="size-3.5 shrink-0" />
-                <span className="truncate">{session.venueName}</span>
+                <span className="truncate">{where}</span>
               </span>
             </p>
 
