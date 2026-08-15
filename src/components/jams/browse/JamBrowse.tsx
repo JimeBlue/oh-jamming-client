@@ -1,9 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { FaPlugCirclePlus } from 'react-icons/fa6';
 
+import blueRayas from '@/assets/blue-rayas.png';
 import type { JamSession } from '@/schemas/jamSession';
 import { ApiError } from '@/services/api';
 import { getJamSessions } from '@/services/jamSessions';
@@ -59,12 +61,21 @@ export default function JamBrowse() {
 
   return (
     <>
-      <h1 className="font-heading text-3xl sm:text-4xl">All jam sessions</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="font-heading text-3xl sm:text-4xl">All jam sessions</h1>
 
-      {/* `text-base-content/80` rather than `opacity-70` — the alpha modifier
-          touches the colour, where opacity would dim any icon sitting in the same
-          element. Kept the same across the app so there is one muted grey. */}
-      <p className="mt-2 max-w-2xl text-base-content/80">
+        {/* Decorative, so `alt=""` and nothing else — the heading beside it is
+            already the page's name, and a scribble with a description would just
+            make a screen reader read the title twice.
+
+            Static import, which is what gives next/image the intrinsic size and
+            keeps the line from jumping once the file lands. Height set off the
+            heading with `w-auto` so the 2:1 artwork keeps its proportions at
+            both breakpoints. */}
+        <Image src={blueRayas} alt="" priority className="h-6 w-auto sm:h-8" />
+      </div>
+
+      <p className="mt-2 max-w-2xl">
         Every night still to come, soonest first. Pick one, pick a slot, bring
         your instrument.
       </p>
@@ -115,10 +126,12 @@ export default function JamBrowse() {
             </Link>
           </div>
         ) : (
-          /* Four across at the widest, which is the design's grid. `items-stretch`
-              is the default and is what lets the cards match heights so their
-              buttons line up — see the `mt-auto` in JamCard. */
-          <ul className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          /* Up to five across, which the 110rem container has room for: at four
+              the cards were growing rather than the row, and a 400px-wide card
+              is mostly photo. `items-stretch` is the default and is what lets
+              them match heights so the buttons line up — see `mt-auto` in
+              JamCard. */
+          <ul className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {state.sessions.map((session) => (
               <JamCard key={session.id} session={session} />
             ))}

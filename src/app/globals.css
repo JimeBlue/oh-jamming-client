@@ -87,6 +87,18 @@
 
 
   --color-brand-indigo-deep: #2a1f8f;
+
+  /* The header bar. Near-black with the blue left in it, so the bar reads as the
+     dark end of the brand indigo rather than as a neutral strip laid over it —
+     `--color-neutral` (#0a0a0a) is the app's black and stays what the hero and
+     the mobile drawer paint themselves with. */
+  --color-brand-navy: #03072e;
+
+  /* The browse's page colour. Warm off-white, where `--color-base-200` is the
+     faintly indigo grey the rest of the app sits on: the cards here are white
+     and lifted, and against a cool grey they read as a lighter patch of the
+     same colour instead of as paper on a desk. */
+  --color-brand-paper: #faf9f6;
 }
 
 
