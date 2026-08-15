@@ -198,3 +198,29 @@ export const formatListingDate = (date: string): string | null =>
 
 export const formatShortDate = (date: string): string | null =>
   formatWith(shortDateFormatter, date);
+
+/* "Königstraße 93, 90402 Nürnberg" -> "Nürnberg".
+ *
+ * The same heuristic `GET /jam-sessions/cities` runs on the API, and it is
+ * duplicated rather than fetched because there is nothing to fetch: the model
+ * has no city field, only one free-text `formatted` line, and the cities
+ * endpoint returns the distinct list rather than a per-session answer. Keeping
+ * the two in step matters — a card naming a city the filter's dropdown doesn't
+ * offer is a place you can read but can't search for.
+ *
+ * The postcode is the anchor. The geocoder puts the city immediately after a
+ * four- or five-digit postcode in its own comma-separated part, with a country
+ * part that may or may not follow — so this finds that part rather than counting
+ * from either end, which would pick "Germany" off half of them.
+ *
+ * Null when nothing matches; the caller decides what to show instead. Guessing
+ * would put a street name under a location pin. */
+export const cityFromAddress = (formatted: string): string | null => {
+  for (const part of formatted.split(',')) {
+    const match = /^\s*\d{4,5}\s+(.+?)\s*$/.exec(part);
+
+    if (match?.[1]) return match[1];
+  }
+
+  return null;
+};
