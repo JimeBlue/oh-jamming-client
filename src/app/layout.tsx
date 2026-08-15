@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Changa_One, Manrope } from 'next/font/google';
+import { Changa_One, Manrope, Space_Grotesk } from 'next/font/google';
 import AuthProvider from '@/context/AuthContext';
 import './globals.css';
 
@@ -16,6 +16,14 @@ const manrope = Manrope({
   subsets: ['latin'],
 });
 
+// Also variable (300–700). Loaded at the root like the other two even though only
+// the browse uses it — next/font hashes and self-hosts at build time, so a font
+// nothing on the page references costs a `@font-face` rule and no download.
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
+  subsets: ['latin'],
+});
+
 export const metadata: Metadata = {
   title: 'Oh Jamming',
   description: 'Book a spot in a jam session',
@@ -26,7 +34,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       data-theme="ohjamming"
-      className={`${manrope.variable} ${changaOne.variable} h-full antialiased`}
+      className={`${manrope.variable} ${changaOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-base-200 text-base-content">
         {/* Every route reads the session — the site header, the jam builder's

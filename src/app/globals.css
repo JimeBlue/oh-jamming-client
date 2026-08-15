@@ -14,7 +14,10 @@
   --color-base-100: #ffffff;
   --color-base-200: #f2f1fb;
   --color-base-300: #e2e0f5;
-  --color-base-content: #0a0a0a;
+  /* Not the app's black. Text sits a step off #0a0a0a so a full page of it reads
+     as ink rather than as maximum contrast — `--color-neutral` below is still
+     the flat black, and it is a surface colour (the hero, the mobile drawer). */
+  --color-base-content: #1d1d1f;
 
   --color-primary: #5546ff;
   --color-primary-content: #ffffff;
@@ -26,7 +29,7 @@
 
     /* green */
   --color-accent: #bfff0a;
-  --color-accent-content: #0a0a0a;
+  --color-accent-content: #1d1d1f;
 
   --color-neutral: #0a0a0a;
   --color-neutral-content: #f2f1fb;
@@ -36,7 +39,7 @@
   --color-success: #16a34a;
   --color-success-content: #ffffff;
   --color-warning: #facc15;
-  --color-warning-content: #0a0a0a;
+  --color-warning-content: #1d1d1f;
   --color-error: #dc2626;
   --color-error-content: #ffffff;
 
@@ -52,6 +55,11 @@
 @theme inline {
   --font-sans: var(--font-manrope);
   --font-heading: var(--font-changa-one);
+  /* Changa One is a display face with one weight and no lowercase restraint —
+     it names a page, but it can't carry a session title that runs to two lines.
+     Space Grotesk is the second voice for exactly those: the browse's heading
+     and the titles on its cards. */
+  --font-display: var(--font-space-grotesk);
 }
 
 @theme {
@@ -94,11 +102,11 @@
      the mobile drawer paint themselves with. */
   --color-brand-navy: #03072e;
 
-  /* The browse's page colour. Warm off-white, where `--color-base-200` is the
-     faintly indigo grey the rest of the app sits on: the cards here are white
-     and lifted, and against a cool grey they read as a lighter patch of the
-     same colour instead of as paper on a desk. */
-  --color-brand-paper: #faf9f6;
+  /* The browse's page colour. A near-neutral off-white, where `--color-base-200`
+     is the faintly indigo grey the rest of the app sits on: the cards here are
+     lifted, and against a tinted grey they read as a lighter patch of the same
+     colour instead of as paper on a desk. */
+  --color-brand-paper: #f5f5f7;
 }
 
 

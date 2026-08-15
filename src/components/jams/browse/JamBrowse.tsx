@@ -200,7 +200,7 @@ export default function JamBrowse() {
       )}
 
       <div className="flex items-center gap-3">
-        <h1 className="font-heading text-3xl sm:text-4xl">All jam sessions</h1>
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">All jam sessions</h1>
 
         {/* Decorative, so `alt=""` and nothing else — the heading beside it is
             already the page's name, and a scribble with a description would just
