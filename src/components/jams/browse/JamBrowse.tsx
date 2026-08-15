@@ -129,6 +129,18 @@ export default function JamBrowse() {
      express no filter for — "a friendly jam" — leaves the board whole. */
   const hasFilters = Object.keys(filters).length > 0;
 
+  /* A hand-made change to any one control. The reading goes with it: "Beginner
+     jazz nights this weekend" stops describing the board the moment somebody
+     changes the city underneath it, and a sentence that no longer matches what
+     is on screen is worse than no sentence — it is the page telling the reader
+     something untrue about itself. */
+  const changeFilters = (next: JamSessionQuery) => {
+    setReading(null);
+    setSearchError(null);
+    setState({ status: 'loading' });
+    setFilters(next);
+  };
+
   const clearSearch = () => {
     setReading(null);
     setSearchError(null);
@@ -138,7 +150,13 @@ export default function JamBrowse() {
 
   return (
     <>
-      <JamSearch onSearch={runSearch} isSearching={isSearching} />
+      <JamSearch
+        onSearch={runSearch}
+        isSearching={isSearching}
+        filters={filters}
+        onFiltersChange={changeFilters}
+        onReset={clearSearch}
+      />
 
       {searchError && (
         <div
@@ -175,13 +193,9 @@ export default function JamBrowse() {
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={clearSearch}
-            className="btn btn-ghost btn-xs ml-auto font-bold"
-          >
-            Clear
-          </button>
+          {/* No Clear of its own. Reset lives in the bar above and undoes both
+              tabs; a second control here would be a third way to do the same
+              thing, and the one furthest from the controls it resets. */}
         </div>
       )}
 

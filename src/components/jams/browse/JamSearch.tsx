@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaXmark } from 'react-icons/fa6';
 import { HiOutlineSparkles } from 'react-icons/hi';
 
 import { MAX_SEARCH_CHARS } from '@/services/ai';
+import type { JamSessionQuery } from '@/services/jamSessions';
+import JamFilters from './JamFilters';
 
 /* The browse's search bar: describe the night you want, in a sentence.
 
@@ -47,11 +49,48 @@ type JamSearchProps = {
      same request, and two components deciding separately whether it is in flight
      is how a button stops spinning while the list is still loading. */
   isSearching: boolean;
+  /* The same filters both tabs write. That is the point of the pair rather than
+     an implementation detail: an AI search sets these, so switching to Manual
+     afterwards shows what the sentence was understood to mean, in controls that
+     can be corrected one at a time. */
+  filters: JamSessionQuery;
+  onFiltersChange: (filters: JamSessionQuery) => void;
+  onReset: () => void;
 };
 
-export default function JamSearch({ onSearch, isSearching }: JamSearchProps) {
+export default function JamSearch({
+  onSearch,
+  isSearching,
+  filters,
+  onFiltersChange,
+  onReset,
+}: JamSearchProps) {
   const [tab, setTab] = useState<Tab>('ai');
   const [query, setQuery] = useState('');
+
+  /* One Reset for both tabs, shown only when there is something to undo. The
+     query counts alongside the filters: a sentence the AI could extract no
+     filter from still leaves text in the box, and a control that clears the
+     board without clearing what is written in it looks like it failed. */
+  const canReset = Object.keys(filters).length > 0 || query !== '';
+
+  /* Bumped on reset and used as `JamFilters`' key, which remounts it.
+
+     Its date control keeps one piece of state the filters can't express —
+     whether the custom range inputs are open — because "custom" isn't a range,
+     it's the absence of a preset that matches. Clearing the filters therefore
+     leaves that select reading "Custom range…" over two empty date fields, which
+     is a reset that visibly didn't reset. Remounting is the honest way to say
+     "start this control over" to a component holding state of its own; reaching
+     in to clear that one flag would mean lifting it here, where nothing else
+     needs it. */
+  const [resetCount, setResetCount] = useState(0);
+
+  const reset = () => {
+    setQuery('');
+    setResetCount((count) => count + 1);
+    onReset();
+  };
 
   const trimmed = query.trim();
   const tooLong = query.length > MAX_SEARCH_CHARS;
@@ -89,24 +128,39 @@ export default function JamSearch({ onSearch, isSearching }: JamSearchProps) {
             AI-search
           </button>
 
-          {/* Disabled rather than absent, and rather than a tab that switches to
-              nothing. The manual filters are the next piece of work; a tab that
-              looks live and answers a click with an unchanged page is the one
-              version of this that reads as broken. */}
           <button
             type="button"
             role="tab"
-            disabled
             aria-selected={tab === 'manual'}
-            className="tab gap-2 whitespace-nowrap font-bold"
+            className={`tab gap-2 whitespace-nowrap font-bold ${
+              tab === 'manual' ? 'tab-active text-primary' : 'hover:text-primary'
+            }`}
+            onClick={() => setTab('manual')}
           >
             <FaMagnifyingGlass className="size-3.5" />
             Manual
           </button>
         </div>
 
+        {/* The manual panel, in the same place the AI bar occupies — both are the
+            one row beside the tabs, so switching swaps the controls without the
+            page below moving. */}
+        {tab === 'manual' && (
+          <div className="min-w-0 flex-1">
+            <JamFilters key={resetCount} filters={filters} onChange={onFiltersChange} />
+          </div>
+        )}
+
         {/* A form rather than a div so the phone keyboard offers "search" and
-            Enter submits — both come from the element, not from a handler. */}
+            Enter submits — both come from the element, not from a handler.
+
+            Unmounted rather than hidden when the other tab is showing, unlike
+            the builder's `AiAssistedField`, which keeps both panels alive to
+            protect a half-typed draft and a caret position. Nothing here is
+            worth protecting: the query survives in state either way, and a
+            second `role="search"` form in the page is a second landmark
+            announcing itself to anyone navigating by them. */}
+        {tab === 'ai' && (
         <form
           role="search"
           onSubmit={(event) => {
@@ -179,6 +233,31 @@ export default function JamSearch({ onSearch, isSearching }: JamSearchProps) {
             </p>
           )}
         </form>
+        )}
+
+        {/* The manual tab only. Four controls set independently are the case that
+            needs one way back — undoing them one at a time is four moves and it
+            is easy to lose track of which are still set. A sentence is one thing
+            to clear and the field clears itself.
+
+            It still resets everything either tab set, including the sentence and
+            the reading above the grid, so the board a musician lands back on is
+            the whole board rather than one with an invisible filter left on it.
+
+            Absent rather than disabled when there is nothing to undo: a disabled
+            control asks the reader to work out why, and the answer here — "you
+            haven't filtered anything" — is already obvious from the row it would
+            be sitting in. */}
+        {tab === 'manual' && canReset && (
+          <button
+            type="button"
+            onClick={reset}
+            className="btn btn-ghost shrink-0 gap-2 self-start font-bold text-primary md:self-auto"
+          >
+            <FaXmark className="size-4" />
+            Reset
+          </button>
+        )}
       </div>
     </section>
   );

@@ -72,6 +72,21 @@ export const getJamSessions = (query: JamSessionQuery = {}): Promise<JamSession[
   );
 };
 
+/* The cities the city filter can actually find something in, soonest-relevant
+   rather than complete: active sessions from today onwards only, so every option
+   in the dropdown returns at least one night.
+
+   Its own request rather than being derived from the sessions already on screen,
+   which sounds cheaper and is circular — a list built from the current results
+   loses every other city the moment one is picked, so choosing Berlin would make
+   Leipzig unselectable. The options have to come from outside what they filter.
+
+   The API parses these back out of the free-text address line, so a room whose
+   address doesn't carry a postcode simply isn't represented here. One missing
+   option, rather than a wrong one. */
+export const getJamCities = (): Promise<string[]> =>
+  api.get('/jam-sessions/cities', z.array(z.string()));
+
 /* The venue's own board: every session it has posted, cancelled and long past
    ones included, newest first.
 
