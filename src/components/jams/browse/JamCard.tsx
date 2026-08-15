@@ -157,7 +157,7 @@ export default function JamCard({ session }: { session: JamSession }) {
                 stops being a name and starts being a sentence, and cutting one
                 of those at the first line loses the half that says what the
                 night is. */}
-            <h3 className="line-clamp-2 font-heading text-lg leading-tight">
+            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight">
               {session.title}
             </h3>
 
@@ -215,7 +215,7 @@ export default function JamCard({ session }: { session: JamSession }) {
                   already the link. It is the affordance, not the control — so no
                   `aria-label` and nothing focusable: a screen reader meets one
                   link named after the session, which is the whole card. */}
-              <span className="btn btn-secondary w-full justify-between font-bold">
+              <span className="btn btn-primary w-full justify-between font-bold">
                 {cta}
                 <FaArrowRight aria-hidden className="size-4" />
               </span>

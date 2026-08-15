@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FaMagnifyingGlass, FaXmark } from 'react-icons/fa6';
+import { FaArrowsRotate, FaMagnifyingGlass } from 'react-icons/fa6';
 import { HiOutlineSparkles } from 'react-icons/hi';
 
 import { MAX_SEARCH_CHARS } from '@/services/ai';
@@ -109,18 +109,29 @@ export default function JamSearch({
           typeable at all — two tabs and an input sharing 375px leaves a box too
           narrow to see what you have written. */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-        {/* `tabs-box` rather than the builder's `tabs-lift`: nothing is attached
-            underneath here, so this is a segmented control choosing what the bar
-            beside it does. It takes `--radius-field` from the theme, which is
-            what keeps it square-ish next to the fully rounded pill in the design
-            — same radius as every input and button in the wizard. */}
-        <div role="tablist" className="tabs tabs-box shrink-0 self-start p-1 md:self-auto">
+        {/* Outlined buttons rather than daisyUI's `tab`, which is why the `tabs`
+            class is gone with the tray it drew: `.tab` and `.btn` both own the
+            element's height, padding and background, so they can't be stacked —
+            the list keeps `role="tablist"` and does its own layout.
+
+            The live one is solid, the other an outline — the strongest signal
+            available for the only thing this pair has to say, which is which set
+            of controls is on screen.
+
+            Both invert on hover, which is the opposite of daisyUI's own outline
+            behaviour and deliberate. Its `btn-outline` fills on hover, so left
+            alone the inactive tab would go solid indigo under the pointer and
+            look exactly like the active one — hover would be announcing a state
+            change that hasn't happened. Swapping the fill instead keeps the two
+            distinguishable in every combination of hover and selection. */}
+        <div role="tablist" className="flex shrink-0 gap-2 self-start md:self-auto">
           <button
             type="button"
             role="tab"
             aria-selected={tab === 'ai'}
-            className={`tab gap-2 whitespace-nowrap font-bold ${
-              tab === 'ai' ? 'tab-active text-primary' : 'hover:text-primary'
+            className={`btn gap-2 whitespace-nowrap font-bold ${
+              tab === 'ai'                ? 'btn-primary hover:border-primary hover:bg-transparent hover:text-primary'
+                : 'btn-outline border-base-300 text-base-content/60 hover:border-primary hover:bg-transparent hover:text-primary'
             }`}
             onClick={() => setTab('ai')}
           >
@@ -132,8 +143,9 @@ export default function JamSearch({
             type="button"
             role="tab"
             aria-selected={tab === 'manual'}
-            className={`tab gap-2 whitespace-nowrap font-bold ${
-              tab === 'manual' ? 'tab-active text-primary' : 'hover:text-primary'
+            className={`btn gap-2 whitespace-nowrap font-bold ${
+              tab === 'manual'                ? 'btn-primary hover:border-primary hover:bg-transparent hover:text-primary'
+                : 'btn-outline border-base-300 text-base-content/60 hover:border-primary hover:bg-transparent hover:text-primary'
             }`}
             onClick={() => setTab('manual')}
           >
@@ -175,14 +187,31 @@ export default function JamSearch({
 
           {/* `join` for the attached bar: it rounds only the outer corners, and
               with `--radius-field` at 0.5rem that is the wizard's radius rather
-              than the design's pill. */}
+              than the design's pill.
+
+              Default size, not `lg`. From `md` up the tabs sit on the same line
+              as this, and they are buttons at daisyUI's default height — an `lg`
+              bar beside them made the pair look like a control and its caption
+              rather than one row. */}
           <div className="join w-full">
             {/* daisyUI 5 puts the icon inside by making the wrapper the `input`
                 — the control itself carries no `input` class. Indigo border and
                 indigo glyph; `input-primary` alone leaves the icon at body
                 colour, which reads as a disabled field next to a primary button. */}
+            {/* Focus leaves the edge exactly as it is at rest. daisyUI draws a
+                2px ring at `outline-offset: 2px`, which sits in the gap outside
+                the border and makes the focused field read as taller than the
+                button joined to it — an outline takes no layout space, so the
+                two are the same 48px either way and it is purely the second
+                line doing it.
+
+                1px wide at -1px offset lands the ring exactly on the border it
+                already has, covering it rather than adding to it. Kept rather
+                than removed with `outline-none`: the caret is the only other
+                thing saying where focus is, and it disappears every time the
+                animated placeholder repaints. */}
             <label
-              className={`input join-item flex w-full items-center gap-3 md:input-lg ${
+              className={`input join-item flex w-full items-center gap-3 focus-within:outline-1 focus-within:outline-offset-[-1px] ${
                 tooLong ? 'input-error' : 'input-primary'
               }`}
             >
@@ -206,10 +235,23 @@ export default function JamSearch({
               />
             </label>
 
+            {/* Still `disabled` — an empty box is nothing to search and the
+                button must not fire — but it keeps the indigo instead of taking
+                daisyUI's grey. The grey read as a broken control rather than an
+                unfinished one: the field beside it is empty and outlined in
+                indigo, and a dead grey block on the end of it looked like the
+                bar had failed to load.
+
+                The `!`s are unavoidable: daisyUI's disabled rule nests a
+                `:not(.btn-link, .btn-ghost)` inside `.btn:disabled`, which
+                out-specifies a plain `disabled:` utility. Full strength rather
+                than a tint, because anything faded enough to read as disabled
+                takes the white label down with it — the affordance is the
+                cursor and the dead click, not the colour. */}
             <button
               type="submit"
               disabled={!canSearch}
-              className="btn btn-primary join-item gap-2 font-bold md:btn-lg"
+              className="btn btn-primary join-item gap-2 font-bold disabled:cursor-not-allowed disabled:border-primary! disabled:bg-primary! disabled:text-primary-content!"
             >
               {isSearching ? (
                 <span className="loading loading-spinner loading-sm" />
@@ -249,13 +291,18 @@ export default function JamSearch({
             haven't filtered anything" — is already obvious from the row it would
             be sitting in. */}
         {tab === 'manual' && canReset && (
+          /* The soft pink wash the guest list's Reset filters wears, so the one
+             control that undoes a filter strip looks the same on both sides of
+             the app. `border-0` because `.btn` draws one by default and the wash
+             is meant to read as a tint rather than as a fourth outlined box in a
+             row of three. */
           <button
             type="button"
             onClick={reset}
-            className="btn btn-ghost shrink-0 gap-2 self-start font-bold text-primary md:self-auto"
+            className="btn shrink-0 gap-2 self-start border-0 bg-status-taken/10 font-bold text-status-taken hover:bg-status-taken/20 md:self-auto"
           >
-            <FaXmark className="size-4" />
-            Reset
+            <FaArrowsRotate aria-hidden className="size-4" />
+            Reset filters
           </button>
         )}
       </div>
