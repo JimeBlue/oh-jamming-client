@@ -80,16 +80,6 @@ export default function JamBrowse() {
         your instrument.
       </p>
 
-      {/* Only once there is a number to say. During loading it would be a claim
-          about a list that hasn't arrived, and on the empty state the panel below
-          already says it in a full sentence. */}
-      {state.status === 'ready' && state.sessions.length > 0 && (
-        <p className="mt-6 text-sm font-bold text-base-content/60">
-          Showing {state.sessions.length} upcoming jam
-          {state.sessions.length === 1 ? '' : 's'}
-        </p>
-      )}
-
       {state.status === 'loading' && (
         <div className="flex justify-center py-24">
           <span className="loading loading-spinner loading-lg text-primary" />
@@ -131,7 +121,7 @@ export default function JamBrowse() {
               is mostly photo. `items-stretch` is the default and is what lets
               them match heights so the buttons line up — see `mt-auto` in
               JamCard. */
-          <ul className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {state.sessions.map((session) => (
               <JamCard key={session.id} session={session} />
             ))}

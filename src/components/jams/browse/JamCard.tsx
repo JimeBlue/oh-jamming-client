@@ -2,12 +2,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   FaArrowRight,
+  FaChartSimple,
   FaLocationDot,
   FaRegClock,
   FaRegImage,
 } from 'react-icons/fa6';
 
-import { GENRE_LABELS } from '@/config/jamOptions';
+import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import { formatShortDate } from '@/lib/jamListing';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
@@ -27,7 +28,18 @@ import { ALL_GENRES, type JamSession } from '@/schemas/jamSession';
    control that visibly does nothing is worse than one that isn't there. */
 export default function JamCard({ session }: { session: JamSession }) {
   const day = utcMidnightToDateString(session.date);
+
+  /* Only to decide what the button promises — a sold-out night still belongs on
+     the browse, but "Book a spot" on it is a lie. Counted through the same
+     report the venue's cockpit reads rather than summed here: there is no
+     availability counter anywhere, only spots with a booking on them, and a
+     second implementation of that sum is a second answer waiting to disagree. */
   const { free } = jamReport(session);
+
+  /* `skillLevel` is an array on the wire and the API requires at least one, so
+     this is only ever undefined for a document written before that rule — worth
+     guarding rather than indexing blind. */
+  const [level] = session.skillLevel;
 
   /* "Tonight" reads better than today's own date on a card whose whole job is
      urgency — and it is the same day-granular answer the board's badge gives,
@@ -82,13 +94,17 @@ export default function JamCard({ session }: { session: JamSession }) {
         {/* min-w-0 on the venue half and nowhere else: a flex item refuses to
             shrink below its content by default, so a long venue name pushes the
             time off the row instead of truncating itself. */}
-        <p className="flex items-center gap-4 text-sm text-base-content/80">
+        {/* Full-strength base-content and bold, glyphs included — when and where
+            are the two facts a musician scans a grid for, so this row is read
+            before the title rather than after it. Nothing sets a colour, which
+            is what keeps the icons in step with the words beside them. */}
+        <p className="flex items-center gap-4 text-sm font-bold">
           <span className="flex shrink-0 items-center gap-1.5">
-            <FaRegClock aria-hidden className="size-3.5 text-primary" />
+            <FaRegClock aria-hidden className="size-3.5" />
             <span className="tabular-nums">{session.startTime}</span>
           </span>
           <span className="flex min-w-0 items-center gap-1.5">
-            <FaLocationDot aria-hidden className="size-3.5 shrink-0 text-primary" />
+            <FaLocationDot aria-hidden className="size-3.5 shrink-0" />
             <span className="truncate">{session.venueName}</span>
           </span>
         </p>
@@ -101,9 +117,10 @@ export default function JamCard({ session }: { session: JamSession }) {
         </h3>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Two, then a count. Every genre on a card that is 290px wide wraps
-              into three rows and pushes the button off the fold, and a musician
-              filtering by genre already knows which one they asked for. */}
+          {/* The first two only, and silently — every genre on a card this wide
+              wraps into three rows and pushes the button off the fold, and a
+              musician filtering by genre already knows which one they asked
+              for. */}
           {session.genres.slice(0, 2).map((genre) => (
             <span
               key={genre}
@@ -120,41 +137,46 @@ export default function JamCard({ session }: { session: JamSession }) {
             </span>
           ))}
 
-          {session.genres.length > 2 && (
-            <span className="text-xs font-bold text-base-content/60">
-              +{session.genres.length - 2}
+          {/* The level, at the far end of the genre row. Two answers to "is this
+              night for me?" reading from opposite edges rather than as a third
+              chip in the same run — which is also what stops it being mistaken
+              for a genre.
+
+              The first only, like the genres: a session tagged for two levels is
+              rare, and the space here is one pill wide.
+
+              `FaChartSimple` is the listing's own mark for skill level, so the
+              browse and the page it leads to agree about what the glyph means.
+              It takes the pill's colour rather than the listing's green, because
+              there it sits on white with a heading beside it and here it is
+              inside a tinted lozenge. */}
+          {level && (
+            <span className="ml-auto flex shrink-0 items-center gap-1.5 rounded-field bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
+              <FaChartSimple aria-hidden className="size-3.5" />
+              {SKILL_LEVEL_LABELS[level]}
             </span>
           )}
         </div>
 
-        {/* Counted from the spots, via the same report the venue's cockpit
-            reads — there is no availability counter anywhere to fall out of step
-            with, and a second implementation of this sum is a second answer
-            waiting to disagree. */}
-        <p className="text-sm font-bold">
-          {free === 0 ? (
-            <span className="text-status-empty">Fully booked</span>
-          ) : (
-            <span className="text-status-full">
-              {free} spot{free === 1 ? '' : 's'} left
-            </span>
-          )}
-        </p>
-
         {/* mt-auto is what makes a grid of cards line their buttons up: the
             titles above run to one line or two, and without this the button
-            floats up under the short ones. */}
-        <Link
-          href={`/jams/${session.id}`}
-          /* Names the session, and opens with the visible words so voice control
-             still matches on "click Book a spot" — twelve identical link names
-             in a screen reader's list is the thing this is fixing. */
-          aria-label={`${free === 0 ? 'See the night' : 'Book a spot'} — ${session.title}`}
-          className="btn btn-secondary mt-auto w-full justify-between font-bold"
-        >
-          {free === 0 ? 'See the night' : 'Book a spot'}
-          <FaArrowRight aria-hidden className="size-4" />
-        </Link>
+            floats up under the short ones. It collapses to nothing on the tall
+            cards, though, which is what the padding is for — the button keeps
+            its gap above even when there is no slack left to distribute. */}
+        <div className="mt-auto pt-3">
+          <Link
+            href={`/jams/${session.id}`}
+            /* Names the session, and opens with the visible words so voice
+               control still matches on "click Book a spot" — twelve identical
+               link names in a screen reader's list is the thing this is
+               fixing. */
+            aria-label={`${free === 0 ? 'See the night' : 'Book a spot'} — ${session.title}`}
+            className="btn btn-secondary w-full justify-between font-bold"
+          >
+            {free === 0 ? 'See the night' : 'Book a spot'}
+            <FaArrowRight aria-hidden className="size-4" />
+          </Link>
+        </div>
       </div>
     </li>
   );
