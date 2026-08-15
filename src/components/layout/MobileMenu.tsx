@@ -51,7 +51,10 @@ export default function MobileMenu({ open, onClose }: MobileMenuProps) {
       />
 
       <aside
-        className={`absolute inset-y-0 right-0 flex w-80 max-w-[85vw] flex-col gap-6 bg-neutral p-6 text-neutral-content shadow-2xl transition-transform duration-300 ease-out ${
+        /* `brand-navy` rather than `bg-neutral`: this panel slides out from
+           under the header and the two are joined along that edge, so the app's
+           flat black beside the header's dark indigo read as a seam. */
+        className={`absolute inset-y-0 right-0 flex w-80 max-w-[85vw] flex-col gap-6 bg-brand-navy p-6 text-neutral-content shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

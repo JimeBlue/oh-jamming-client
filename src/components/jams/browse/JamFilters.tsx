@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FaChartSimple, FaLocationDot, FaMusic, FaRegCalendar } from 'react-icons/fa6';
 
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import {
@@ -82,6 +83,41 @@ const datePresets = (): { id: string; label: string; range: DateRange }[] => {
   ];
 };
 
+const FILTER_ICON = 'size-4 shrink-0 text-primary';
+
+/* Same construction as the guest list's filter strip, and deliberately the same
+   component shape: daisyUI 5 puts a glyph inside a select by making the *label*
+   the `select` and leaving the control unclassed, so this can't be done with a
+   className on the `<select>` alone.
+
+   `ms-0!` because that wrapper gives its child an inline-start margin meant to
+   clear a leading label, which here just pushes the text away from the icon. */
+const FilterSelect = ({
+  icon,
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) => (
+  <label className="filter-select select w-44 gap-2 border-primary/30 bg-base-100">
+    {icon}
+    <select
+      aria-label={label}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="ms-0!"
+    >
+      {children}
+    </select>
+  </label>
+);
+
 type JamFiltersProps = {
   filters: JamSessionQuery;
   onChange: (filters: JamSessionQuery) => void;
@@ -148,13 +184,11 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
      isn't reading the option. */
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <select
-        aria-label="Date"
-        className="select select-primary w-40"
+      <FilterSelect
+        icon={<FaRegCalendar aria-hidden className={FILTER_ICON} />}
+        label="Date"
         value={showCustom ? 'custom' : activePreset}
-        onChange={(event) => {
-          const chosen = event.target.value;
-
+        onChange={(chosen) => {
           if (chosen === 'custom') {
             setCustomOpen(true);
             return;
@@ -176,7 +210,7 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
           </option>
         ))}
         <option value="custom">Custom range…</option>
-      </select>
+      </FilterSelect>
 
       {showCustom && (
         <>
@@ -205,11 +239,11 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
         </>
       )}
 
-      <select
-        aria-label="City"
-        className="select select-primary w-40"
+      <FilterSelect
+        icon={<FaLocationDot aria-hidden className={FILTER_ICON} />}
+        label="City"
         value={filters.city ?? ''}
-        onChange={(event) => update({ city: event.target.value })}
+        onChange={(city) => update({ city })}
       >
         <option value="">Any city</option>
         {cities.map((city) => (
@@ -217,13 +251,13 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
             {city}
           </option>
         ))}
-      </select>
+      </FilterSelect>
 
-      <select
-        aria-label="Genre"
-        className="select select-primary w-40"
+      <FilterSelect
+        icon={<FaMusic aria-hidden className={FILTER_ICON} />}
+        label="Genre"
         value={filters.genre ?? ''}
-        onChange={(event) => update({ genre: event.target.value as Genre })}
+        onChange={(genre) => update({ genre: genre as Genre })}
       >
         <option value="">Any genre</option>
         {FILTERABLE_GENRES.map((genre) => (
@@ -231,13 +265,15 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
             {GENRE_LABELS[genre]}
           </option>
         ))}
-      </select>
+      </FilterSelect>
 
-      <select
-        aria-label="Level"
-        className="select select-primary w-40"
+      {/* The same glyph the card and the listing use for skill level, so the
+          control that sets it and the places that show it agree. */}
+      <FilterSelect
+        icon={<FaChartSimple aria-hidden className={FILTER_ICON} />}
+        label="Level"
         value={filters.skillLevel ?? ''}
-        onChange={(event) => update({ skillLevel: event.target.value as SkillLevel })}
+        onChange={(skillLevel) => update({ skillLevel: skillLevel as SkillLevel })}
       >
         <option value="">Any level</option>
         {FILTERABLE_LEVELS.map((level) => (
@@ -245,7 +281,7 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
             {SKILL_LEVEL_LABELS[level]}
           </option>
         ))}
-      </select>
+      </FilterSelect>
     </div>
   );
 }
