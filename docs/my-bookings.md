@@ -42,9 +42,17 @@ which is why the edit modal fetches, and the list does not.
 document per claimed spot, all sharing a `groupId`. The page groups by `groupId`
 and draws one card per group: the instruments are the rows inside it.
 
-Actions live on the card, and the card's own modal holds the QR. There is no
-`/my-bookings/[id]` route — a booking has nothing to link to, share, or bookmark,
-and skipping the route skips a layout, a loader and a not-found state.
+**The list has no buttons on it.** A card is one big link to
+`/my-bookings/[group]`, and Cancel, Change and the QR all live there. The cards
+are already carrying six things plus a status badge, the ticket silhouette is the
+best part of the design, and three action states — confirmed, past, cancelled —
+would give the list three card heights.
+
+The route is keyed by `groupId`, because that is a booking's handle everywhere
+else in this app. There is no endpoint that fetches one group, so the page issues
+the same `GET /bookings` the list does and filters — exactly what
+`BookingConfirmed` already does with `?group=`. It costs nothing worth avoiding:
+the response is a musician's own bookings, tens of rows at the outside.
 
 ---
 
@@ -60,7 +68,9 @@ and skipping the route skips a layout, a loader and a not-found state.
 | 6 | **Edit and Cancel are hidden on past and cancelled bookings** | The API has no date rule (see constraints), so this is the only thing stopping someone cancelling a night that already happened |
 | 7 | **Edit stays inside one session** | `POST /bookings` takes one `jamSessionId` and one `slotId`. Playing a different night is a different booking by any reading |
 | 8 | **`bandName` is not editable** | There is no PATCH, so it cannot be. Deliberately not worked around |
-| 9 | **The QR lives in a modal, not on the card** | Four cards each showing a QR is four scannable codes on one screen and no way to tell which is which at the door |
+| 9 | **No actions on the list — the card is a link to `/my-bookings/[group]`** | Cancel, Change and the QR all live on the details page. Buttons on the card would be a second route to the same two actions, on the surface where they are easiest to hit by accident |
+| 10 | **The QR is on the details page, not on the card** | Three cards each showing a QR is three scannable codes on one screen and no way to tell which is which at the door. On its own page it can be big, which is what matters when someone is holding a phone up at a door |
+| 11 | **The details page is a route, not a modal** | QR, address, spots, band name and two actions is a screenful on a phone, and a confirm dialog stacked on a modal holding all that is cramped. A route also survives a refresh, which someone standing at a door will do |
 
 ---
 
@@ -87,9 +97,14 @@ Checked against `oh-jamming-api/src/controllers/bookings.ts`,
 
 ## The edit flow
 
-What the user sees: **Change booking** → a modal with the night's time slots and
-instruments, their current choice pre-selected → they change something → **Save
-changes** → the card updates.
+What the user sees: **Change booking**, on the details page → a modal with the
+night's time slots and instruments, their current choice pre-selected → they
+change something → **Save changes** → the page redraws.
+
+A modal here and a route for the details page, which is not a contradiction: the
+details page is a destination, and this is a detour from it that you either
+complete or abandon. Sending someone to a third route to edit and back again also
+loses the one thing the modal keeps in view — the booking they are changing.
 
 What happens:
 
@@ -184,6 +199,16 @@ adding an instrument through it produces a second group and a second QR code.
 **A per-instrument swap** (drop Bass, take Drums, same group). Same objection,
 worse: the add half mints a new group, so a swap leaves one night wearing two QR
 codes.
+
+**Cancel and Change buttons on every card in the list.** Rejected on the design
+as much as on the code: the ticket card is already carrying a time slot, spots, a
+date, an address and a status badge, and the notch-and-stub silhouette is what
+makes the list worth looking at. Buttons would have to sit inside it, and only on
+some cards — past and cancelled bookings have no actions — so the stack would
+lose its rhythm. Underneath that, a details page has to exist anyway to hold the
+QR, so buttons on the card would be a second implementation of two actions that
+already have a home, on the surface where a destructive one is easiest to hit by
+mistake.
 
 **Sending the musician back through the booking flow.** No modal, no diff — just
 a link to `/jams/[id]`. Rejected because nothing cancels the old booking, so the
