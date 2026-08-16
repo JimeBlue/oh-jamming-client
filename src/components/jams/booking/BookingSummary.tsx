@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaArrowLeft, FaCheck, FaRegCalendar } from 'react-icons/fa6';
+import { FaArrowLeft, FaRegCalendar } from 'react-icons/fa6';
 import { HiUserGroup } from 'react-icons/hi';
 import { MdFactCheck } from 'react-icons/md';
 import { RiTimerFlashLine } from 'react-icons/ri';
 import { VscPreview } from 'react-icons/vsc';
 
+import rockHand from '@/assets/rock-hand.png';
+import MaskIcon from '@/components/ui/MaskIcon';
 import { useAuth } from '@/context/AuthContext';
 import { formatListingDate } from '@/lib/jamListing';
 import { utcMidnightToDateString } from '@/lib/time';
@@ -309,12 +311,13 @@ export default function BookingSummary({
           disabled={submitting}
           className="btn btn-primary font-bold"
         >
-          {submitting ? (
-            <span className="loading loading-spinner" />
-          ) : (
-            <FaCheck aria-hidden className="size-4" />
-          )}
+          {submitting && <span className="loading loading-spinner" />}
           {submitting ? 'Booking…' : 'Confirm booking'}
+          {/* After the words, and `bg-current` rather than a named colour: the
+              artwork is black on transparency, so the mask paints it in whatever
+              the button's own text colour is — which keeps it right if this
+              button ever stops being indigo. */}
+          {!submitting && <MaskIcon src={rockHand.src} className="size-5 bg-current" />}
         </button>
       </div>
     </Card>
