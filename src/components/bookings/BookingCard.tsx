@@ -15,9 +15,10 @@ const STATUS: Record<
   BookingCardStatus,
   { label: string; icon: IconType; className: string }
 > = {
-  /* Emerald on the cyan card. The only badge with a colour of its own: the other
-     two sit on the same blue and are drawn out of it, because "past" and
-     "cancelled" are the absence of the thing this page is for. */
+  /* The badge is now the *only* thing carrying status — the card's colour says
+     nothing about it (see below) — so each one has to be legible on either
+     surface rather than relying on the one it usually lands on. Emerald and the
+     cancelled red both are; "Past" is drawn out of whatever it sits on. */
   confirmed: {
     label: 'Confirmed',
     icon: FaCircleCheck,
@@ -37,14 +38,16 @@ const STATUS: Record<
   },
 };
 
-/* Cyan for a night still to come, royal blue for one that is over or off. Two
-   colours rather than three: past and cancelled are both "nothing to do here",
-   and the badge is what tells them apart. */
-const SURFACE: Record<BookingCardStatus, string> = {
-  confirmed: 'bg-cyan-blue',
-  past: 'bg-royal-blue',
-  cancelled: 'bg-royal-blue',
-};
+/* Cyan on the first card and every third one after it — 1, 4, 7 — with royal
+   blue on the two in between.
+
+   Colour is a property of the *position*, not of the booking. It was the status
+   at first, and that read as meaning: two cancelled bookings in a row became one
+   long blue block, and a musician with nothing but past nights got a page with
+   no cyan on it at all. As a rhythm it does the job colour is actually good at
+   here — separating one ticket from the next — and leaves saying what a booking
+   *is* to the badge, which says it in words. */
+const isCyan = (index: number): boolean => index % 3 === 0;
 
 /* The label above every value on the coloured stub. Small, and held back from
    white so the value it names is the thing that is read first. */
@@ -66,9 +69,20 @@ const Field = ({
   </div>
 );
 
-export default function BookingCard({ booking }: { booking: BookingCardView }) {
+export default function BookingCard({
+  booking,
+  /* Where this card sits in the list, which is the only thing its colour depends
+     on. Passed in rather than worked out here: a card cannot see the list it is
+     in, and giving it the whole list so it could count itself would be a much
+     larger prop for a smaller answer. */
+  index,
+}: {
+  booking: BookingCardView;
+  index: number;
+}) {
   const status = STATUS[booking.status];
   const StatusIcon = status.icon;
+  const cyan = isCyan(index);
 
   return (
     <article className="flex items-stretch">
@@ -84,7 +98,9 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
         /* Less padding at the top than on the other three sides: the badge row
            below is short and right-aligned, so a full 28px above it left the
            card looking hollow before it had said anything. */
-        className={`min-w-0 flex-1 rounded-l-[var(--radius-box)] p-6 pt-4 text-white shadow-md sm:p-7 sm:pt-5 ${SURFACE[booking.status]}`}
+        className={`min-w-0 flex-1 rounded-l-[var(--radius-box)] p-6 pt-4 text-white shadow-md sm:p-7 sm:pt-5 ${
+          cyan ? 'bg-cyan-blue' : 'bg-royal-blue'
+        }`}
       >
         {/* Its own row, above everything, at every width. In the flow rather
             than pinned to the corner: absolute meant every field beneath it had
@@ -144,18 +160,30 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
 
           {/* No date here — the stub beside it is the date, at a size you can
               read across a room, and printing it twice on one ticket only made
-              the second one look like a different fact. */}
+              the second one look like a different fact.
+
+              The jam's name sits under the venue with no label of its own: it
+              reads as the second line of "where am I going", which is what it
+              is, and a label would have made two fields out of one answer. */}
           <Field label="Venue">
             <p className="font-medium">{booking.venueName}</p>
-          </Field>
-
-          {/* The design has the venue's street address in this slot, and there is
-              none to show: `GET /bookings` populates four fields off the session
-              — title, date, venueName, status — and the address is not one of
-              them. The night's own name is what a musician recognises anyway. */}
-          <Field label="Jam session">
+            {/* Same white and same weight as the line above it, so the two read
+                as one answer rather than as a name with a caption. */}
             <p className="font-medium">{booking.title}</p>
           </Field>
+
+          {/* Dropped entirely rather than shown empty when the API predates
+              `address` in the bookings projection — a labelled blank reads as a
+              venue that forgot to fill it in. */}
+          {booking.addressLines.length > 0 && (
+            <Field label="Address">
+              {booking.addressLines.map((line) => (
+                <p key={line} className="font-medium">
+                  {line}
+                </p>
+              ))}
+            </Field>
+          )}
         </div>
       </div>
 
@@ -221,7 +249,7 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
             from rather than reading as a separate white card beside it. */}
         <p
           className={`font-display text-4xl font-bold tabular-nums sm:text-5xl ${
-            booking.status === 'confirmed' ? 'text-cyan-blue' : 'text-royal-blue'
+            cyan ? 'text-cyan-blue' : 'text-royal-blue'
           }`}
         >
           {booking.dateParts.day}

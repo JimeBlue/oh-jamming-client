@@ -30,6 +30,12 @@ export type BookingCardView = {
   spots: string[];
   bandName?: string;
 
+  /* The address as the card draws it: street on one line, postcode and town on
+     the next, country dropped. Empty when the API hasn't been redeployed with
+     `address` in the bookings projection — the card leaves the field out rather
+     than printing a blank label. */
+  addressLines: string[];
+
   status: BookingCardStatus;
 
   /* Kept alongside `status` rather than derived from it, because a cancelled
@@ -68,6 +74,42 @@ const splitDate = (date: string): BookingCardView['dateParts'] => {
   };
 };
 
+/* A part that starts with a postcode: "70173 Stuttgart". The same anchor
+   `cityFromAddress` uses, and for the same reason — the geocoder puts the town
+   immediately after a four- or five-digit postcode, in its own comma-separated
+   part, with a country part that may or may not follow. Counting parts from
+   either end picks "Germany" off half of them. */
+const POSTCODE_PART = /^\d{4,5}\s+\S/;
+
+/* "Königstraße 20, 70173 Stuttgart, Germany" -> ["Königstraße 20", "70173 Stuttgart"]
+ *
+ * Two lines, the way an envelope is addressed: everything before the postcode is
+ * the street, the postcode part is the town, and whatever follows is the country
+ * — which nobody needs on a ticket for a room they are travelling to tonight.
+ *
+ * The address is one free-text line in the model, not structured fields, so this
+ * is a split rather than a lookup. When the postcode anchor doesn't match — a
+ * venue that typed the address by hand, which the API allows — the first two
+ * parts are the honest guess, and one long line is better than a wrong split. */
+export const splitAddress = (formatted: string): string[] => {
+  const parts = formatted
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const postcodeAt = parts.findIndex((part) => POSTCODE_PART.test(part));
+  const postcodeLine = postcodeAt === -1 ? undefined : parts[postcodeAt];
+
+  /* `> 0`, not `!== -1`: an address that *starts* with its postcode has no
+     street part to put above it, and joining an empty slice would print a
+     leading comma. */
+  if (postcodeAt > 0 && postcodeLine) {
+    return [parts.slice(0, postcodeAt).join(', '), postcodeLine];
+  }
+
+  return parts.slice(0, 2);
+};
+
 const toCard = (rows: Booking[], today: string): BookingCardView | null => {
   const [first] = rows;
 
@@ -92,6 +134,10 @@ const toCard = (rows: Booking[], today: string): BookingCardView | null => {
        before "Second guitar" by luck, and "Voice" last by accident. */
     spots: rows.map(({ label }) => label),
     bandName: first.bandName,
+
+    addressLines: first.jamSession.address
+      ? splitAddress(first.jamSession.address.formatted)
+      : [],
 
     /* A venue cancelling a night cascades to its bookings (BK14), so a session
        the venue called off is already `cancelled` on every row here — there is

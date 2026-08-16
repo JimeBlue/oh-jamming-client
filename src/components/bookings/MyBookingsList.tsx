@@ -79,9 +79,12 @@ export default function MyBookingsList() {
 
   return (
     <ul className="space-y-5">
-      {state.cards.map((card) => (
+      {state.cards.map((card, index) => (
         <li key={card.groupId}>
-          <BookingCard booking={card} />
+          {/* The index is the card's colour, not its identity — `groupId` is
+              still the key, so re-sorting or a cancellation moves the colours
+              with the positions rather than with the bookings. */}
+          <BookingCard booking={card} index={index} />
         </li>
       ))}
     </ul>

@@ -31,6 +31,13 @@ const jamSessionSummarySchema = z.object({
   date: z.coerce.date(),
   venueName: z.string(),
   status: z.string(),
+
+  /* Optional, and that is about deployment rather than about the data: the API
+     added `address` to this projection after the client shipped, and a required
+     field here would fail every parse — the whole page, not one line — against
+     an API that hasn't been redeployed yet. It is required on the API's own
+     schema, so absent means "old server", never "session without an address". */
+  address: z.object({ formatted: z.string() }).optional(),
 });
 
 /* BK18 — a name and an email, and nothing else. The API projects exactly these
