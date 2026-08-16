@@ -51,20 +51,20 @@ export default function BookingSummary({
   id,
   slotId,
   spotIds,
+  bandName,
 }: {
   id: string;
   slotId: string;
   spotIds: string[];
+  /* Already trimmed by the page, and "" for a booking with no band. Typed on the
+     instrument step, not here — this page collects nothing. */
+  bandName: string;
 }) {
   const router = useRouter();
   const { status: authStatus, user } = useAuth();
 
   const [state, setState] = useState<SummaryState>({ status: 'loading' });
   const [submitting, setSubmitting] = useState(false);
-
-  /* Only ever asked for below when the booking holds more than one spot — every
-     spot in a booking is inside the same slot, so two of them is two people. */
-  const [bandName, setBandName] = useState('');
 
   /* Kept apart from the load failure above: this one leaves the page usable and
      the spots still chosen, and the most likely cause — someone else took one of
@@ -87,12 +87,13 @@ export default function BookingSummary({
     };
   }, [id]);
 
-  /* The spots go back with it. Without them Back is a reset button wearing a
-     Back label — the step reopens empty and the musician re-picks what they had
-     just finished picking. */
-  const backHref = `/jams/${id}/book?slot=${encodeURIComponent(slotId)}&spots=${spotIds
-    .map(encodeURIComponent)
-    .join(',')}`;
+  /* The spots and the band name go back with it. Without them Back is a reset
+     button wearing a Back label — the step reopens empty and the musician
+     re-types what they had just finished choosing. */
+  const backHref =
+    `/jams/${id}/book?slot=${encodeURIComponent(slotId)}&spots=${spotIds
+      .map(encodeURIComponent)
+      .join(',')}` + (bandName ? `&band=${encodeURIComponent(bandName)}` : '');
 
   if (state.status === 'loading' || authStatus === 'loading') {
     return (
@@ -140,23 +141,6 @@ export default function BookingSummary({
     );
   }
 
-  /* A booking of one spot is one person, so there is no band to name. Asked for
-     only past that, and never required: BK09 — "required when claiming more than
-     one spot" — is deferred on the API, and enforcing it here alone would be a
-     rule only half the system believes in. Plenty of pairs have no name. */
-  const asksForBandName = chosen.length > 1;
-
-  const trimmedBandName = bandName.trim();
-
-  /* The API's own floor. One character is the only value that can't be sent and
-     can't be omitted either, so it is caught here rather than coming back as a
-     400 for the whole booking.
-
-     Gated on the field being on screen, because a value nobody can see must not
-     be able to disable the button under them — the submit drops the name in that
-     case anyway, so there is nothing left to be invalid. */
-  const bandNameTooShort = asksForBandName && trimmedBandName.length === 1;
-
   const submit = async () => {
     setSubmitting(true);
     setSubmitError(null);
@@ -175,7 +159,7 @@ export default function BookingSummary({
         jamSessionId: id,
         slotId,
         spotIds: chosen.map((spot) => spot.spotId),
-        ...(asksForBandName && trimmedBandName ? { bandName: trimmedBandName } : {}),
+        ...(bandName ? { bandName } : {}),
       });
 
       /* Every row of the response shares one groupId, and that is the booking as
@@ -225,31 +209,17 @@ export default function BookingSummary({
       </p>
 
       {/* Above the chips, because the name labels that list — under it, it reads
-          as an afterthought about the last instrument.
+          as an afterthought about the last instrument. Read back, not asked for:
+          it was typed on the step before, and this page's job is to show what is
+          about to be booked.
 
-          The venue is the reason this field exists: its guest list already has a
+          The venue is the reason it exists at all: its guest list already has a
           Band column, and without a name three spots held by one account look
           like a mistake rather than a group. */}
-      {asksForBandName && (
-        <fieldset className="fieldset mt-4">
-          <legend className="fieldset-legend">Band name (optional)</legend>
-          <input
-            type="text"
-            value={bandName}
-            onChange={(event) => setBandName(event.target.value)}
-            placeholder="The name your venue should expect at the door"
-            /* The API's ceiling, enforced by the browser so a long name is
-               stopped as it is typed rather than refused after the button. */
-            maxLength={120}
-            aria-invalid={bandNameTooShort ? true : undefined}
-            className={`input w-full ${bandNameTooShort ? 'input-error' : ''}`}
-          />
-          {bandNameTooShort && (
-            <p role="alert" className="fieldset-label text-error">
-              Use at least 2 characters, or leave it empty
-            </p>
-          )}
-        </fieldset>
+      {bandName && (
+        <p className="mt-4 text-sm">
+          Playing as <span className="font-bold">{bandName}</span>
+        </p>
       )}
 
       {/* The labels only. Every other fact about these spots — the time, the day,
@@ -272,7 +242,7 @@ export default function BookingSummary({
         </div>
       )}
 
-      <div className="mt-8 flex items-center justify-between gap-3">
+      <div className="mt-10 flex items-center justify-between gap-3">
         <Link href={backHref} className="btn btn-outline btn-primary font-bold">
           <FaArrowLeft aria-hidden className="size-4" />
           Back
@@ -286,7 +256,7 @@ export default function BookingSummary({
         <button
           type="button"
           onClick={submit}
-          disabled={submitting || bandNameTooShort}
+          disabled={submitting}
           className="btn btn-primary font-bold"
         >
           {submitting ? (

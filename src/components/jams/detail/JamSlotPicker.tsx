@@ -48,20 +48,20 @@ export default function JamSlotPicker({
      Seeded from `?slot=` so a musician returning from the login gate finds their
      choice already made — they left this page mid-decision, and the point of
      sending them back here rather than onward is that they get to see it and
-     press Continue themselves. An id that matches no slot simply highlights
+     press Next themselves. An id that matches no slot simply highlights
      nothing, which is the right answer for a hand-edited URL. */
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(
     initialSlotId ?? null,
   );
 
-  /* Where Continue goes, and the one place the login gate is decided for this
+  /* Where Next goes, and the one place the login gate is decided for this
      flow.
 
      An anonymous musician is sent to /login with *this* page as the destination,
      slot and all — not the booking page. Landing back here is the whole point:
      they picked a time, got interrupted by a sign-in they didn't ask for, and
      the honest way to resume is to show them the choice they made and let them
-     press Continue themselves.
+     press Next themselves.
 
      `RequireRole` still guards the booking route, and still redirects to it
      rather than here. That is not the same check said twice: it catches someone
@@ -99,7 +99,7 @@ export default function JamSlotPicker({
             right-aligning each one separately stacks a short time under a long
             date and leaves the icons on two different columns. `w-fit` is what
             lets the wider row set the edge for both. */}
-        <dl className="ml-auto w-fit space-y-1 text-sm">
+        <dl className="w-fit space-y-1 text-sm sm:ml-auto">
           <div className="flex items-center gap-2">
             <FaRegCalendar aria-hidden className="size-4 shrink-0 text-primary" />
             <dt className="sr-only">Date</dt>
@@ -164,7 +164,7 @@ export default function JamSlotPicker({
               onClick={() => continueToBooking(selectedSlotId ?? '')}
               className="btn btn-primary font-bold"
             >
-              Continue
+              Next
               <FaArrowRight aria-hidden className="size-4" />
             </button>
           </div>

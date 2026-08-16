@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 type BookPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ slot?: string; spots?: string }>;
+  searchParams: Promise<{ slot?: string; spots?: string; band?: string }>;
 };
 
 /* The booking flow's instrument step.
@@ -29,7 +29,7 @@ type BookPageProps = {
    itself. */
 export default async function BookPage({ params, searchParams }: BookPageProps) {
   const { id } = await params;
-  const { slot, spots } = await searchParams;
+  const { slot, spots, band } = await searchParams;
 
   /* Nothing to book without one, and this is reachable by hand. Back to the
      session rather than an error: the slot list is the thing they need, and it
@@ -44,6 +44,7 @@ export default async function BookPage({ params, searchParams }: BookPageProps) 
             id={id}
             slotId={slot}
             initialSpotIds={spots?.split(',').filter(Boolean) ?? []}
+            initialBandName={band ?? ''}
           />
         </RequireRole>
       </div>
