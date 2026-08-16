@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import PasswordInput from '@/components/ui/PasswordInput';
 import { HOME_BY_ROLE } from '@/config/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { safeNextPath } from '@/lib/nextPath';
+import { safeNextPath, withNext } from '@/lib/nextPath';
 import { loginSchema, type LoginInput } from '@/schemas/auth';
 import { ApiError } from '@/services/api';
 
@@ -80,7 +80,10 @@ export default function LoginForm() {
 
       <p className="mt-2 text-sm">
         New to Oh Jamming?{' '}
-        <Link href="/register" className="link link-primary font-medium">
+        {/* Carrying `next` across, because someone sent here by the slot picker
+            has no account more often than not — and registering signs them in,
+            so the destination is just as reachable from that side. */}
+        <Link href={withNext('/register', next)} className="link link-primary font-medium">
           Register here
         </Link>
       </p>

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import RegisterForm from '@/components/auth/RegisterForm';
 import RoleTabs from '@/components/auth/RoleTabs';
@@ -44,13 +45,28 @@ export default async function RegisterPage({ params }: RegisterPageProps) {
   return (
     /* relative so the card stacks above the layout's background and scrim. */
     <div className="relative w-full max-w-md">
-      <RoleTabs activeRole={role} />
+      {/* Both children read ?next= with useSearchParams — the tabs to keep it
+          across a change of role, the form to return there after signing up —
+          and this page is prerendered for both roles. Without a boundary that
+          is a build error; with one, only these wait. Same shape as /login.
 
-      {/* Square top corners so the card reads as the panel the tabs are
-          attached to, whichever of the two is active. */}
-      <div className="rounded-box rounded-t-none bg-base-100 p-8 text-base-content shadow-2xl">
-        <RegisterForm role={role} />
-      </div>
+          Around both rather than one each: they swap in together, and two
+          fallbacks would make the tabs appear a frame before the card. */}
+      <Suspense
+        fallback={
+          <div className="grid min-h-[38rem] place-items-center rounded-box bg-base-100">
+            <span className="loading loading-spinner loading-lg text-primary" />
+          </div>
+        }
+      >
+        <RoleTabs activeRole={role} />
+
+        {/* Square top corners so the card reads as the panel the tabs are
+            attached to, whichever of the two is active. */}
+        <div className="rounded-box rounded-t-none bg-base-100 p-8 text-base-content shadow-2xl">
+          <RegisterForm role={role} />
+        </div>
+      </Suspense>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaRegCalendar } from 'react-icons/fa6';
+import { FaArrowRight, FaRegCalendar } from 'react-icons/fa6';
 
 import JamSlotList from '@/components/jams/listing/JamSlotList';
 import { formatListingDate, jamSessionToListing } from '@/lib/jamListing';
@@ -35,7 +36,17 @@ const asMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
 
 export default function JamSlotPicker({ id }: { id: string }) {
+  const router = useRouter();
   const [state, setState] = useState<PickerState>({ status: 'loading' });
+
+  /* Picking and continuing are two acts, and the button below is what separates
+     them. A row that navigated on click would leave a musician on the next page
+     with no way to see which slot they chose or to change their mind short of
+     going back — worse for anyone sent through the login gate in between, since
+     they meet that page after a detour.
+
+     It stays local state: the moment they continue, the slot is in the URL, which
+     is what lets the gate carry it and the back button undo it. */
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,16 +120,39 @@ export default function JamSlotPicker({ id }: { id: string }) {
                 Select a time slot to book a spot
               </p>
 
-              {/* Selection is local for now. It becomes a push to
-                  /jams/[id]/book?slot=<id>, which is the same URL the login gate
-                  has to carry: picking a slot is where an anonymous musician gets
-                  asked to sign in, and the slot id is the one fact that has to
-                  survive the round trip. */}
               <JamSlotList
                 slots={state.listing.slots}
                 selectedSlotId={selectedSlotId}
                 onSelect={setSelectedSlotId}
               />
+
+              {/* Disabled until a slot is picked, because there is nothing to
+                  continue to — the booking route sends anyone arriving without a
+                  slot straight back here.
+
+                  Disabled by attribute rather than by a class: the attribute is
+                  what takes it out of the tab order and stops the click, and
+                  daisyUI dims it either way.
+
+                  Continuing does not check whether anyone is signed in. That is
+                  asked once, by the `RequireRole` on the booking route — a second
+                  check in front of it would be a second answer to the same
+                  question, and only one of them redirects. */}
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  disabled={selectedSlotId === null}
+                  onClick={() =>
+                    router.push(
+                      `/jams/${id}/book?slot=${encodeURIComponent(selectedSlotId ?? '')}`,
+                    )
+                  }
+                  className="btn btn-primary font-bold"
+                >
+                  Next
+                  <FaArrowRight aria-hidden className="size-4" />
+                </button>
+              </div>
             </>
           )}
         </>

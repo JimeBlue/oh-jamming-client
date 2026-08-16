@@ -20,3 +20,13 @@ export const safeNextPath = (
   next: string | null | undefined,
   fallback: string,
 ): string => (next && isSafeNextPath(next) ? next : fallback);
+
+/* Carries the destination one hop further: /login?next=X -> the "Register here"
+   link, the role tabs, and back again.
+
+   Every one of those hops used to drop it, which showed up as a musician who
+   picked a slot, was asked to register, and landed on their home page with the
+   slot gone. Checked here as well as on the way out, so a tampered value is
+   dropped at the first link rather than travelling through the flow. */
+export const withNext = (href: string, next: string | null | undefined): string =>
+  next && isSafeNextPath(next) ? `${href}?next=${encodeURIComponent(next)}` : href;
