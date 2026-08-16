@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import RequireRole from '@/components/auth/RequireRole';
+import InstrumentPicker from '@/components/jams/booking/InstrumentPicker';
 
 export const metadata: Metadata = {
   title: 'Book a spot · Oh Jamming',
@@ -40,21 +40,7 @@ export default async function BookPage({ params, searchParams }: BookPageProps) 
     <main className="min-h-screen flex-1 bg-primary pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <RequireRole role="musician">
-          <section className="rounded-box bg-base-100 p-6 text-base-content shadow-lg sm:p-8">
-            <h1 className="font-heading text-2xl">Pick your instruments</h1>
-
-            <p className="mt-3 text-sm opacity-80">
-              Slot <span className="font-mono">{slot}</span> — the instrument grid
-              goes here.
-            </p>
-
-            <Link
-              href={`/jams/${id}`}
-              className="btn btn-outline btn-primary mt-6 font-bold"
-            >
-              Back
-            </Link>
-          </section>
+          <InstrumentPicker id={id} slotId={slot} />
         </RequireRole>
       </div>
     </main>

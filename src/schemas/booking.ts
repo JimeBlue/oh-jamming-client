@@ -13,6 +13,12 @@ import { z } from 'zod';
 
 export const bookingStatuses = ['confirmed', 'cancelled'] as const;
 
+/* BK08 — the API's cap on one submission, mirrored here so the instrument picker
+   can stop at it rather than send an eleventh spot and take a 400 for the whole
+   booking. It is the API's number: raising it here alone only moves where the
+   rejection happens. */
+export const MAX_SPOTS_PER_BOOKING = 10;
+
 /* The API populates both references and renames them on the way out —
    `.populate()` writes the document back to the path it read, so mongoose hands
    over a session sitting under the key `jamSessionId`, and the output schema's
