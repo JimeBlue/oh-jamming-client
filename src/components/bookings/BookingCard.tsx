@@ -1,7 +1,7 @@
 import type { IconType } from 'react-icons/lib';
 import { FaCircleCheck, FaCircleXmark, FaRegClock } from 'react-icons/fa6';
 
-import { formatCardDate, type BookingCardStatus, type BookingCardView } from '@/lib/myBookings';
+import type { BookingCardStatus, BookingCardView } from '@/lib/myBookings';
 
 /* One booking, drawn as a ticket: a coloured stub carrying the details and a
    white one carrying the date, the way a paper ticket puts the date where a
@@ -81,40 +81,50 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
           version of it. Reading the variable directly keeps this in step with
           the theme instead of hardcoding the 1rem it currently holds. */}
       <div
-        className={`relative min-w-0 flex-1 rounded-l-[var(--radius-box)] p-6 text-white sm:p-7 ${SURFACE[booking.status]}`}
+        /* Less padding at the top than on the other three sides: the badge row
+           below is short and right-aligned, so a full 28px above it left the
+           card looking hollow before it had said anything. */
+        className={`min-w-0 flex-1 rounded-l-[var(--radius-box)] p-6 pt-4 text-white shadow-md sm:p-7 sm:pt-5 ${SURFACE[booking.status]}`}
       >
-        {/* Out of the flow rather than in a row with the fields: the fields wrap
-            to one column on a phone, and as a flex sibling the badge would wrap
-            with them and land in the middle of the card. */}
-        <span
-          /* Not `rounded-full`. Nothing else in this app is a pill, and at this
-             size a fully round badge reads as a different component's leftover.
-             `rounded-field` is the same 0.5rem the inputs and buttons use. */
-          className={`absolute top-5 right-5 inline-flex items-center gap-1.5 rounded-field px-2.5 py-1 text-xs font-bold ${status.className}`}
-        >
-          {status.label}
-          <StatusIcon aria-hidden className="size-3.5" />
-        </span>
+        {/* Its own row, above everything, at every width. In the flow rather
+            than pinned to the corner: absolute meant every field beneath it had
+            to carry padding to dodge it, and that reserved gap moved between the
+            columns at the breakpoint. A row of its own costs one line and the
+            fields underneath get the whole card back. */}
+        {/* No margin under it. The badge is right-aligned and the label beneath
+            it starts at the left, so the two never sit on top of each other and
+            a gap between them only pushed the fields down the card. */}
+        <div className="flex justify-end">
+          <span
+            /* Not `rounded-full`. Nothing else in this app is a pill, and at this
+               size a fully round badge reads as a different component's leftover.
+               `rounded-field` is the same 0.5rem the inputs and buttons use. */
+            className={`inline-flex items-center gap-1.5 rounded-field px-2.5 py-1 text-xs font-bold ${status.className}`}
+          >
+            {status.label}
+            <StatusIcon aria-hidden className="size-3.5" />
+          </span>
+        </div>
 
         {/* All four fields in one grid rather than two stacked rows, so the left
-            column is sized once from its widest cell and Date lines up under the
+            column is sized once from its widest cell and Venue lines up under the
             slot time. Two separate grids each measured their own content and put
             the two right-hand columns in different places.
 
             `auto` rather than a fixed width for the same reason: the slot time
             is the widest thing in that column and it must not wrap, so it is
             what the column should be measured from. */}
-        <div className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-x-10">
-          {/* Clearance for the badge, which is out of the flow above it. On a
-              phone the badge sits over this field; from `sm` the columns are
-              side by side and it sits over the spots instead. */}
-          <Field label="Time Slot" className="pr-24 sm:pr-0">
-            <p className="text-xl font-bold whitespace-nowrap tabular-nums sm:text-2xl">
+        <div className="grid gap-y-6 sm:grid-cols-[auto_minmax(0,1fr)] sm:gap-x-10 sm:gap-y-8">
+          <Field label="Time Slot">
+            {/* Medium, not bold. It is the largest thing on the card already, so
+                weight on top of size made it shout over the spots beside it —
+                which are the other half of what the card is for. */}
+            <p className="text-xl font-medium whitespace-nowrap tabular-nums sm:text-2xl">
               {booking.startTime} - {booking.endTime}
             </p>
           </Field>
 
-          <Field label="Spots" className="sm:pr-28">
+          <Field label="Spots">
             <ul className="flex flex-wrap gap-2">
               {booking.spots.map((spot, index) => (
                 /* The label is the venue's own wording for the spot ("First
@@ -132,20 +142,19 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
             </ul>
           </Field>
 
-          <Field label="Date">
-            <p className="font-medium whitespace-nowrap">
-              {formatCardDate(booking.dateParts)}
-            </p>
-          </Field>
-
-          {/* The design has the venue's street address here, and this does not:
-              `GET /bookings` populates four fields off the session — title, date,
-              venueName, status — and the address is not one of them. Showing the
-              night and the room it is in is the honest version of that until the
-              API's projection says otherwise. */}
+          {/* No date here — the stub beside it is the date, at a size you can
+              read across a room, and printing it twice on one ticket only made
+              the second one look like a different fact. */}
           <Field label="Venue">
             <p className="font-medium">{booking.venueName}</p>
-            <p className="text-sm text-white/70">{booking.title}</p>
+          </Field>
+
+          {/* The design has the venue's street address in this slot, and there is
+              none to show: `GET /bookings` populates four fields off the session
+              — title, date, venueName, status — and the address is not one of
+              them. The night's own name is what a musician recognises anyway. */}
+          <Field label="Jam session">
+            <p className="font-medium">{booking.title}</p>
           </Field>
         </div>
       </div>
@@ -157,7 +166,14 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
           `relative` so the two notches can hang off its left edge, which is the
           seam. Anchoring them here rather than on the article means neither of
           them has to know how wide this is. */}
-      <div className="relative flex w-24 shrink-0 flex-col items-center justify-center rounded-r-[var(--radius-box)] bg-base-100 px-2 py-6 text-center sm:w-32">
+      {/* The shadow is offset sideways with no vertical component, and that is
+          deliberate rather than fussy. A shadow spreading in all directions put a
+          dark lip along the bottom of the stub that did not continue under the
+          coloured half beside it — so the two halves of one ticket looked like
+          they were lying at different heights, and the seam's bottom notch had a
+          shadow inside it. Throwing it to the right keeps the lift where the
+          stub actually overhangs nothing. */}
+      <div className="relative flex w-24 shrink-0 flex-col items-center justify-center rounded-r-[var(--radius-box)] bg-base-100 px-2 py-6 text-center shadow-[6px_0_14px_-4px_rgb(0_0_0_/_0.14)] sm:w-32">
         {/* The bite taken out of each end of the seam. Painted the page's own
             colour and pulled half outside the ticket, so what reads as a hole is
             really a disc sitting on top — which is the only way to punch through
@@ -188,9 +204,13 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
           aria-hidden
           className="absolute inset-y-3 -left-1 w-1"
           style={{
+            /* 4px dots on a 7px pitch — the gap is smaller than the dot, which is
+               what makes this read as a tear line rather than as a dotted rule.
+               Widening the gap turns it into punctuation; shrinking the dot makes
+               it disappear into the cyan. */
             backgroundImage:
-              'radial-gradient(circle, rgb(255 255 255 / 0.75) 45%, transparent 46%)',
-            backgroundSize: '4px 9px',
+              'radial-gradient(circle, rgb(255 255 255 / 0.8) 45%, transparent 46%)',
+            backgroundSize: '4px 7px',
             backgroundRepeat: 'repeat-y',
           }}
         />

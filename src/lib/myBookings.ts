@@ -39,11 +39,10 @@ export type BookingCardView = {
   isPast: boolean;
 };
 
-/* Uppercase for the date stub, title case for the line inside the card. Built
-   by index off the "YYYY-MM-DD" string rather than through Intl: the value is a
-   calendar day with no time and no place, and every formatter that takes a Date
-   will happily shift it across a midnight for somebody in the wrong timezone.
-   Twelve strings can't. */
+/* The month on the date stub. Built by index off the "YYYY-MM-DD" string rather
+   than through Intl: the value is a calendar day with no time and no place, and
+   every formatter that takes a Date will happily shift it across a midnight for
+   somebody in the wrong timezone. Twelve strings can't. */
 const MONTHS = [
   'Jan',
   'Feb',
@@ -68,11 +67,6 @@ const splitDate = (date: string): BookingCardView['dateParts'] => {
     year,
   };
 };
-
-/* "Aug 01, 2020" — the design's wording, from the same three parts as the stub
-   beside it so the two can't disagree about what day this is. */
-export const formatCardDate = ({ month, day, year }: BookingCardView['dateParts']): string =>
-  `${month.charAt(0)}${month.slice(1).toLowerCase()} ${day}, ${year}`;
 
 const toCard = (rows: Booking[], today: string): BookingCardView | null => {
   const [first] = rows;
