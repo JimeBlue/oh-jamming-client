@@ -13,6 +13,12 @@ import { z } from 'zod';
 
 export const bookingStatuses = ['confirmed', 'cancelled'] as const;
 
+/* BK08 — the API's cap on one submission, mirrored here so the instrument picker
+   can stop at it rather than send an eleventh spot and take a 400 for the whole
+   booking. It is the API's number: raising it here alone only moves where the
+   rejection happens. */
+export const MAX_SPOTS_PER_BOOKING = 10;
+
 /* The API populates both references and renames them on the way out —
    `.populate()` writes the document back to the path it read, so mongoose hands
    over a session sitting under the key `jamSessionId`, and the output schema's
@@ -82,3 +88,55 @@ export const bookingSchema = z.object({
 });
 
 export type Booking = z.infer<typeof bookingSchema>;
+
+/* What `POST /bookings` takes, mirroring the API's `bookingInputSchema`.
+
+   `strictObject`, like every payload here: the API's is strict, so one unknown
+   key is a 400 for the whole submission rather than a field it ignores. The
+   server-owned ones are the trap — `musicianId` comes from the access token,
+   `groupId` and `qrCode` are generated per submission, `status` only moves
+   through the cancel endpoint — so none of them may be sent, however tempting it
+   is to echo back what the summary already knows.
+
+   One slot, several spots: that is the shape of the booking flow, and it is why
+   `slotId` is a single value while `spotIds` is a list. Two slots is two
+   submissions, two groups, two QR codes. */
+export const bookingPayloadSchema = z.strictObject({
+  jamSessionId: z.string(),
+  slotId: z.string(),
+  spotIds: z.array(z.string()).min(1).max(MAX_SPOTS_PER_BOOKING),
+  bandName: z.string().trim().min(2).max(120).optional(),
+});
+
+export type BookingPayload = z.infer<typeof bookingPayloadSchema>;
+
+/* What comes back from it, mirroring `bookingOutputSchema` — the same booking as
+   above with neither reference populated, because nothing has been looked up on
+   a document that was written a millisecond ago.
+
+   One object per spot, sharing a `groupId`. That is the confirmation's unit: the
+   musician made one booking, and the API wrote four rows for it. */
+export const createdBookingSchema = z.object({
+  id: z.string(),
+  groupId: z.string(),
+
+  jamSessionId: z.string(),
+  slotId: z.string(),
+  spotId: z.string(),
+  musicianId: z.string(),
+
+  instrument: z.string(),
+  label: z.string(),
+  slotStartTime: z.string(),
+  slotEndTime: z.string(),
+
+  bandName: z.string().optional(),
+
+  status: z.enum(bookingStatuses),
+  qrCode: z.string(),
+
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export type CreatedBooking = z.infer<typeof createdBookingSchema>;

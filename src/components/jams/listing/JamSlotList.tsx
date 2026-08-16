@@ -96,7 +96,7 @@ export default function JamSlotList({
    capacity of the slot; anything else is what is left of it. */
 const availability = ({ spotsFree, spotsTotal }: JamListingSlot): string => {
   if (spotsTotal === 0) return 'No spots';
-  if (spotsFree === 0) return 'Full';
+  if (spotsFree === 0) return 'Booked out';
   if (spotsFree === spotsTotal) return `${spotsTotal} spots`;
 
   return `${spotsFree} of ${spotsTotal} left`;

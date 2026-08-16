@@ -2,12 +2,13 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 import PasswordInput from '@/components/ui/PasswordInput';
 import { HOME_BY_ROLE } from '@/config/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { safeNextPath, withNext } from '@/lib/nextPath';
 import {
   registerSchema,
   toRegisterPayload,
@@ -31,6 +32,11 @@ const roleNoun: Record<UserRole, string> = {
 export default function RegisterForm({ role }: { role: UserRole }) {
   const { register: createAccount } = useAuth();
   const router = useRouter();
+
+  /* Carried here from /login, which was itself sent by the role guard. Most
+     people who reach this form did so from a page they were trying to use — the
+     slot picker especially, where a musician has already chosen a time. */
+  const next = useSearchParams().get('next');
 
   const {
     register,
@@ -59,8 +65,16 @@ export default function RegisterForm({ role }: { role: UserRole }) {
       const user = await createAccount(toRegisterPayload(values));
 
       /* Registering signs you in — the API issues the same session cookies as
-         login — so this goes straight to the app, not to the login page. */
-      router.replace(HOME_BY_ROLE[user.role]);
+         login — so this goes straight to the app, not to the login page.
+
+         `next` came out of a URL, so it is re-checked here rather than trusted
+         from the link that carried it; unchecked, an absolute value would make
+         this an open redirect exactly as it would on the login page.
+
+         A venue whose `next` points at a musician-only page lands on the role
+         guard's explanation instead, which is the right answer and the same one
+         login gives — they can't be sent somewhere their account can't go. */
+      router.replace(safeNextPath(next, HOME_BY_ROLE[user.role]));
     } catch (error) {
       /* 409 is the one failure that belongs to a specific field: the unique
          index on email fired, so the address is already taken. Everything else
@@ -87,7 +101,9 @@ export default function RegisterForm({ role }: { role: UserRole }) {
 
       <p className="mt-2 text-sm">
         You already have an Oh Jamming account?{' '}
-        <Link href="/login" className="link link-primary font-medium">
+        {/* Back the way they came, destination intact — the round trip has to
+            work in both directions or it only half works. */}
+        <Link href={withNext('/login', next)} className="link link-primary font-medium">
           Log in here
         </Link>
       </p>

@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { bookingSchema, type Booking } from '@/schemas/booking';
+import {
+  bookingSchema,
+  createdBookingSchema,
+  type Booking,
+  type BookingPayload,
+  type CreatedBooking,
+} from '@/schemas/booking';
 import { api } from '@/services/api';
 
 /* One night's bookings, for the venue running it.
@@ -24,3 +30,13 @@ export const getJamSessionBookings = (jamSessionId: string): Promise<Booking[]> 
     `/bookings?jamSessionId=${encodeURIComponent(jamSessionId)}`,
     z.array(bookingSchema),
   );
+
+/* Claims the chosen spots. Musician-only, and the whole submission is one
+   transaction on the API's side: if any single spot was taken while the musician
+   was reading the summary, none of them are claimed (BK07) and the response is a
+   409. That is the failure worth branching on — it is not "try again", it is "go
+   back and pick a different instrument", and the caller has to say so.
+
+   Returns one booking per spot, all sharing a `groupId`. */
+export const createBooking = (payload: BookingPayload): Promise<CreatedBooking[]> =>
+  api.post('/bookings', payload, z.array(createdBookingSchema));

@@ -1,5 +1,9 @@
-import Link from 'next/link';
+'use client';
 
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+
+import { withNext } from '@/lib/nextPath';
 import type { UserRole } from '@/schemas/user';
 
 const tabs: { role: UserRole; label: string; href: string }[] = [
@@ -15,7 +19,12 @@ const tabs: { role: UserRole; label: string; href: string }[] = [
    changes the URL, so the choice survives a refresh, a back button, and a shared
    link. That's also what keeps role out of the form: it comes from the address
    bar, where a stray click can't change it. */
+/* Client only so the tabs can keep `?next=` on both hrefs — switching tab is a
+   navigation, and a destination that survives login has to survive changing your
+   mind about which account to create. Same hook LoginForm reads it with. */
 export default function RoleTabs({ activeRole }: { activeRole: UserRole }) {
+  const next = useSearchParams().get('next');
+
   return (
     <div role="tablist" className="tabs tabs-lift">
       {tabs.map(({ role, label, href }) => {
@@ -24,7 +33,7 @@ export default function RoleTabs({ activeRole }: { activeRole: UserRole }) {
         return (
           <Link
             key={role}
-            href={href}
+            href={withNext(href, next)}
             role="tab"
             aria-selected={isActive}
             /* daisyUI styles an inactive tab as base-content at 50% alpha on a

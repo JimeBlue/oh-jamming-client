@@ -58,7 +58,17 @@ export default function RequireRole({ role, children }: RequireRoleProps) {
   useEffect(() => {
     if (status !== 'anonymous') return;
 
-    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    /* The query string as well as the path, and read off `window` rather than
+       through `useSearchParams` — that hook opts the whole subtree out of static
+       rendering, and this component wraps pages that are prerendered today.
+       Inside an effect there is no server pass to disagree with.
+
+       It matters because of /jams/[id]/book?slot=…: the slot is the one thing a
+       musician chose before being asked to log in, and dropping it sends them
+       back to a booking page with nothing selected. */
+    const { pathname: path, search } = window.location;
+
+    router.replace(`/login?next=${encodeURIComponent(`${path}${search}`)}`);
   }, [status, pathname, router]);
 
   /* Both states render the same thing, for different reasons: `loading` is
