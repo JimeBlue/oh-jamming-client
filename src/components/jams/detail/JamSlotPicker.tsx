@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { FaArrowRight, FaRegCalendar } from 'react-icons/fa6';
 
 import JamSlotList from '@/components/jams/listing/JamSlotList';
+import { useAuth } from '@/context/AuthContext';
 import { formatListingDate, jamSessionToListing } from '@/lib/jamListing';
 import type { JamListingView } from '@/lib/jamListing';
 import { ApiError } from '@/services/api';
@@ -35,19 +36,55 @@ type PickerState =
 const asMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
 
-export default function JamSlotPicker({ id }: { id: string }) {
+export default function JamSlotPicker({
+  id,
+  initialSlotId,
+}: {
+  id: string;
+  initialSlotId?: string;
+}) {
   const router = useRouter();
+  const { status: authStatus } = useAuth();
   const [state, setState] = useState<PickerState>({ status: 'loading' });
 
   /* Picking and continuing are two acts, and the button below is what separates
      them. A row that navigated on click would leave a musician on the next page
      with no way to see which slot they chose or to change their mind short of
-     going back — worse for anyone sent through the login gate in between, since
-     they meet that page after a detour.
+     going back.
 
-     It stays local state: the moment they continue, the slot is in the URL, which
-     is what lets the gate carry it and the back button undo it. */
-  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+     Seeded from `?slot=` so a musician returning from the login gate finds their
+     choice already made — they left this page mid-decision, and the point of
+     sending them back here rather than onward is that they get to see it and
+     press Next themselves. An id that matches no slot simply highlights nothing,
+     which is the right answer for a hand-edited URL. */
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(
+    initialSlotId ?? null,
+  );
+
+  /* Where Next goes, and the one place the login gate is decided for this flow.
+
+     An anonymous musician is sent to /login with *this* page as the destination,
+     slot and all — not the booking page. Landing back here is the whole point:
+     they picked a time, got interrupted by a sign-in they didn't ask for, and
+     the honest way to resume is to show them the choice they made and let them
+     press Next themselves.
+
+     `RequireRole` still guards the booking route, and still redirects to it
+     rather than here. That is not the same check said twice: it catches someone
+     opening /jams/x/book directly, where this page was never involved and there
+     is nothing to come back to. */
+  const continueToBooking = (slotId: string) => {
+    const booking = `/jams/${id}/book?slot=${encodeURIComponent(slotId)}`;
+
+    if (authStatus === 'anonymous') {
+      const back = `/jams/${id}?slot=${encodeURIComponent(slotId)}`;
+
+      router.push(`/login?next=${encodeURIComponent(back)}`);
+      return;
+    }
+
+    router.push(booking);
+  };
 
   useEffect(() => {
     /* Flipped by the cleanup, so navigating away mid-flight doesn't set state on
@@ -128,25 +165,18 @@ export default function JamSlotPicker({ id }: { id: string }) {
 
               {/* Disabled until a slot is picked, because there is nothing to
                   continue to — the booking route sends anyone arriving without a
-                  slot straight back here.
+                  slot straight back here. Also while `/auth/me` is still out:
+                  the branch below depends on the answer, and guessing sends half
+                  of them to the wrong page.
 
                   Disabled by attribute rather than by a class: the attribute is
                   what takes it out of the tab order and stops the click, and
-                  daisyUI dims it either way.
-
-                  Continuing does not check whether anyone is signed in. That is
-                  asked once, by the `RequireRole` on the booking route — a second
-                  check in front of it would be a second answer to the same
-                  question, and only one of them redirects. */}
+                  daisyUI dims it either way. */}
               <div className="mt-6 flex justify-end">
                 <button
                   type="button"
-                  disabled={selectedSlotId === null}
-                  onClick={() =>
-                    router.push(
-                      `/jams/${id}/book?slot=${encodeURIComponent(selectedSlotId ?? '')}`,
-                    )
-                  }
+                  disabled={selectedSlotId === null || authStatus === 'loading'}
+                  onClick={() => continueToBooking(selectedSlotId ?? '')}
                   className="btn btn-primary font-bold"
                 >
                   Next

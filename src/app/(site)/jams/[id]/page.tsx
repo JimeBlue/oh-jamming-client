@@ -19,10 +19,18 @@ export const metadata: Metadata = {
    page, so it carries the brand instead. */
 type JamDetailPageProps = {
   params: Promise<{ id: string }>;
+  /* Set when a musician is coming back from the login gate — it is what they had
+     picked before being asked to sign in, and putting it back is the difference
+     between resuming and starting over. */
+  searchParams: Promise<{ slot?: string }>;
 };
 
-export default async function JamDetailPage({ params }: JamDetailPageProps) {
+export default async function JamDetailPage({
+  params,
+  searchParams,
+}: JamDetailPageProps) {
   const { id } = await params;
+  const { slot } = await searchParams;
 
   return (
     /* pt-28 clears the fixed header, same as the browse. The horizontal padding
@@ -35,9 +43,9 @@ export default async function JamDetailPage({ params }: JamDetailPageProps) {
         <JamIntroCard />
 
         {/* The id goes to the picker rather than being fetched here: the session
-            is public, but the slot click has to know whether the visitor is
-            signed in, and that cookie is unreadable from this server. */}
-        <JamSlotPicker id={id} />
+            is public, but continuing has to know whether the visitor is signed
+            in, and that cookie is unreadable from this server. */}
+        <JamSlotPicker id={id} initialSlotId={slot} />
       </div>
     </main>
   );
