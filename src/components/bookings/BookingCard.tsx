@@ -85,7 +85,37 @@ export default function BookingCard({
   const cyan = isCyan(index);
 
   return (
-    <article className="flex items-stretch">
+    <article
+      /* The growth is on the whole ticket, never on the two halves separately —
+         transforming them independently would pull the seam apart and leave the
+         notches straddling nothing.
+
+         `will-change-transform` is not a performance flourish, it is the fix for
+         the date stub juddering. Without a compositor layer of its own the
+         browser re-lays out and re-hints the text at every intermediate scale,
+         so "AUG" — small, bold, letter-spaced — jumps between subpixel positions
+         all the way up. Promoted, it is rasterised once and the texture is
+         scaled, which is smooth. The cost is a touch of softness at the top of
+         the movement, and a layer per card — affordable here, where the list is
+         a musician's own bookings rather than an unbounded feed.
+
+         `transform-gpu` was the first attempt and does not do it: it only adds a
+         `translateZ(0)` to the transform chain, which the browser folds back
+         into a 2D matrix while the card is at rest, so no layer exists at the
+         moment the movement starts — which is exactly when the judder happens.
+
+         The easing overshoots slightly past the target and settles back, which
+         is what makes the growth read as the card coming forward rather than
+         being stretched.
+
+         `relative` plus a raised z-index on hover so the card that grew sits
+         over its neighbours rather than under the next one's shadow.
+
+         `motion-safe:` because this is decorative movement: a reader who has
+         asked their system for less of it gets the card without the growth and
+         nothing else missing. */
+      className="relative flex cursor-pointer items-stretch transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:z-10 motion-safe:will-change-transform motion-safe:hover:scale-[1.03]"
+    >
       {/* The two halves meet edge to edge — the seam between them is drawn, not
           spaced. Only the outer corners are rounded, so the join reads as one
           ticket torn down the middle rather than as two cards side by side.
