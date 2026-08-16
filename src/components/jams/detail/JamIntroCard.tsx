@@ -95,7 +95,7 @@ export default function JamIntroCard({ listing }: { listing: JamListingView }) {
               500 characters upstream, so there is nothing here to hide. */}
           {summary && <p className="leading-relaxed">{summary}</p>}
 
-          <Section icon={<FaLocationDot aria-hidden className="size-5" />} title="Where">
+          <Section icon={<FaLocationDot aria-hidden className="size-6" />} title="Where">
             <p className="mt-2 text-sm">
               {venueName && <span className="block font-bold">{venueName}</span>}
               {/* The weight above is what separates the two lines now — nothing
@@ -179,7 +179,7 @@ export default function JamIntroCard({ listing }: { listing: JamListingView }) {
         type="button"
         onClick={() => setCardExpanded((open) => !open)}
         aria-expanded={cardExpanded}
-        className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-primary hover:underline"
+        className="mt-6 inline-flex cursor-pointer items-center gap-2 text-sm font-bold text-primary hover:underline"
       >
         <FaChevronDown
           aria-hidden
@@ -191,10 +191,14 @@ export default function JamIntroCard({ listing }: { listing: JamListingView }) {
   );
 }
 
-/* A section of the left column: the heading in a tinted disc, and everything
-   under it indented past the disc so the block reads as one thing rather than as
-   a title with loose text beneath it. Pink, which is the site's accent — the
-   aside opposite is where the indigo lives. */
+/* A section of the left column: the glyph in the margin, and everything under it
+   indented past that glyph so the block reads as one thing rather than as a
+   title with loose text beneath it.
+
+   The box around the glyph is the glyph's own size now that there is no disc to
+   fill: any larger and it centres a 24px pin in a 40px square, which puts it
+   half a line below the heading it belongs to and pushes the whole block right
+   for no reason. */
 const Section = ({
   icon,
   title,
@@ -204,11 +208,10 @@ const Section = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <section className="flex gap-4 border-t border-base-200 pt-6">
-    <span
-      aria-hidden
-      className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-pink-deep/15 text-brand-pink-deep"
-    >
+  <section className="flex gap-3 border-t border-base-200 pt-6">
+    {/* `mt-0.5` rather than a line-height guess: the heading is 18px on a 28px
+        line, so its cap sits two pixels below the top of a 24px glyph. */}
+    <span aria-hidden className="mt-0.5 grid size-6 shrink-0 place-items-center text-primary">
       {icon}
     </span>
     <div className="min-w-0 flex-1">
