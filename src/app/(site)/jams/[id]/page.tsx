@@ -1,17 +1,18 @@
 import type { Metadata } from 'next';
 
-import JamIntroCard from '@/components/jams/detail/JamIntroCard';
-import JamSlotPicker from '@/components/jams/detail/JamSlotPicker';
+import JamDetailView from '@/components/jams/detail/JamDetailView';
 
 export const metadata: Metadata = {
   title: 'Jam session · Oh Jamming',
   description: 'The night in full — what is played, who is playing, and what is still free.',
 };
 
-/* The page every card on the browse has been linking at, and until now 404ing
-   on. Scaffold only: two cards of placeholder copy, no fetch. The session itself
-   arrives next, through `getJamSession` and `jamSessionToListing`, which is what
-   keeps this page and the builder's preview drawing the same listing.
+/* The page every card on the browse links at.
+
+   Almost nothing happens here: the session is fetched in the browser, because
+   the slot click has to know whether the visitor is signed in and that cookie is
+   unreadable from this server. What this file owns is the ground and the column
+   width.
 
    Indigo rather than the browse's `brand-paper`. The cards are base-100 either
    way, and the browse is a grid of twelve of them where a near-white ground
@@ -37,15 +38,10 @@ export default async function JamDetailPage({
        is on the inner container so a future full-bleed band can sit outside it
        and still run edge to edge. */
     <main className="min-h-screen flex-1 bg-primary pt-28">
-      {/* Narrower than the browse's 7xl: this is one column of prose, and a
-          paragraph the full width of a four-card grid is unreadable. */}
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
-        <JamIntroCard />
-
-        {/* The id goes to the picker rather than being fetched here: the session
-            is public, but continuing has to know whether the visitor is signed
-            in, and that cookie is unreadable from this server. */}
-        <JamSlotPicker id={id} initialSlotId={slot} />
+      {/* Narrower than the browse's 7xl: the card inside splits 3/2, and at the
+          browse's width the left column's paragraphs stop being readable. */}
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
+        <JamDetailView id={id} initialSlotId={slot} />
       </div>
     </main>
   );
