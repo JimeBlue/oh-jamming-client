@@ -140,6 +140,12 @@ changes — it exists because those decisions aren't recoverable from the code.
 venue's edit flow. **Nothing there is built yet** — it is a plan, plus a
 wireframe beside it and the three flows that were rejected on the way to it.
 
+`docs/my-bookings.md` covers `/my-bookings`, the musician's side. Read it before
+touching the edit flow there: **it is a simulation** — the API has no endpoint
+that changes a booking, so "Save changes" cancels the group and creates a new
+one, and the client hides the tombstone. The doc says why the safer-looking
+order is broken and what one endpoint would replace all of it.
+
 ## Conventions
 
 Comments in this codebase explain **why**, not what: the trade-off considered,
