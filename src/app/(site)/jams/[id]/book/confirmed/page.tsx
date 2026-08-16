@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import RequireRole from '@/components/auth/RequireRole';
+import BookingConfirmed from '@/components/jams/booking/BookingConfirmed';
 
 export const metadata: Metadata = {
   title: 'Booking confirmed · Oh Jamming',
@@ -38,22 +38,7 @@ export default async function BookingConfirmedPage({
     <main className="min-h-screen flex-1 bg-primary pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <RequireRole role="musician">
-          <section className="rounded-box bg-base-100 p-6 text-base-content shadow-lg sm:p-8">
-            <h1 className="font-heading text-2xl">Thank you for your booking!</h1>
-
-            <p className="mt-3 text-sm opacity-80">
-              Your spots are claimed. The QR code and your booking details go here.
-            </p>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/jams" className="btn btn-primary font-bold">
-                See all jam sessions
-              </Link>
-              <Link href={`/jams/${id}`} className="btn btn-outline btn-primary font-bold">
-                Back to this jam
-              </Link>
-            </div>
-          </section>
+          <BookingConfirmed id={id} groupId={group} />
         </RequireRole>
       </div>
     </main>

@@ -149,14 +149,17 @@ export default function BookingSummary({
          a musician understands it — one submission, one confirmation, one QR. */
       router.replace(`/jams/${id}/book/confirmed?group=${encodeURIComponent(booking.groupId)}`);
     } catch (error) {
-      /* 409 is the one that isn't worth retrying: BK07 makes the whole
-         submission fail if a single spot went while this page was open, so the
-         fix is to choose again, not to press the button harder. */
-      setSubmitError(
-        error instanceof ApiError && error.status === 409
-          ? 'One of those spots was just taken. Go back and pick again.'
-          : asMessage(error),
-      );
+      /* The API's wording, verbatim, and no branch on 409 — it says more than
+         this page can work out and it already says what to do.
+
+         Three different conflicts reach here: a spot claimed while the summary
+         was open ("The First Guitar spot at 20:00 is no longer available. Please
+         choose another" — only the server knows *which* one went), a session
+         cancelled underneath the booking, and a slot that has already started.
+         One replacement sentence would have to serve all three, and the two that
+         aren't about a taken spot are not fixed by picking a different
+         instrument. */
+      setSubmitError(asMessage(error));
       setSubmitting(false);
     }
   };
