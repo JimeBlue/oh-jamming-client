@@ -62,6 +62,10 @@ export default function BookingSummary({
   const [state, setState] = useState<SummaryState>({ status: 'loading' });
   const [submitting, setSubmitting] = useState(false);
 
+  /* Only ever asked for below when the booking holds more than one spot — every
+     spot in a booking is inside the same slot, so two of them is two people. */
+  const [bandName, setBandName] = useState('');
+
   /* Kept apart from the load failure above: this one leaves the page usable and
      the spots still chosen, and the most likely cause — someone else took one of
      them — is fixed by going back a step rather than by retrying. */
@@ -131,18 +135,42 @@ export default function BookingSummary({
     );
   }
 
+  /* A booking of one spot is one person, so there is no band to name. Asked for
+     only past that, and never required: BK09 — "required when claiming more than
+     one spot" — is deferred on the API, and enforcing it here alone would be a
+     rule only half the system believes in. Plenty of pairs have no name. */
+  const asksForBandName = chosen.length > 1;
+
+  const trimmedBandName = bandName.trim();
+
+  /* The API's own floor. One character is the only value that can't be sent and
+     can't be omitted either, so it is caught here rather than coming back as a
+     400 for the whole booking.
+
+     Gated on the field being on screen, because a value nobody can see must not
+     be able to disable the button under them — the submit drops the name in that
+     case anyway, so there is nothing left to be invalid. */
+  const bandNameTooShort = asksForBandName && trimmedBandName.length === 1;
+
   const submit = async () => {
     setSubmitting(true);
     setSubmitError(null);
 
     try {
-      /* Only ids. The labels and times on this page came from the session and go
-         back as nothing — the API copies them off the spot itself at claim time,
-         which is what keeps a booking's wording identical to the venue's. */
+      /* Only ids, plus the name. The labels and times on this page came from the
+         session and go back as nothing — the API copies them off the spot itself
+         at claim time, which is what keeps a booking's wording identical to the
+         venue's.
+
+         `bandName` is spread in rather than sent as '': the payload is a
+         strictObject mirroring the API's, and an empty string fails its `min(2)`,
+         which would be a 400 for the whole submission. Absent is the way to say
+         "no band name". */
       const [booking] = await createBooking({
         jamSessionId: id,
         slotId,
         spotIds: chosen.map((spot) => spot.spotId),
+        ...(asksForBandName && trimmedBandName ? { bandName: trimmedBandName } : {}),
       });
 
       /* Every row of the response shares one groupId, and that is the booking as
@@ -191,6 +219,34 @@ export default function BookingSummary({
         </span>
       </p>
 
+      {/* Above the chips, because the name labels that list — under it, it reads
+          as an afterthought about the last instrument.
+
+          The venue is the reason this field exists: its guest list already has a
+          Band column, and without a name three spots held by one account look
+          like a mistake rather than a group. */}
+      {asksForBandName && (
+        <fieldset className="fieldset mt-4">
+          <legend className="fieldset-legend">Band name (optional)</legend>
+          <input
+            type="text"
+            value={bandName}
+            onChange={(event) => setBandName(event.target.value)}
+            placeholder="The name your venue should expect at the door"
+            /* The API's ceiling, enforced by the browser so a long name is
+               stopped as it is typed rather than refused after the button. */
+            maxLength={120}
+            aria-invalid={bandNameTooShort ? true : undefined}
+            className={`input w-full ${bandNameTooShort ? 'input-error' : ''}`}
+          />
+          {bandNameTooShort && (
+            <p role="alert" className="fieldset-label text-error">
+              Use at least 2 characters, or leave it empty
+            </p>
+          )}
+        </fieldset>
+      )}
+
       {/* The labels only. Every other fact about these spots — the time, the day,
           who they are for — is already on this page, and repeating it per row
           would bury the one thing that differs. */}
@@ -225,7 +281,7 @@ export default function BookingSummary({
         <button
           type="button"
           onClick={submit}
-          disabled={submitting}
+          disabled={submitting || bandNameTooShort}
           className="btn btn-primary font-bold"
         >
           {submitting ? (
