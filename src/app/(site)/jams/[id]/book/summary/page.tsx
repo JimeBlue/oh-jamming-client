@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import RequireRole from '@/components/auth/RequireRole';
+import BookingSummary from '@/components/jams/booking/BookingSummary';
 
 export const metadata: Metadata = {
   title: 'Booking summary · Oh Jamming',
@@ -38,21 +38,7 @@ export default async function BookingSummaryPage({
     <main className="min-h-screen flex-1 bg-primary pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <RequireRole role="musician">
-          <section className="rounded-box bg-base-100 p-6 text-base-content shadow-lg sm:p-8">
-            <h1 className="font-heading text-2xl">Booking summary</h1>
-
-            <p className="mt-3 text-sm opacity-80">
-              {spotIds.length} spot{spotIds.length === 1 ? '' : 's'} chosen — your
-              contact details and the confirm button go here.
-            </p>
-
-            <Link
-              href={`/jams/${id}/book?slot=${encodeURIComponent(slot)}`}
-              className="btn btn-outline btn-primary mt-6 font-bold"
-            >
-              Back
-            </Link>
-          </section>
+          <BookingSummary id={id} slotId={slot} spotIds={spotIds} />
         </RequireRole>
       </div>
     </main>
