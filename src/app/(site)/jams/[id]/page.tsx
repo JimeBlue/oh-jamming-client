@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import JamIntroCard from '@/components/jams/detail/JamIntroCard';
+import JamSlotPicker from '@/components/jams/detail/JamSlotPicker';
 
 export const metadata: Metadata = {
   title: 'Jam session · Oh Jamming',
@@ -16,7 +17,13 @@ export const metadata: Metadata = {
    way, and the browse is a grid of twelve of them where a near-white ground
    reads as space between cards; here there is one column and the ground is the
    page, so it carries the brand instead. */
-export default function JamDetailPage() {
+type JamDetailPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+export default async function JamDetailPage({ params }: JamDetailPageProps) {
+  const { id } = await params;
+
   return (
     /* pt-28 clears the fixed header, same as the browse. The horizontal padding
        is on the inner container so a future full-bleed band can sit outside it
@@ -27,15 +34,10 @@ export default function JamDetailPage() {
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <JamIntroCard />
 
-        <section className="rounded-box bg-base-100 p-6 text-base-content shadow-lg sm:p-8">
-          <p className="leading-relaxed">
-            Contrary to popular belief, lorem ipsum is not simply random text. It has roots
-            in a piece of classical Latin literature from 45 BC, making it over two thousand
-            years old. Richard McClintock, a Latin professor at Hampden-Sydney College in
-            Virginia, looked up one of the more obscure Latin words and went through the
-            cites of the word in classical literature to discover the undoubtable source.
-          </p>
-        </section>
+        {/* The id goes to the picker rather than being fetched here: the session
+            is public, but the slot click has to know whether the visitor is
+            signed in, and that cookie is unreadable from this server. */}
+        <JamSlotPicker id={id} />
       </div>
     </main>
   );
