@@ -31,6 +31,20 @@ export const getJamSessionBookings = (jamSessionId: string): Promise<Booking[]> 
     z.array(bookingSchema),
   );
 
+/* Every booking the signed-in musician has, for `/my-bookings`.
+
+   The same route as above with no filter. There is no `musicianId` to pass and
+   no way to pass one: the controller reads the id off the access token and
+   builds the filter from it, which is what makes "someone else's bookings" not
+   a request that can be written rather than one that is refused.
+
+   Both statuses come back, and every row is one spot — the caller regroups by
+   `groupId`. `jamSession` is populated, but only with `title`, `date`,
+   `venueName` and `status`, so a card can be drawn without a second request and
+   anything outside those four fields is not available here at any price. */
+export const getMyBookings = (): Promise<Booking[]> =>
+  api.get('/bookings', z.array(bookingSchema));
+
 /* Claims the chosen spots. Musician-only, and the whole submission is one
    transaction on the API's side: if any single spot was taken while the musician
    was reading the summary, none of them are claimed (BK07) and the response is a

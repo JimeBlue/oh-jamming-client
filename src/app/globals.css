@@ -107,6 +107,19 @@
      lifted, and against a tinted grey they read as a lighter patch of the same
      colour instead of as paper on a desk. */
   --color-brand-paper: #f5f5f7;
+
+  /* My bookings — a palette of its own, and deliberately not the site's.
+     Everywhere else the musician goes is indigo and pink; this is the one page
+     that is *theirs* rather than the venue's, and the ticket cards it is built
+     from want to read as tickets rather than as more of the browse. Named for
+     the colours they are, not for the roles they play, because the roles are
+     one page deep and a name like `--color-card-past` would be a lie the first
+     time a second thing uses it. */
+  --color-dark-teal: #003f3b;
+  --color-royal-blue: #306ffc;
+  --color-cyan-blue: #01a8cb;
+  --color-pale-blue: #f1f7fc;
+  --color-emerald-green: #01d265;
 }
 
 
