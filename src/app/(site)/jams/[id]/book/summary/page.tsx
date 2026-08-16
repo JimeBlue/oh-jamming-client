@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 type SummaryPageProps = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ slot?: string; spots?: string }>;
+  searchParams: Promise<{ slot?: string; spots?: string; band?: string }>;
 };
 
 /* Step three, scaffold only — it exists so Next on the instrument step leads
@@ -25,7 +25,7 @@ export default async function BookingSummaryPage({
   searchParams,
 }: SummaryPageProps) {
   const { id } = await params;
-  const { slot, spots } = await searchParams;
+  const { slot, spots, band } = await searchParams;
 
   /* Either half missing means this was reached by hand rather than by the flow.
      Back to the step that produces it, which is where the answer is. */
@@ -34,11 +34,23 @@ export default async function BookingSummaryPage({
 
   const spotIds = spots.split(',').filter(Boolean);
 
+  /* The instrument step can't produce a one-character name — it disables Next —
+     but a hand-edited URL can, and the API's `min(2)` would refuse the whole
+     booking. Dropped rather than reported: the field is optional, so "no band
+     name" is a valid booking and the honest fallback. */
+  const trimmedBand = band?.trim() ?? '';
+  const bandName = trimmedBand.length >= 2 ? trimmedBand : '';
+
   return (
     <main className="min-h-screen flex-1 bg-primary pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <RequireRole role="musician">
-          <BookingSummary id={id} slotId={slot} spotIds={spotIds} />
+          <BookingSummary
+            id={id}
+            slotId={slot}
+            spotIds={spotIds}
+            bandName={bandName}
+          />
         </RequireRole>
       </div>
     </main>

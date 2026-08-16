@@ -3,8 +3,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaArrowLeft, FaCheck } from 'react-icons/fa6';
+import { FaArrowLeft, FaRegCalendar } from 'react-icons/fa6';
+import { HiUserGroup } from 'react-icons/hi';
+import { MdFactCheck } from 'react-icons/md';
+import { RiTimerFlashLine } from 'react-icons/ri';
+import { VscPreview } from 'react-icons/vsc';
 
+import rockHand from '@/assets/rock-hand.png';
+import MaskIcon from '@/components/ui/MaskIcon';
 import { useAuth } from '@/context/AuthContext';
 import { formatListingDate } from '@/lib/jamListing';
 import { utcMidnightToDateString } from '@/lib/time';
@@ -16,11 +22,12 @@ import { getJamSession } from '@/services/jamSessions';
 /* Step three: what you are about to book, and the button that books it.
 
    Everything here is a re-reading of choices already made — nothing new is
-   collected. The contact details come from the account and are shown disabled
-   rather than left out, because "who is this booking for?" is a question worth
-   answering on the page that commits, and because a musician who spots the wrong
-   address should find out here rather than after the QR code. Editing them is a
-   profile job, which is a different page and a different request. */
+   collected, and nothing is a form control. The contact details come from the
+   account and are shown rather than left out, because "who is this booking for?"
+   is a question worth answering on the page that commits, and because a musician
+   who spots the wrong address should find out here rather than after the QR
+   code. Editing them is a profile job, which is a different page and a different
+   request. */
 
 type SummaryState =
   | { status: 'loading' }
@@ -36,35 +43,46 @@ const Card = ({ children }: { children: React.ReactNode }) => (
   </section>
 );
 
-/* Disabled rather than readOnly. Both stop the typing; disabled also drops the
-   field from any form submission and takes it out of the tab order, which is
-   right for a value this page never sends — the API reads the musician off the
-   session cookie. */
-const ContactField = ({ label, value }: { label: string; value: string }) => (
-  <fieldset className="fieldset">
-    <legend className="fieldset-legend">{label}</legend>
-    <input type="text" value={value} disabled className="input w-full" />
-  </fieldset>
+/* A labelled fact, not a field. Nothing on this page is editable, and disabled
+   inputs said "you could have typed here" about values that come off the account
+   and the step before. The label carries the icon, the same way the section
+   headings on the two steps before it do. */
+const Fact = ({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <div>
+    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
+      {icon}
+      {label}
+    </p>
+    <div className="mt-1.5">{children}</div>
+  </div>
 );
 
 export default function BookingSummary({
   id,
   slotId,
   spotIds,
+  bandName,
 }: {
   id: string;
   slotId: string;
   spotIds: string[];
+  /* Already trimmed by the page, and "" for a booking with no band. Typed on the
+     instrument step, not here — this page collects nothing. */
+  bandName: string;
 }) {
   const router = useRouter();
   const { status: authStatus, user } = useAuth();
 
   const [state, setState] = useState<SummaryState>({ status: 'loading' });
   const [submitting, setSubmitting] = useState(false);
-
-  /* Only ever asked for below when the booking holds more than one spot — every
-     spot in a booking is inside the same slot, so two of them is two people. */
-  const [bandName, setBandName] = useState('');
 
   /* Kept apart from the load failure above: this one leaves the page usable and
      the spots still chosen, and the most likely cause — someone else took one of
@@ -87,12 +105,13 @@ export default function BookingSummary({
     };
   }, [id]);
 
-  /* The spots go back with it. Without them Back is a reset button wearing a
-     Back label — the step reopens empty and the musician re-picks what they had
-     just finished picking. */
-  const backHref = `/jams/${id}/book?slot=${encodeURIComponent(slotId)}&spots=${spotIds
-    .map(encodeURIComponent)
-    .join(',')}`;
+  /* The spots and the band name go back with it. Without them Back is a reset
+     button wearing a Back label — the step reopens empty and the musician
+     re-types what they had just finished choosing. */
+  const backHref =
+    `/jams/${id}/book?slot=${encodeURIComponent(slotId)}&spots=${spotIds
+      .map(encodeURIComponent)
+      .join(',')}` + (bandName ? `&band=${encodeURIComponent(bandName)}` : '');
 
   if (state.status === 'loading' || authStatus === 'loading') {
     return (
@@ -140,23 +159,6 @@ export default function BookingSummary({
     );
   }
 
-  /* A booking of one spot is one person, so there is no band to name. Asked for
-     only past that, and never required: BK09 — "required when claiming more than
-     one spot" — is deferred on the API, and enforcing it here alone would be a
-     rule only half the system believes in. Plenty of pairs have no name. */
-  const asksForBandName = chosen.length > 1;
-
-  const trimmedBandName = bandName.trim();
-
-  /* The API's own floor. One character is the only value that can't be sent and
-     can't be omitted either, so it is caught here rather than coming back as a
-     400 for the whole booking.
-
-     Gated on the field being on screen, because a value nobody can see must not
-     be able to disable the button under them — the submit drops the name in that
-     case anyway, so there is nothing left to be invalid. */
-  const bandNameTooShort = asksForBandName && trimmedBandName.length === 1;
-
   const submit = async () => {
     setSubmitting(true);
     setSubmitError(null);
@@ -175,7 +177,7 @@ export default function BookingSummary({
         jamSessionId: id,
         slotId,
         spotIds: chosen.map((spot) => spot.spotId),
-        ...(asksForBandName && trimmedBandName ? { bandName: trimmedBandName } : {}),
+        ...(bandName ? { bandName } : {}),
       });
 
       /* Every row of the response shares one groupId, and that is the booking as
@@ -199,72 +201,92 @@ export default function BookingSummary({
 
   return (
     <Card>
-      <h1 className="font-heading text-2xl">Booking summary</h1>
+      {/* The same header the two steps before it wear: icon, then the title in
+          Space Grotesk. */}
+      <div className="flex items-start gap-3">
+        <VscPreview
+          aria-hidden
+          className="size-7 shrink-0 text-primary sm:size-9"
+        />
+        <h1 className="font-display text-xl font-bold">Booking summary</h1>
+      </div>
 
-      <h2 className="mt-6 font-heading text-lg">Contact information</h2>
-
+      {/* Who the booking is for, in a panel rather than in fields — see `Fact`.
+          The initials stand in for an avatar the account doesn't have; they are
+          decoration beside the name they are drawn from, so nothing is lost by
+          hiding them from a screen reader. */}
       {authStatus === 'authenticated' && (
-        <div className="mt-1 grid gap-x-4 sm:grid-cols-2">
-          <ContactField label="First name" value={user.firstName} />
-          <ContactField label="Last name" value={user.lastName} />
-          <div className="sm:col-span-2">
-            <ContactField label="Email address" value={user.email} />
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4 rounded-box border border-base-300 bg-base-200 p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden
+              className="grid size-11 shrink-0 place-items-center rounded-full bg-primary font-bold text-primary-content"
+            >
+              {`${user.firstName.charAt(0)}${user.lastName.charAt(0)}`}
+            </span>
+            <div>
+              <p className="font-bold">
+                {user.firstName} {user.lastName}
+              </p>
+              <p className="text-sm text-base-content/60">{user.email}</p>
+            </div>
+          </div>
+
+          {/* The venue is the reason this exists: its guest list already has a
+              Band column, and without a name three spots held by one account
+              look like a mistake rather than a group. Stated either way, because
+              "nothing here" and "we forgot to show it" look identical when the
+              row is simply absent — and it is the last screen before the name
+              is committed. */}
+          <div className="sm:border-l sm:border-base-300 sm:pl-6">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
+              <HiUserGroup aria-hidden className="size-4" />
+              Band name
+            </p>
+            {/* A step down from the name above it: this is the one value on the
+                panel that may say nothing at all, and at full size an absence
+                carries as much weight as the booking. */}
+            <p
+              className={`mt-1.5 text-sm ${
+                bandName ? 'font-bold' : 'text-base-content/60'
+              }`}
+            >
+              {bandName || 'No band name provided'}
+            </p>
           </div>
         </div>
       )}
 
-      <h2 className="mt-8 font-heading text-lg">Your booking</h2>
+      <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <Fact
+          icon={<RiTimerFlashLine aria-hidden className="size-4" />}
+          label="Time slot"
+        >
+          <p className="font-bold tabular-nums">
+            {slot.startTime} – {slot.endTime}
+          </p>
+        </Fact>
 
-      <p className="mt-1 text-sm">
-        <span className="font-bold tabular-nums">
-          {slot.startTime} – {slot.endTime}
-        </span>
-        <span className="block opacity-70">
-          {formatListingDate(utcMidnightToDateString(state.session.date))}
-        </span>
-      </p>
+        {/* The labels only. Every other fact about these spots — the time, the
+            day, who they are for — is already on this page, and repeating it per
+            row would bury the one thing that differs. */}
+        <Fact icon={<MdFactCheck aria-hidden className="size-4" />} label="Spots">
+          <ul className="flex flex-wrap gap-2">
+            {chosen.map((spot) => (
+              <li
+                key={spot.spotId}
+                className="rounded-field border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-bold text-primary"
+              >
+                {spot.label}
+              </li>
+            ))}
+          </ul>
+        </Fact>
 
-      {/* Above the chips, because the name labels that list — under it, it reads
-          as an afterthought about the last instrument.
-
-          The venue is the reason this field exists: its guest list already has a
-          Band column, and without a name three spots held by one account look
-          like a mistake rather than a group. */}
-      {asksForBandName && (
-        <fieldset className="fieldset mt-4">
-          <legend className="fieldset-legend">Band name (optional)</legend>
-          <input
-            type="text"
-            value={bandName}
-            onChange={(event) => setBandName(event.target.value)}
-            placeholder="The name your venue should expect at the door"
-            /* The API's ceiling, enforced by the browser so a long name is
-               stopped as it is typed rather than refused after the button. */
-            maxLength={120}
-            aria-invalid={bandNameTooShort ? true : undefined}
-            className={`input w-full ${bandNameTooShort ? 'input-error' : ''}`}
-          />
-          {bandNameTooShort && (
-            <p role="alert" className="fieldset-label text-error">
-              Use at least 2 characters, or leave it empty
-            </p>
-          )}
-        </fieldset>
-      )}
-
-      {/* The labels only. Every other fact about these spots — the time, the day,
-          who they are for — is already on this page, and repeating it per row
-          would bury the one thing that differs. */}
-      <ul className="mt-4 flex flex-wrap gap-2">
-        {chosen.map((spot) => (
-          <li
-            key={spot.spotId}
-            className="rounded-field border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-bold text-primary"
-          >
-            {spot.label}
-          </li>
-        ))}
-      </ul>
+        <Fact icon={<FaRegCalendar aria-hidden className="size-4" />} label="Date">
+          <p>{formatListingDate(utcMidnightToDateString(state.session.date))}</p>
+        </Fact>
+      </div>
 
       {submitError && (
         <div role="alert" className="mt-6 rounded-box border border-error/40 bg-error/5 p-4">
@@ -272,7 +294,7 @@ export default function BookingSummary({
         </div>
       )}
 
-      <div className="mt-8 flex items-center justify-between gap-3">
+      <div className="mt-10 flex items-center justify-between gap-3 border-t border-base-200 pt-8">
         <Link href={backHref} className="btn btn-outline btn-primary font-bold">
           <FaArrowLeft aria-hidden className="size-4" />
           Back
@@ -286,15 +308,16 @@ export default function BookingSummary({
         <button
           type="button"
           onClick={submit}
-          disabled={submitting || bandNameTooShort}
+          disabled={submitting}
           className="btn btn-primary font-bold"
         >
-          {submitting ? (
-            <span className="loading loading-spinner" />
-          ) : (
-            <FaCheck aria-hidden className="size-4" />
-          )}
+          {submitting && <span className="loading loading-spinner" />}
           {submitting ? 'Booking…' : 'Confirm booking'}
+          {/* After the words, and `bg-current` rather than a named colour: the
+              artwork is black on transparency, so the mask paints it in whatever
+              the button's own text colour is — which keeps it right if this
+              button ever stops being indigo. */}
+          {!submitting && <MaskIcon src={rockHand.src} className="size-5 bg-current" />}
         </button>
       </div>
     </Card>

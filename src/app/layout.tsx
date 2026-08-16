@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Changa_One, Manrope, Space_Grotesk } from 'next/font/google';
+import { Changa_One, Inter, Space_Grotesk } from 'next/font/google';
 import AuthProvider from '@/context/AuthContext';
 import './globals.css';
 
@@ -10,9 +10,12 @@ const changaOne = Changa_One({
   subsets: ['latin'],
 });
 
-// Manrope is variable (200–800), so no weight is needed.
-const manrope = Manrope({
-  variable: '--font-manrope',
+// The body face, and the closest thing on Google Fonts to the SF Pro that Apple
+// sets its pages in: same neo-grotesque skeleton, same large x-height, straight-
+// sided glyphs rather than Manrope's rounded geometric ones. Variable (100–900),
+// so no weight is needed and 500 is a real instance if body copy ever wants it.
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
 });
 
@@ -34,7 +37,11 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       data-theme="ohjamming"
-      className={`${manrope.variable} ${changaOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      /* No `antialiased`: Tailwind's class is `-webkit-font-smoothing:
+         antialiased`, which takes macOS off its default rendering and thins
+         every stem on the site, which is what made dark text on a white card
+         read as faint rather than crisp. */
+      className={`${inter.variable} ${changaOne.variable} ${spaceGrotesk.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-sans bg-base-200 text-base-content">
         {/* Every route reads the session — the site header, the jam builder's

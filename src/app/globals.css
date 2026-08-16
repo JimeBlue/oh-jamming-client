@@ -53,7 +53,7 @@
 /* `inline` is required so these resolve against the next/font variables
    that layout.tsx puts on <html> at runtime. */
 @theme inline {
-  --font-sans: var(--font-manrope);
+  --font-sans: var(--font-inter);
   --font-heading: var(--font-changa-one);
   /* Changa One is a display face with one weight and no lowercase restraint —
      it names a page, but it can't carry a session title that runs to two lines.
