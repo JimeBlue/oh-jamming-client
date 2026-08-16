@@ -87,7 +87,12 @@ export default function BookingSummary({
     };
   }, [id]);
 
-  const backHref = `/jams/${id}/book?slot=${encodeURIComponent(slotId)}`;
+  /* The spots go back with it. Without them Back is a reset button wearing a
+     Back label — the step reopens empty and the musician re-picks what they had
+     just finished picking. */
+  const backHref = `/jams/${id}/book?slot=${encodeURIComponent(slotId)}&spots=${spotIds
+    .map(encodeURIComponent)
+    .join(',')}`;
 
   if (state.status === 'loading' || authStatus === 'loading') {
     return (

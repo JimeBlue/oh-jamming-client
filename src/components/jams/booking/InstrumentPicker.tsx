@@ -35,17 +35,22 @@ const asMessage = (error: unknown): string =>
 export default function InstrumentPicker({
   id,
   slotId,
+  initialSpotIds,
 }: {
   id: string;
   slotId: string;
+  initialSpotIds: string[];
 }) {
   const router = useRouter();
   const [state, setState] = useState<PickerState>({ status: 'loading' });
 
   /* A Set rather than an array: this is membership, and every read below asks
      "is this one in?". Re-created on each change rather than mutated, or React
-     sees the same reference and skips the render. */
-  const [chosen, setChosen] = useState<Set<string>>(new Set());
+     sees the same reference and skips the render.
+
+     Seeded from `?spots=` so coming back from the summary shows what was picked
+     rather than an empty list. */
+  const [chosen, setChosen] = useState<Set<string>>(new Set(initialSpotIds));
 
   useEffect(() => {
     let active = true;
@@ -63,14 +68,30 @@ export default function InstrumentPicker({
     };
   }, [id]);
 
-  const toggle = (spotId: string) =>
-    setChosen((current) => {
-      const next = new Set(current);
+  /* The query both steps of the flow are addressed by, given a selection. One
+     builder for the toggle below and for Next, so the address bar and the page
+     it leads to can't disagree about what was picked. */
+  const stepQuery = (spotIds: Iterable<string>) =>
+    `?slot=${encodeURIComponent(slotId)}&spots=${[...spotIds]
+      .map(encodeURIComponent)
+      .join(',')}`;
 
-      if (!next.delete(spotId)) next.add(spotId);
+  const toggle = (spotId: string) => {
+    const next = new Set(chosen);
 
-      return next;
-    });
+    if (!next.delete(spotId)) next.add(spotId);
+
+    setChosen(next);
+
+    /* `replace`, not `push`: every tap would otherwise be its own history entry,
+       and backing out of a five-instrument booking would take five presses. This
+       leaves one entry for the step and keeps it current, which is what makes the
+       browser's own back button restore the selection instead of an empty list.
+
+       `scroll: false` because the default is to jump to the top, and a musician
+       choosing their fourth instrument is somewhere down the list. */
+    router.replace(`/jams/${id}/book${stepQuery(next)}`, { scroll: false });
+  };
 
   /* Back to the slot list with the slot still lit — the same `?slot=` the login
      gate uses. Changing your mind about the time shouldn't mean finding it
@@ -188,15 +209,7 @@ export default function InstrumentPicker({
           /* Nothing to confirm without a spot, and `spotIds` has to hold at
              least one for the API to accept the booking at all. */
           disabled={chosen.size === 0}
-          onClick={() =>
-            router.push(
-              `/jams/${id}/book/summary?slot=${encodeURIComponent(slotId)}&spots=${[
-                ...chosen,
-              ]
-                .map(encodeURIComponent)
-                .join(',')}`,
-            )
-          }
+          onClick={() => router.push(`/jams/${id}/book/summary${stepQuery(chosen)}`)}
           className="btn btn-primary font-bold"
         >
           Next
