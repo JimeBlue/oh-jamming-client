@@ -34,7 +34,12 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
     <html
       lang="en"
       data-theme="ohjamming"
-      className={`${manrope.variable} ${changaOne.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      /* No `antialiased`: Tailwind's class is `-webkit-font-smoothing:
+         antialiased`, which takes macOS off its default rendering and thins
+         every stem on the site. Manrope 400 is a light face to begin with, and
+         the two together are what made dark text on a white card read as faint
+         rather than crisp. */
+      className={`${manrope.variable} ${changaOne.variable} ${spaceGrotesk.variable} h-full`}
     >
       <body className="min-h-full flex flex-col font-sans bg-base-200 text-base-content">
         {/* Every route reads the session — the site header, the jam builder's

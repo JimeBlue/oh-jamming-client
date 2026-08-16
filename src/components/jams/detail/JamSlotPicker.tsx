@@ -174,10 +174,13 @@ export default function JamSlotPicker({
   );
 }
 
-/* One control per slot, drawn as two: the time on the left, what is left of the
-   slot on the right, and the whole row clickable. Splitting the badge off into
-   its own button would make "10 spots" look like something a musician can press
-   for a different result. */
+/* One control per slot: the time on the left, what is left of the slot on the
+   right, both inside the one box a musician presses.
+
+   Every row is the same colour whatever its count. A slot down to its last spots
+   is the one a musician is most likely to lose, and painting it a warning colour
+   would push them at it — a nudge the venue didn't ask for and the page has no
+   business making. The number says it plainly enough. */
 const SlotRows = ({
   slots,
   selectedSlotId,
@@ -197,13 +200,13 @@ const SlotRows = ({
   }
 
   return (
-    <ul className="mt-3">
+    <ul className="mt-3 space-y-2.5">
       {slots.map((slot) => {
         const isSelected = slot.id === selectedSlotId;
         const isFull = slot.spotsFree === 0 && slot.spotsTotal > 0;
 
         return (
-          <li key={slot.id} className="border-b border-base-200 last:border-0">
+          <li key={slot.id}>
             <button
               type="button"
               onClick={() => onSelect(slot.id)}
@@ -211,23 +214,23 @@ const SlotRows = ({
                  night is busy — but there is nothing behind it. */
               disabled={isFull}
               aria-pressed={isSelected}
-              className="flex w-full cursor-pointer items-center gap-4 py-2 text-left disabled:cursor-not-allowed disabled:opacity-50"
+              className={`flex w-full cursor-pointer items-center justify-between gap-4 rounded-box border px-5 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                isSelected
+                  ? 'border-primary bg-primary text-primary-content'
+                  : 'border-base-300 bg-base-100 hover:border-primary'
+              }`}
             >
-              <span
-                className={`w-1/2 rounded-field border px-4 py-3 font-bold tabular-nums transition-colors ${
-                  isSelected
-                    ? 'border-primary bg-primary text-primary-content'
-                    : 'border-primary bg-base-100'
-                }`}
-              >
+              <span className="font-bold tabular-nums">
                 {slot.startTime} – {slot.endTime}
               </span>
 
+              {/* Grey until the row is chosen, so the indigo in this list means
+                  one thing only: this is the slot you picked. A colour on the
+                  alpha rather than on the element — `opacity` would soften the
+                  glyphs as well as lighten them. */}
               <span
-                className={`ml-auto rounded-field px-3 py-1 text-sm font-bold transition-colors ${
-                  isSelected
-                    ? 'bg-primary text-primary-content'
-                    : 'bg-primary/10 text-primary'
+                className={`text-sm font-bold ${
+                  isSelected ? '' : 'text-base-content/60'
                 }`}
               >
                 {availability(slot)}

@@ -81,7 +81,12 @@ export default function JamDetailView({
           here by mistake shouldn't have to tab past a whole listing to leave. */}
       <Link
         href="/jams"
-        className="inline-flex w-fit items-center gap-2 font-heading text-sm uppercase tracking-wide text-primary-content hover:underline"
+        /* Space Grotesk, like the title it sits above — Changa One has one
+           weight and no lowercase, so set in caps at 14px it read as a third
+           voice on a page that already has two. `tracking-wider` because caps
+           are what letter-spacing exists for: the glyphs are all the same
+           height and run together without it. */
+        className="inline-flex w-fit items-center gap-2 font-display text-sm font-bold uppercase tracking-wider text-primary-content transition-colors hover:text-brand-pink"
       >
         <FaArrowLeft aria-hidden className="size-4" />
         Back to jams
