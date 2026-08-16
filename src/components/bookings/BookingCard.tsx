@@ -71,9 +71,17 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
   const StatusIcon = status.icon;
 
   return (
-    <article className="flex items-stretch gap-1">
+    <article className="flex items-stretch">
+      {/* The two halves meet edge to edge — the seam between them is drawn, not
+          spaced. Only the outer corners are rounded, so the join reads as one
+          ticket torn down the middle rather than as two cards side by side.
+
+          `rounded-l-[var(--radius-box)]` rather than `rounded-l-box`: daisyUI
+          ships `rounded-box` as its own utility, and there is no per-side
+          version of it. Reading the variable directly keeps this in step with
+          the theme instead of hardcoding the 1rem it currently holds. */}
       <div
-        className={`relative min-w-0 flex-1 rounded-box p-6 text-white sm:p-7 ${SURFACE[booking.status]}`}
+        className={`relative min-w-0 flex-1 rounded-l-[var(--radius-box)] p-6 text-white sm:p-7 ${SURFACE[booking.status]}`}
       >
         {/* Out of the flow rather than in a row with the fields: the fields wrap
             to one column on a phone, and as a flex sibling the badge would wrap
@@ -144,8 +152,48 @@ export default function BookingCard({ booking }: { booking: BookingCardView }) {
 
       {/* The date stub. A fixed width rather than a share of the row, so a column
           of cards has its dates in one line down the page — which is the whole
-          reason it is a separate block and not another field. */}
-      <div className="flex w-24 shrink-0 flex-col items-center justify-center rounded-box bg-base-100 px-2 py-6 text-center sm:w-32">
+          reason it is a separate block and not another field.
+
+          `relative` so the two notches can hang off its left edge, which is the
+          seam. Anchoring them here rather than on the article means neither of
+          them has to know how wide this is. */}
+      <div className="relative flex w-24 shrink-0 flex-col items-center justify-center rounded-r-[var(--radius-box)] bg-base-100 px-2 py-6 text-center sm:w-32">
+        {/* The bite taken out of each end of the seam. Painted the page's own
+            colour and pulled half outside the ticket, so what reads as a hole is
+            really a disc sitting on top — which is the only way to punch through
+            two differently coloured boxes at once without an SVG mask.
+
+            The cost of that trick is that the colour is the page's, not the
+            card's: on any background other than `bg-pale-blue` these stop being
+            holes and start being spots. They belong to this page. */}
+        <span
+          aria-hidden
+          className="absolute top-0 left-0 size-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-pale-blue"
+        />
+        <span
+          aria-hidden
+          className="absolute bottom-0 left-0 size-5 -translate-x-1/2 translate-y-1/2 rounded-full bg-pale-blue"
+        />
+
+        {/* The perforation between the two notches. A repeated radial gradient
+            rather than `border-dotted`, for two reasons: a dotted border draws
+            its dots at the border's own width, so round ones mean a thick border
+            pushing the layout around — and at the 2px that didn't, they were
+            invisible on the cyan. This paints the dots at whatever size looks
+            right without occupying any space at all.
+
+            Inset past the notch radius at both ends, so the line stops where the
+            holes start instead of running through them. */}
+        <span
+          aria-hidden
+          className="absolute inset-y-3 -left-1 w-1"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle, rgb(255 255 255 / 0.75) 45%, transparent 46%)',
+            backgroundSize: '4px 9px',
+            backgroundRepeat: 'repeat-y',
+          }}
+        />
         <p className="text-sm font-bold tracking-wide text-dark-teal">
           {booking.dateParts.month}
         </p>
