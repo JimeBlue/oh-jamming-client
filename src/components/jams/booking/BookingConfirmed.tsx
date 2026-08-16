@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 
+import rockHand from '@/assets/rock-hand.png';
+import MaskIcon from '@/components/ui/MaskIcon';
 import type { Booking } from '@/schemas/booking';
 import { ApiError } from '@/services/api';
 import { getJamSessionBookings } from '@/services/bookings';
@@ -82,11 +84,27 @@ export default function BookingConfirmed({
 
   return (
     <Card>
-      <h1 className="font-heading text-3xl">Thank you for your booking!</h1>
+      {/* The same sticker the Confirm button wore on the step before, so the
+          page that lands reads as the answer to the button that was pressed.
+          Decorative beside the heading it sits on, hence no label.
+
+          No gap between them: the artwork carries its own transparent margin, so
+          any spacing set here is added to space that is already in the file.
+
+          Inline rather than a flex row: on a phone the title wraps to two lines,
+          and as a flex item the glyph was centred against both of them — sitting
+          in the margin beside the wrap instead of in front of the first word.
+          `inline-block` because a bare inline span ignores width and height. */}
+      <h1 className="font-heading text-3xl">
+        <MaskIcon
+          src={rockHand.src}
+          className="inline-block size-8 -translate-y-0.5 align-middle bg-primary"
+        />
+        Thank you for your booking!
+      </h1>
 
       <p className="mx-auto mt-3 max-w-md text-sm opacity-80">
-        You can also find this QR code, and edit or cancel your booking, from{' '}
-        <span className="font-bold">My bookings</span>.
+        See this QR code. Cancel or edit your booking.
       </p>
 
       {/* Not a link, because the page doesn't exist yet — and a Link to a 404 is
