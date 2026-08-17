@@ -82,7 +82,14 @@ export default function BackstageRow({
     /* The photo sits *under* the coloured pane's right edge rather than beside
        it, which is what leaves the pane's own rounded corner cut out of it. One
        rounded rectangle overlapping another, not a card divided in two. */
-    <li className="flex items-stretch">
+    /* The same lift the musician's booking cards make on /my-bookings, down to
+       the easing: it overshoots slightly and settles back, which is what makes
+       the growth read as the card coming forward rather than being stretched.
+       `relative` plus a raised z-index on hover so the card that grew sits over
+       its neighbours rather than under the next one's shadow, and `motion-safe:`
+       because this is decorative — a reader who asked their system for less
+       movement gets the card without it and nothing else missing. */
+    <li className="relative flex cursor-pointer items-stretch transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:z-10 motion-safe:will-change-transform motion-safe:hover:scale-[1.03]">
       <div
         className={`relative z-10 flex flex-1 gap-4 rounded-box p-4 text-white sm:gap-6 sm:p-6 ${CARD[status].fill}`}
       >
