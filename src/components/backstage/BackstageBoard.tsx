@@ -136,14 +136,16 @@ export default function BackstageBoard() {
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-3xl sm:text-4xl">My backstage</h1>
-          {/* `text-base-content/80` rather than `opacity-70`. Both dim text, but
-              opacity dims the *element* — every icon inside it goes pale with the
-              words — while the alpha modifier only touches the colour. Which
-              matters on the rows below, where the pins and calendars are meant
-              to stay indigo. Kept the same here so the page has one muted grey
-              and not two that nearly match. */}
-          <p className="mt-2 text-base-content/80">
+          {/* Sized and coloured to match /my-bookings' heading — the two boards
+              are the same page from either side of a booking, and a venue that
+              also books elsewhere shouldn't meet two different title treatments. */}
+          <h1 className="font-display text-4xl font-bold text-dark-teal sm:text-5xl">
+            My backstage
+          </h1>
+          {/* The heading's own colour, held apart from it by weight rather than
+              by going grey: on the pale blue a dimmed grey reads as disabled
+              text, and these two lines are one block. */}
+          <p className="mt-2 font-normal text-dark-teal">
             Manage your jam sessions. Check what&apos;s coming up, and call off a
             night if you have to.
           </p>
@@ -151,11 +153,19 @@ export default function BackstageBoard() {
 
         {/* Hidden while the board is empty, where BackstageEmpty carries the
             only copy of this button, and hidden while loading so it doesn't
-            appear a beat before the thing it sits above. */}
+            appear a beat before the thing it sits above.
+
+            The heading's own dark teal rather than the builder's indigo, so the
+            three things at the top of the page are one colour, and emptying to
+            an outline on hover the way every primary action in the booking flow
+            now does. The border is there at rest in the fill's own
+            colour, so gaining a visible edge doesn't change the button's height.
+            Written out rather than `btn-primary` because daisyUI's own hover is
+            a darker fill. */}
         {sessions.length > 0 && (
           <Link
             href="/jams/new"
-            className="btn btn-primary shrink-0 gap-2 font-bold"
+            className="btn shrink-0 gap-2 border-dark-teal bg-dark-teal font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-dark-teal"
           >
             <FaPlugCirclePlus className="size-5" />
             Insert your Jam
@@ -184,49 +194,23 @@ export default function BackstageBoard() {
         (sessions.length === 0 ? (
           <BackstageEmpty />
         ) : (
-          /* Lifted off the page rather than outlined. The page sits on base-200
-             and the board is base-100, so a border was drawing a line between
-             two colours that already differed — the shadow is what makes it read
-             as a panel resting on the page instead of a region marked out on
-             it. */
-          <div className="mt-8 overflow-hidden rounded-box bg-base-100 shadow-xl">
-            {/* The column headings from the design, and only from lg up — below
-                that the rows stop being columns, so a header naming them would
-                be labelling something that isn't there. `aria-hidden` because
-                the headings are decorative: each row already says its own venue,
-                date and status in words. */}
-            {/* base-300, not base-200: the page itself is base-200, so a header
-                tinted with it was the same colour as the space around the board
-                and read as a gap rather than a heading. */}
-            {/* Three columns, and the third has no heading — the buttons label
-                themselves. It is still declared, as an empty span of the width
-                the actions occupy, because that is what holds "Status" over the
-                badges: the heading row and every jam row now end with the same
-                two fixed widths and the same gap, so their flex-1 columns stop
-                at the same x and everything to the right of it lines up. Drop
-                the spacer and "Status" slides over the buttons. */}
-            <div
-              aria-hidden
-              className="hidden gap-5 bg-base-300 px-6 py-4 font-bold lg:flex"
-            >
-              <span className="flex-1">Jam sessions</span>
-              <span className="w-40">Status</span>
-              <span className="w-48" />
-            </div>
-
-            <ul>
-              {inBoardOrder(sessions).map((session) => (
-                <BackstageRow
-                  key={session.id}
-                  session={session}
-                  onCancel={() => {
-                    setCancelError(null);
-                    setTarget(session);
-                  }}
-                />
-              ))}
-            </ul>
-          </div>
+          /* Free-standing cards rather than one panel of rows. The panel and its
+             column headings went together: each card now carries its status as
+             its own fill, so there is nothing left to line up under a heading
+             called "Status", and a white board behind cards this saturated only
+             added an edge between them and the page. */
+          <ul className="mt-8 space-y-5">
+            {inBoardOrder(sessions).map((session) => (
+              <BackstageRow
+                key={session.id}
+                session={session}
+                onCancel={() => {
+                  setCancelError(null);
+                  setTarget(session);
+                }}
+              />
+            ))}
+          </ul>
         ))}
 
       <CancelJamDialog

@@ -15,8 +15,13 @@ export default function JamBuilderHeader() {
   return (
     /* In the flow rather than fixed, unlike the site header — there's no video
        to overlay here, and it saves every page under this layout having to pad
-       itself out from under it. */
-    <header className="bg-primary text-primary-content">
+       itself out from under it.
+
+       Navy rather than the builder's indigo: this bar and the site header are
+       the same bar as far as anyone crossing between /jams and /my-backstage is
+       concerned, and a second brand colour at the top of the screen reads as
+       having landed somewhere else. */
+    <header className="bg-brand-navy text-white">
       <div className="mx-auto flex h-20 max-w-7xl items-center gap-4 px-4 sm:px-6 lg:px-8">
         <Link href="/" aria-label="Oh Jamming — home" className="shrink-0">
           <Image src={logo} alt="Oh Jamming" priority className="h-9 w-auto" />
