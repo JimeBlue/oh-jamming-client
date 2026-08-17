@@ -124,6 +124,13 @@ Steps 2–4 are `rescheduleBooking` in `src/lib/rescheduleBooking.ts`, deliberat
 apart from the dialog: when the real endpoint lands, that file becomes one
 `api.patch` and `RescheduleDialog` does not change at all.
 
+**All four outcomes end in a confirmation, success included** — the dialog stops
+being a picker and becomes a report, in the cancel dialog's shape (disc, heading,
+one fact in a panel, one button). Success closing straight out was tried first
+and was wrong: the page redraws behind a vanished modal, and the musician is left
+comparing times to work out whether the change took. This is the one flow in the
+app where "did that work?" has an expensive wrong answer.
+
 ### The details page has to move afterwards
 
 Not in the original plan and easy to miss. `/my-bookings/[group]` is keyed by

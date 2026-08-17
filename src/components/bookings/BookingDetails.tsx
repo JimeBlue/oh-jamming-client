@@ -557,7 +557,10 @@ export function BookingDetailsView({
             type="button"
             disabled={!canReschedule}
             onClick={() => setRescheduling(true)}
-            className="btn h-12 border-none bg-pale-blue font-bold text-royal-blue sm:flex-1"
+            /* Fills with the blue it is already lettered in. The other two
+               hovers move towards their own ink as well — one row, one idea,
+               three different destinations. */
+            className="btn h-12 border-none bg-pale-blue font-bold text-royal-blue transition-colors hover:bg-royal-blue hover:text-white sm:flex-1"
           >
             Reschedule
           </button>
