@@ -7,27 +7,30 @@ import { useJamDetail } from './JamDetailContext';
 /* The published session, exactly as a musician sees it.
 
    Nothing is designed here on purpose. `JamListing` is the same component the
-   builder renders as its last step, fed through the same adapter — the moment
-   this drew its own version of the listing, the preview a venue approved before
-   publishing would have stopped predicting the page they get afterwards.
+   builder renders as its last step, and it is itself built from the two blocks
+   the musician's page renders — the moment this drew its own version of the
+   listing, the preview a venue approved before publishing would have stopped
+   predicting the page they get afterwards.
 
-   No `onSelectSlot`, which is what makes the slot list a list rather than a row
-   of buttons: this is a venue checking what is live, not somebody booking. */
+   No slot handler anywhere in that chain, which is what makes the slots a board
+   rather than a row of buttons: this is a venue checking what is live, not
+   somebody booking.
+
+   No heading and no frame either, and the route drops the session card above it
+   (see `JamDetailShell`). All three said the same thing the listing says louder
+   two centimetres lower — the night's name is the first thing in it — and a
+   white card wrapped around a page that carries its own pale ground is a border
+   with nothing on either side of it. The rail already names the section. */
 export default function ListingPanel() {
   const { session } = useJamDetail();
 
   return (
-    <section className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
-        <h2 className="shrink-0 font-heading text-xl">Listing</h2>
-        <p className="max-w-prose text-sm text-base-content/80">
-          What a musician sees when they open this session.
-        </p>
-      </div>
-
-      <div className="mt-6">
-        <JamListing listing={jamSessionToListing(session)} />
-      </div>
-    </section>
+    /* The view model drops `status` on the way through — it is not something a
+       listing says about itself — so a cancelled night is read off the response
+       here and handed over, the same as on the musician's page. */
+    <JamListing
+      listing={jamSessionToListing(session)}
+      cancelled={session.status === 'cancelled'}
+    />
   );
 }

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa6';
 
-import JamIntroCard from '@/components/jams/detail/JamIntroCard';
 import JamSlotPicker from '@/components/jams/detail/JamSlotPicker';
+import JamIntroCard from '@/components/jams/listing/JamIntroCard';
 import { jamSessionToListing } from '@/lib/jamListing';
 import type { JamListingView } from '@/lib/jamListing';
 import { ApiError } from '@/services/api';

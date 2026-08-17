@@ -6,8 +6,6 @@ import { useEffect, useState } from 'react';
 import { FormProvider, useForm, type FieldErrors } from 'react-hook-form';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 
-import guitarPlayer from '@/assets/guitar-player.png';
-import MaskIcon from '@/components/ui/MaskIcon';
 import { JAM_STEPS, JAM_STEP_FIELDS, type JamStepId } from '@/config/jamSteps';
 import { JamImageProvider, useJamImage } from '@/context/JamImageContext';
 import { clearJamDraft, readJamDraft, writeJamDraft } from '@/lib/jamDraft';
@@ -200,7 +198,19 @@ function JamWizardForm() {
   const StepFields = STEP_FIELDS[step.id];
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    /* Wider on the last step, and only there. Every other step is a column of
+       fields, which gets worse the wider it runs; the preview is the musician's
+       page, and that page is 77.5rem with a two-column grid that only opens at
+       `lg`. Held to 56rem the venue would approve the phone layout and publish
+       the desktop one — which is the one failure this step exists to prevent.
+
+       The step bar and the Back/Publish row widen with it. That reads as the
+       last step being a different kind of screen, which it is. */
+    <div
+      className={`mx-auto w-full px-4 py-10 sm:px-6 lg:px-8 ${
+        isLastStep ? 'max-w-[77.5rem]' : 'max-w-4xl'
+      }`}
+    >
       <JamStepBar currentIndex={stepIndex} />
 
       {/* FormProvider rather than prop-drilling: each step is its own component
@@ -212,8 +222,25 @@ function JamWizardForm() {
             two different messages for one mistake in two different styles. */}
         <form onSubmit={onFormSubmit} noValidate>
           <div className="mt-8 rounded-box bg-base-100 p-6 shadow-xl sm:p-10">
-            <h1 className="font-heading text-2xl sm:text-3xl">{step.title}</h1>
-            <p className="mt-2 text-sm opacity-70">{step.description}</p>
+            {/* Space Grotesk on the last step alone. Everything under it there
+                is the musician's page, which is set in `font-display`
+                throughout — Changa One above it made the heading a third voice
+                on a screen that already has the listing's two. */}
+            <h1
+              className={
+                isLastStep
+                  ? 'font-display text-2xl font-bold tracking-tight sm:text-3xl'
+                  : 'font-heading text-2xl sm:text-3xl'
+              }
+            >
+              {step.title}
+            </h1>
+            {/* `in` rather than `step.description &&`: `JAM_STEPS` is
+                `as const satisfies`, so the preview step's member of the union
+                has no such key at all and a property access doesn't typecheck. */}
+            {'description' in step && (
+              <p className="mt-2 text-sm opacity-70">{step.description}</p>
+            )}
 
             <div className="mt-8">
               <StepFields />
@@ -236,7 +263,12 @@ function JamWizardForm() {
               <button
                 type="button"
                 onClick={goBack}
-                className="btn btn-outline gap-2 font-bold"
+                /* Written out rather than `btn-outline`, which takes its colour
+                   from the button's text and would need a second class to say
+                   which colour anyway. Cyan is the step back because indigo is
+                   the step forward — the pair reads as a direction, not as two
+                   equally weighted choices. */
+                className="btn gap-2 border-cyan-blue bg-transparent font-bold text-cyan-blue transition-colors hover:border-cyan-blue hover:bg-cyan-blue hover:text-white"
               >
                 <FaArrowLeft className="size-4" />
                 Back
@@ -260,13 +292,21 @@ function JamWizardForm() {
                 key="publish"
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-primary gap-2 font-bold"
+                /* Hollows out on hover rather than darkening — the inverse of
+                   Back beside it, which fills. The pair moves rather than just
+                   lighting up, which is the one thing that makes a hover state
+                   read on two buttons sitting in the same row.
+                   `disabled:` keeps the filled look while publishing, so the
+                   spinner isn't sitting in an outline that looks switched off. */
+                className="btn btn-primary gap-2 font-bold transition-colors hover:border-primary hover:bg-transparent hover:text-primary disabled:border-transparent disabled:bg-primary disabled:text-primary-content"
               >
-                {/* Masked to white rather than dropped in as artwork, so the
-                    glyph tracks `btn-primary`'s own text colour instead of being
-                    a black silhouette that only works while the button is
-                    indigo. Swapped out entirely while submitting — the spinner
-                    is the thing to look at then. */}
+                {/* The same arrow the Next button carries, because this is the
+                    same gesture — forward, out of the wizard. It replaced the
+                    guitar-player glyph, which was the one illustration in the
+                    flow and read as decoration on the one button that commits.
+
+                    Swapped out entirely while submitting: the spinner is the
+                    thing to look at then. */}
                 {isSubmitting ? (
                   <>
                     <span className="loading loading-spinner" />
@@ -275,10 +315,7 @@ function JamWizardForm() {
                 ) : (
                   <>
                     Publish jam
-                    <MaskIcon
-                      src={guitarPlayer.src}
-                      className="size-5 bg-primary-content"
-                    />
+                    <FaArrowRight className="size-4" />
                   </>
                 )}
               </button>

@@ -10,22 +10,23 @@ import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import { formatShortDate } from '@/lib/jamListing';
 import type { JamListingView } from '@/lib/jamListing';
 
-/* Everything about the night except when it runs — the top half of the detail
-   page. The slots live in the cyan box below, because that is the box a musician
+/* Everything about the night except when it runs — the top half of the listing.
+   The slots live in the cyan board below, because that is the box a musician
    acts in and this is the box they read.
 
-   Not one card any more. The night's name rides its own indigo block, the photo
-   and the map are their own frames, and the right column is three small white
-   panels on the page's pale ground — so what used to be a single white slab is
-   now a group of pieces that happen to be clipped together. The clip is the only
-   thing that still treats them as one unit, which is why the collapse lives on
-   the grid rather than on a card.
+   Not one card. The night's name rides its own indigo block, the photo and the
+   map are their own frames, and the right column is small white panels on the
+   page's pale ground — so what used to be a single white slab is a group of
+   pieces that happen to be clipped together. The clip is the only thing that
+   still treats them as one unit, which is why the collapse lives on the grid
+   rather than on a card.
 
-   The builder preview (`listing/JamListing`) stayed where it was. It draws the
-   same view model, but it is one card inside the wizard's chrome with the title
-   supplied by the step, and it has no page ground of its own to sit these blocks
-   on. What the two still share is `JamListingView`, which is the part that has
-   to agree. */
+   Drawn in all three places a session is shown: the musician's page, the
+   builder's last step, and the venue's Listing panel. It used to be drawn in one
+   and imitated in the other two, which is the arrangement that lets a preview
+   quietly stop predicting the page — the venue approves a layout and something
+   else ships. Two props are all that remain of the difference: which heading
+   level the title takes, and whether the spots badge is suppressed. */
 
 const VenueMap = dynamic(() => import('../VenueMap'), {
   /* Leaflet touches `window` at import; see the note in VenueMap. */
@@ -44,14 +45,24 @@ const VenueMap = dynamic(() => import('../VenueMap'), {
    mid-photo or leaves the desktop showing everything. */
 const COLLAPSED = 'max-h-[34rem] lg:max-h-[39rem]';
 
+/* The musician's page owns nothing above this, so the night's name is its h1.
+   Rendered inside the builder step or the backstage panel there is already a
+   page heading, and a second h1 under it is a document with two titles — so the
+   whole block shifts down a level and the sections shift with it. */
+type Level = 'h1' | 'h2';
+
+const SUB_LEVEL: Record<Level, 'h2' | 'h3'> = { h1: 'h2', h2: 'h3' };
+
 export default function JamIntroCard({
   listing,
-  cancelled,
+  as = 'h1',
+  cancelled = false,
 }: {
   listing: JamListingView;
-  /* Only to keep the spots badge off a night that isn't happening. The picker
+  as?: Level;
+  /* Only to keep the spots badge off a night that isn't happening. The board
      below is where a cancelled session is actually explained. */
-  cancelled: boolean;
+  cancelled?: boolean;
 }) {
   const {
     title,
@@ -73,6 +84,9 @@ export default function JamIntroCard({
      its own, and two of them a few centimetres apart made the shorter one read
      as the control for the longer one. */
   const [expanded, setExpanded] = useState(false);
+
+  const Title = as;
+  const sub = SUB_LEVEL[as];
 
   const hasPin = address.lat !== undefined && address.lng !== undefined;
   const trimmedOverview = overview.trim();
@@ -100,20 +114,21 @@ export default function JamIntroCard({
         }`}
       >
         <div className="flex min-w-0 flex-col gap-8">
-          {/* The night's name, on the brand's indigo. It is the page's h1, so
-              everything below can keep starting at h2 — and it is inside the
-              clip rather than above it because the title is the first thing you
-              read, not something the page keeps pinned while you open the rest
-              of it. */}
+          {/* The night's name, on the brand's indigo. Inside the clip rather
+              than above it because the title is the first thing you read, not
+              something the page keeps pinned while you open the rest of it. */}
           <div className="flex flex-col gap-4 rounded-box bg-royal-blue p-6 text-white shadow-lg sm:p-8">
             <p className="flex items-center gap-2.5 font-display text-xs font-bold uppercase tracking-widest text-white/75">
               <span aria-hidden className="size-2 rounded-full bg-cyan-blue" />
               Open jam · {slotDurationMinutes}-minute slots
             </p>
 
-            <h1 className="font-display text-3xl font-bold leading-tight tracking-tight text-pretty sm:text-5xl">
-              {title}
-            </h1>
+            {/* "Untitled session" only ever shows in the builder, where the
+                venue can still be three steps from having named it. A blank
+                indigo block would read as a broken preview. */}
+            <Title className="font-display text-3xl font-bold leading-tight tracking-tight text-pretty sm:text-5xl">
+              {title || 'Untitled session'}
+            </Title>
 
             {/* One line of facts with dots between them, and it wraps rather
                 than truncates: on a phone this is three short strings that
@@ -130,8 +145,10 @@ export default function JamIntroCard({
             </div>
           </div>
 
-          {/* The frame is there whether or not a photo is, so the page's
-              proportions don't depend on whether the venue uploaded one.
+          {/* The frame is there whether or not a photo is, so the listing's
+              proportions don't depend on whether the venue uploaded one — a
+              venue approving this layout without a photo gets the layout they
+              approved.
 
               A fixed height rather than an aspect ratio: the collapse above is a
               height budget, and a photo that grows with the column width would
@@ -140,8 +157,14 @@ export default function JamIntroCard({
             {image ? (
               <Image
                 src={image}
-                alt={`${title} at ${venueName}`}
+                alt={title ? `${title} at ${venueName}` : 'The room this session runs in'}
                 fill
+                /* A blob: URL — the builder's not-yet-published photo — exists
+                   only in this tab, so there is nothing for next/image's
+                   optimiser to fetch. Keyed off the scheme rather than off which
+                   caller this is, because that is the actual reason: the file
+                   has no server. */
+                unoptimized={image.startsWith('blob:')}
                 /* What stops next/image serving a 1600px file to a phone: it
                    describes the rendered width, not the source, and the left
                    column is roughly five eighths of a 1240px page once the grid
@@ -159,7 +182,7 @@ export default function JamIntroCard({
 
             {/* Absent at zero rather than saying "0 spots left": a badge is a
                 thing to act on, and a badge that says there is nothing to act on
-                is worse than the plain photo. The picker below still shows every
+                is worse than the plain photo. The board below still shows every
                 slot booked out, which is where that belongs. */}
             {!cancelled && spotsLeft > 0 && (
               <p className="pointer-events-none absolute left-4 top-4 rounded-field bg-cyan-blue px-3.5 py-2 font-display text-xs font-bold uppercase tracking-wide text-white">
@@ -171,14 +194,14 @@ export default function JamIntroCard({
           {/* The venue's pitch, at reading size and never cut: it is capped at
               500 characters upstream, so there is nothing here to hide. */}
           {summary && (
-            <Block title="Description">
+            <Block as={sub} title="Description">
               <p className="max-w-[62ch] text-base leading-relaxed text-dark-teal text-pretty sm:text-lg">
                 {summary}
               </p>
             </Block>
           )}
 
-          <Block title="Where">
+          <Block as={sub} title="Where">
             <div className="flex flex-col gap-1">
               {venueName && (
                 <p className="font-display text-lg font-bold text-dark-teal">{venueName}</p>
@@ -207,11 +230,11 @@ export default function JamIntroCard({
         </div>
 
         <aside className="flex min-w-0 flex-col gap-5">
-          <Panel title="Genres">
+          <Panel as={sub} title="Genres">
             <ChipRow items={genres.map((genre) => GENRE_LABELS[genre])} />
           </Panel>
 
-          <Panel title="Skill level">
+          <Panel as={sub} title="Skill level">
             <ChipRow items={skillLevel.map((level) => SKILL_LEVEL_LABELS[level])} />
           </Panel>
 
@@ -219,7 +242,7 @@ export default function JamIntroCard({
               optional, and a panel headed "Overview" with nothing under it reads
               as something that failed to load. */}
           {trimmedOverview && (
-            <Panel title="Overview">
+            <Panel as={sub} title="Overview">
               {/* The stored value is markdown; `.rich-text` is what puts back the
                   list markers and bold weights Tailwind's preflight strips, and
                   it's the same class the editor wears so the two can't drift.
@@ -237,10 +260,11 @@ export default function JamIntroCard({
         </aside>
 
         {/* Says "there is more below" in the one place a hard cut says the
-            opposite. Fading to the page's own ground rather than to a card's,
-            now that these blocks sit straight on it. Out of the flow and
-            click-through, so it can't sit between a pointer and the map
-            underneath it. */}
+            opposite. Fading to the pale ground these blocks sit on — which the
+            musician's page owns and `JamListing` brings with it, precisely so
+            this gradient has the same thing to fade into in all three places.
+            Out of the flow and click-through, so it can't sit between a pointer
+            and the map underneath it. */}
         {!expanded && (
           <div
             aria-hidden
@@ -275,22 +299,38 @@ const Dot = () => (
 /* A titled run of text in the left column. The heading is small, cyan and set in
    caps — it labels the block without competing with the night's name above it,
    which is the only thing on this page allowed to be loud. */
-const Block = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Block = ({
+  as: Heading,
+  title,
+  children,
+}: {
+  as: 'h2' | 'h3';
+  title: string;
+  children: React.ReactNode;
+}) => (
   <section className="flex flex-col gap-3">
-    <h2 className="font-display text-xs font-bold uppercase tracking-widest text-cyan-blue">
+    <Heading className="font-display text-xs font-bold uppercase tracking-widest text-cyan-blue">
       {title}
-    </h2>
+    </Heading>
     {children}
   </section>
 );
 
 /* The same heading, boxed. The right column is a stack of short answers, and the
    border is what keeps three of them from reading as one long one. */
-const Panel = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Panel = ({
+  as: Heading,
+  title,
+  children,
+}: {
+  as: 'h2' | 'h3';
+  title: string;
+  children: React.ReactNode;
+}) => (
   <section className="flex flex-col gap-3.5 rounded-box border border-royal-blue/15 bg-base-100 p-6">
-    <h2 className="font-display text-xs font-bold uppercase tracking-widest text-cyan-blue">
+    <Heading className="font-display text-xs font-bold uppercase tracking-widest text-cyan-blue">
       {title}
-    </h2>
+    </Heading>
     {children}
   </section>
 );

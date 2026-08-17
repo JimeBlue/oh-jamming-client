@@ -13,7 +13,11 @@ export type JamStep = {
      desktop viewport. Anything longer than two short words wraps. */
   shortLabel: string;
   title: string;
-  description: string;
+  /* Optional, and only the preview step goes without one. Every other step is
+     asking for something and the line says what for; the preview asks for
+     nothing — the listing under it is the explanation, and a caption over it was
+     describing what was already on screen. */
+  description?: string;
 };
 
 export const JAM_STEPS = [
@@ -63,7 +67,6 @@ export const JAM_STEPS = [
     id: 'preview',
     shortLabel: 'Preview',
     title: 'Preview & publish',
-    description: 'How your session will look to musicians.',
   },
 ] as const satisfies readonly JamStep[];
 

@@ -41,15 +41,17 @@ export default function PreviewStep() {
 
   return (
     <div className="space-y-6">
-      {/* Same tinted panel as the image step, and for the same reason: this
-          theme's --color-info is the brand indigo, so `alert-info` would shout a
-          quiet sentence. */}
+      {/* A tinted panel rather than `alert-info`: this theme's --color-info is a
+          solid loud block, and this is a quiet sentence. Royal blue rather than
+          the builder's `primary`, because everything below it is now the
+          musician's page and this line is the last thing wearing the wizard's
+          colours before that starts. */}
       <div
         role="note"
-        className="flex gap-3 rounded-box border border-primary/40 bg-primary/10 p-4"
+        className="flex gap-3 rounded-box border border-royal-blue/40 bg-royal-blue/10 p-4"
       >
-        <FaRegEye className="mt-0.5 size-5 shrink-0 text-primary" />
-        <p className="text-sm">
+        <FaRegEye className="mt-0.5 size-5 shrink-0 text-royal-blue" />
+        <p className="text-sm text-dark-teal">
           This is your session as musicians will see it.{' '}
           {bookableSpots > 0 ? (
             <>
