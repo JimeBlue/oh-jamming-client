@@ -92,12 +92,19 @@ export default function JamSlotPicker({
            takes it out of the tab order and stops the click. The styling is
            written out instead of using `btn-primary` because daisyUI's disabled
            treatment is a grey fill, which on this cyan reads as a hole in the
-           card rather than as a button waiting. */
+           card rather than as a button waiting.
+
+           It empties out to an outline on hover, the same move the two booking
+           steps and the browse's cards make — but in white rather than in its
+           own royal blue, because this is the one of the three that sits on
+           cyan and blue on cyan is two of the same hue. The border is there at
+           rest in the fill's own colour, so gaining a visible edge doesn't
+           change the button's height. */
         <button
           type="button"
           disabled={selectedSlotId === null || authStatus === 'loading'}
           onClick={() => continueToBooking(selectedSlotId ?? '')}
-          className="btn h-12 w-full border-none bg-royal-blue px-10 font-display text-base font-bold text-white hover:bg-royal-blue/90 disabled:bg-dark-teal/25 disabled:text-white/60 sm:w-auto"
+          className="btn h-12 w-full border-royal-blue bg-royal-blue px-10 font-display text-base font-bold text-white shadow-none transition-colors hover:border-white hover:bg-transparent hover:text-white disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60 sm:w-auto"
         >
           Next
           <FaArrowRight aria-hidden className="size-4" />

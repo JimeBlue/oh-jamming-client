@@ -81,6 +81,14 @@ export default function InstrumentPicker({
      summary has to bring it with it. */
   const [bandName, setBandName] = useState(initialBandName);
 
+  /* Whether the field has been left at least once. The rule below is true after
+     the very first keystroke — every two-character name passes through being a
+     one-character name — so validating as it is typed means telling someone
+     their name is too short before they have finished the first letter of it.
+     Raised on blur, which is the first moment "t" is an answer rather than a
+     name half typed. */
+  const [bandNameBlurred, setBandNameBlurred] = useState(false);
+
   useEffect(() => {
     let active = true;
 
@@ -137,6 +145,11 @@ export default function InstrumentPicker({
      can't be omitted either, so it is caught here rather than coming back as a
      400 for the whole booking two pages later. */
   const bandNameTooShort = bandName.trim().length === 1;
+
+  /* The message and the red edge, which is a narrower thing than the rule: Next
+     stays disabled from the first keystroke either way, because a one-character
+     name cannot be sent whether or not anyone has been told about it yet. */
+  const showBandNameError = bandNameTooShort && bandNameBlurred;
 
   /* Back to the slot list with the slot still lit — the same `?slot=` the login
      gate uses. Changing your mind about the time shouldn't mean finding it
@@ -334,24 +347,25 @@ export default function InstrumentPicker({
             type="text"
             value={bandName}
             onChange={(event) => setBandName(event.target.value)}
+            onBlur={() => setBandNameBlurred(true)}
             placeholder="The name your venue should expect at the door"
             /* The API's ceiling, enforced by the browser so a long name is
                stopped as it is typed rather than refused after the button. */
             maxLength={120}
-            aria-invalid={bandNameTooShort ? true : undefined}
-            aria-describedby={bandNameTooShort ? 'band-name-error' : undefined}
+            aria-invalid={showBandNameError ? true : undefined}
+            aria-describedby={showBandNameError ? 'band-name-error' : undefined}
             /* The pale field the browse's filters use, on the same white plate.
                Borderless with a hairline ring, so the box is legible against the
                card without drawing a second edge inside it. */
             className={`input mt-3 h-12 w-full border-0 bg-pale-blue text-dark-teal ring-1 focus:outline-2 focus:outline-offset-[-2px] ${
-              bandNameTooShort
+              showBandNameError
                 ? 'ring-error focus:outline-error'
                 : 'ring-dark-teal/10 focus:outline-royal-blue'
             }`}
           />
         </label>
 
-        {bandNameTooShort && (
+        {showBandNameError && (
           <p id="band-name-error" role="alert" className="mt-2 text-sm text-error">
             Use at least 2 characters, or leave it empty
           </p>
@@ -383,8 +397,13 @@ export default function InstrumentPicker({
                daisyUI, and it is the one the slot step's Next wears: a muted
                dark teal that still reads as a button waiting for something.
                daisyUI's own is a grey fill, which on a white card reads as a
-               hole in it. */
-            className="btn border-royal-blue bg-royal-blue font-bold text-white hover:border-royal-blue/90 hover:bg-royal-blue/90 disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60"
+               hole in it.
+
+               It empties out to an outline on hover, which is what every filled
+               button in this flow does. The border is there at rest in the
+               fill's own colour, so gaining a visible edge doesn't change the
+               button's height and shift the row under it. */
+            className="btn border-royal-blue bg-royal-blue font-bold text-white transition-colors hover:bg-transparent hover:text-royal-blue disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60"
           >
             Next
             <FaArrowRight aria-hidden className="size-4" />

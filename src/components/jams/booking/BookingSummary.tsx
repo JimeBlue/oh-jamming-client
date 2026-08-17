@@ -383,12 +383,14 @@ export default function BookingSummary({
               given.
 
               The disabled treatment is the one both steps before it wear, rather
-              than daisyUI's grey fill. */}
+              than daisyUI's grey fill, and so is the outline it empties out to
+              on hover — the border is there at rest in the fill's own colour so
+              gaining a visible edge doesn't change the button's height. */}
           <button
             type="button"
             onClick={submit}
             disabled={submitting}
-            className="btn border-royal-blue bg-royal-blue font-bold text-white hover:border-royal-blue/90 hover:bg-royal-blue/90 disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60"
+            className="btn border-royal-blue bg-royal-blue font-bold text-white transition-colors hover:bg-transparent hover:text-royal-blue disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60"
           >
             {submitting && <span className="loading loading-spinner" />}
             {submitting ? 'Booking…' : 'Confirm booking'}
