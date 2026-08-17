@@ -19,12 +19,14 @@ type AccountLink = {
    up for booking. Keyed by role so adding an item is a one-line change and the
    two lists can't quietly diverge in styling.
 
-   The venue pair points at real routes now. The musician pair is still `#`:
-   those pages don't exist, and a link to a 404 is worse than one that visibly
-   does nothing. */
+   The venue pair points at real routes, and so does the musician's first one
+   now. "Book a spot" is still `#`: there is no single page to book from — you
+   book a *night*, from its own page — so that item is waiting on a decision
+   about where it should land, not on a page being written. A link to a 404 is
+   worse than one that visibly does nothing. */
 const linksByRole: Record<UserRole, AccountLink[]> = {
   musician: [
-    { label: 'My spots', href: '#', icon: FaClipboardUser },
+    { label: 'My bookings', href: '/my-bookings', icon: FaClipboardUser },
     { label: 'Book a spot', href: '#', icon: IoTicketSharp },
   ],
   venue: [
