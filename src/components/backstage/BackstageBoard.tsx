@@ -136,14 +136,16 @@ export default function BackstageBoard() {
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-heading text-3xl sm:text-4xl">My backstage</h1>
-          {/* `text-base-content/80` rather than `opacity-70`. Both dim text, but
-              opacity dims the *element* — every icon inside it goes pale with the
-              words — while the alpha modifier only touches the colour. Which
-              matters on the rows below, where the pins and calendars are meant
-              to stay indigo. Kept the same here so the page has one muted grey
-              and not two that nearly match. */}
-          <p className="mt-2 text-base-content/80">
+          {/* Sized and coloured to match /my-bookings' heading — the two boards
+              are the same page from either side of a booking, and a venue that
+              also books elsewhere shouldn't meet two different title treatments. */}
+          <h1 className="font-display text-4xl font-bold text-dark-teal sm:text-5xl">
+            My backstage
+          </h1>
+          {/* The heading's own colour, held apart from it by weight rather than
+              by going grey: on the pale blue a dimmed grey reads as disabled
+              text, and these two lines are one block. */}
+          <p className="mt-2 font-normal text-dark-teal">
             Manage your jam sessions. Check what&apos;s coming up, and call off a
             night if you have to.
           </p>
@@ -151,11 +153,19 @@ export default function BackstageBoard() {
 
         {/* Hidden while the board is empty, where BackstageEmpty carries the
             only copy of this button, and hidden while loading so it doesn't
-            appear a beat before the thing it sits above. */}
+            appear a beat before the thing it sits above.
+
+            The heading's own dark teal rather than the builder's indigo, so the
+            three things at the top of the page are one colour, and emptying to
+            an outline on hover the way every primary action in the booking flow
+            now does. The border is there at rest in the fill's own
+            colour, so gaining a visible edge doesn't change the button's height.
+            Written out rather than `btn-primary` because daisyUI's own hover is
+            a darker fill. */}
         {sessions.length > 0 && (
           <Link
             href="/jams/new"
-            className="btn btn-primary shrink-0 gap-2 font-bold"
+            className="btn shrink-0 gap-2 border-dark-teal bg-dark-teal font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-dark-teal"
           >
             <FaPlugCirclePlus className="size-5" />
             Insert your Jam

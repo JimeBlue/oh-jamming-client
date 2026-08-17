@@ -21,7 +21,10 @@ export default function BackstageEmpty() {
       {/* A link styled as a button rather than a <button>: it navigates, and
           anything that navigates should be middle-clickable and openable in a
           new tab like every other link on the site. */}
-      <Link href="/jams/new" className="btn btn-primary mt-6 gap-2 font-bold">
+      <Link
+        href="/jams/new"
+        className="btn mt-6 gap-2 border-dark-teal bg-dark-teal font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-dark-teal"
+      >
         <FaPlugCirclePlus className="size-5" />
         Insert your Jam
       </Link>
