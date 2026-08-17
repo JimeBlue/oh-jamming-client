@@ -31,6 +31,11 @@ type VenueMapProps = {
   lng?: number;
   /* The address itself, for anyone who can't see the pin. */
   label?: string;
+  /* Height only, and as a class rather than a number, because Leaflet measures
+     the container it is handed — a map sized by its content would come out at
+     zero. The detail page wants a shorter map on a phone than on a desktop, and
+     everywhere else the default is the right answer. */
+  heightClass?: string;
 };
 
 /* Germany at country scale. Not a guess at where the venue is — a frame that
@@ -60,7 +65,12 @@ const pinIcon = () =>
     iconAnchor: [14, 37],
   });
 
-export default function VenueMap({ lat, lng, label }: VenueMapProps) {
+export default function VenueMap({
+  lat,
+  lng,
+  label,
+  heightClass = 'h-64',
+}: VenueMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
@@ -146,7 +156,7 @@ export default function VenueMap({ lat, lng, label }: VenueMapProps) {
       /* `isolate` matters: Leaflet gives its internal panes z-indexes up to 800,
          and without a stacking context of its own the map would paint straight
          over the suggestion list hanging down from the input above it. */
-      className="isolate h-64 w-full overflow-hidden rounded-box border border-base-300"
+      className={`isolate w-full overflow-hidden rounded-box border border-base-300 ${heightClass}`}
     />
   );
 }
