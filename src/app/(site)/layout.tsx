@@ -1,3 +1,4 @@
+import Footer from '@/components/layout/Footer';
 import Header from '@/components/layout/Header';
 
 /* Everything that wears the public header: home, login and register. A route
@@ -13,6 +14,10 @@ export default function SiteLayout({ children }: LayoutProps<'/'>) {
           under here clear it themselves — see the padding in (auth)/layout. */}
       <Header />
       {children}
+      {/* Here rather than in the root layout, for the same reason the header is:
+          the builder is a full-screen wizard and shouldn't grow a sitemap under
+          its last step. */}
+      <Footer />
     </>
   );
 }
