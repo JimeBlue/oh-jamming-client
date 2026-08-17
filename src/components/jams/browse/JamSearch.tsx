@@ -87,10 +87,14 @@ export default function JamSearch({
 
   /* Below the page's heading rather than above it, which is the design and also
      the right order to read: the title says what the board is, and the bar
-     narrows it. Its own top margin, none underneath — everything that can follow
-     it carries its own. */
+     narrows it.
+
+     More air underneath than above, and on top of the margin whatever follows
+     already carries: the bar is a control and the grid under it is the answer,
+     so the gap between them has to be wider than the one holding the bar to its
+     own heading. */
   return (
-    <section aria-labelledby="jam-search-heading" className="mt-8">
+    <section aria-labelledby="jam-search-heading" className="mt-8 mb-6">
       <h2 id="jam-search-heading" className="sr-only">
         Search jam sessions
       </h2>
