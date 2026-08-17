@@ -200,27 +200,58 @@ export const toBookingCards = (bookings: Booking[]): BookingCardView[] => {
     else groups.set(booking.groupId, [booking]);
   }
 
-  const cards = [...groups.values()]
-    .map((rows) => toCard(rows, today))
-    .filter((card): card is BookingCardView => card !== null);
+  /* `made` rides along with the card because the second filter below needs it
+     and the card has no business carrying it: nothing is drawn from when a
+     booking was submitted, and after an edit it wouldn't be true anyway — a
+     rebook resets `createdAt`. */
+  const entries = [...groups.values()]
+    .map((rows) => ({ card: toCard(rows, today), made: rows[0]?.createdAt }))
+    .filter((entry): entry is { card: BookingCardView; made: Date } =>
+      entry.card !== null && entry.made !== undefined,
+    );
 
   /* Hide a cancelled booking for a night the musician is still playing.
      Written as a rule about bookings rather than about edits: if you have a live
      booking for a session, the spots you dropped for it are not news — they are
-     the shape of a decision you already finished making.
-
-     It also happens to hide the tombstone that "Change booking" leaves behind,
-     which is why it is built now. Both jobs are honest; only the second one is
-     temporary. See `docs/my-bookings.md`.
-
-     A booking cancelled outright still shows. That is the record of what was
-     dropped, and this page is the only place it exists. */
+     the shape of a decision you already finished making. */
   const stillPlaying = new Set(
-    cards.filter(({ status }) => status !== 'cancelled').map(({ jamSessionId }) => jamSessionId),
+    entries
+      .filter(({ card }) => card.status !== 'cancelled')
+      .map(({ card }) => card.jamSessionId),
   );
 
-  return cards
-    .filter(({ status, jamSessionId }) => status !== 'cancelled' || !stillPlaying.has(jamSessionId))
+  /* And hide one that a *later* booking for the same night replaced, live or
+     not. This is the half that catches the edit flow's tombstone once the
+     booking it left behind has itself been cancelled — at which point the rule
+     above stops applying and one gesture that changed a booking, followed by one
+     that dropped it, showed up as two cancellations for a night the musician
+     booked once. Two rows, one for a booking they never knowingly made.
+
+     The cost is a real case it also hides: booking a night, cancelling, booking
+     it again and cancelling again leaves one cancellation on the list rather
+     than two. Accepted, because the two are indistinguishable in the data —
+     which is the whole reason this filter exists. There is nothing on a booking
+     that says "this one was a rebuild"; see `docs/my-bookings.md`.
+
+     Both rules go when `PATCH /bookings/group/:groupId` lands. An edit that
+     keeps its groupId leaves no tombstone, and then the only cancellations here
+     are the ones the musician meant. */
+  const supersededAt = new Map<string, number>();
+
+  for (const { card, made } of entries) {
+    const latest = supersededAt.get(card.jamSessionId) ?? 0;
+
+    supersededAt.set(card.jamSessionId, Math.max(latest, made.getTime()));
+  }
+
+  return entries
+    .filter(
+      ({ card, made }) =>
+        card.status !== 'cancelled' ||
+        (!stillPlaying.has(card.jamSessionId) &&
+          made.getTime() >= (supersededAt.get(card.jamSessionId) ?? 0)),
+    )
+    .map(({ card }) => card)
     .sort((a, b) => {
       /* Everything still to come, soonest first, then everything behind —
          most recent first. The next night a musician is playing is the reason

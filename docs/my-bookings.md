@@ -13,10 +13,10 @@ rejected, and what has to change to make it real.
 
 **Built so far:** the list at `/my-bookings`; the details page at
 `/my-bookings/[group]` — ticket, QR, spots, genres, skill levels, address and
-map; and **the edit flow**, as `RescheduleDialog` plus `lib/rescheduleBooking.ts`.
-**Cancel is still rendered `disabled`** — `DELETE /bookings/group/:groupId` plus a
-confirm, not written. Everything under [Making it real](#making-it-real) is still
-a plan, and will stay one until the API grows a PATCH.
+map; **the edit flow**, as `RescheduleDialog` plus `lib/rescheduleBooking.ts`; and
+**cancel**, as `CancelBookingDialog`. Everything under
+[Making it real](#making-it-real) is still a plan, and will stay one until the API
+grows a PATCH.
 
 > ## Read this first if you are picking this up after demo day
 >
@@ -69,7 +69,7 @@ the response is a musician's own bookings, tens of rows at the outside.
 | 2 | **Cancel is whole-group only** | `DELETE /bookings/group/:groupId`. Per-instrument removal was designed and dropped — see [Rejected](#rejected-on-the-way-here) |
 | 3 | **Edit is cancel + rebook, presented as an edit** | The user is told their booking changed, not how. See [The edit flow](#the-edit-flow) |
 | 4 | **Cancel first, then book** — never the reverse | Book-first looks safer and is broken. See the constraint table |
-| 5 | **A cancelled group is hidden when a confirmed group exists for the same session** | One client-side filter. It is what keeps the edit's tombstone off the list, and it stands on its own merits besides |
+| 5 | **A cancelled group is hidden when a confirmed group — or any later group — exists for the same session** | One client-side filter. It is what keeps the edit's tombstone off the list, and it stands on its own merits besides. The "any later group" half was added after cancelling an edited booking put two cancellations on the list for one night |
 | 6 | **Edit and Cancel are off on past and cancelled bookings** | The API has no date rule (see constraints), so this is the only thing stopping someone cancelling a night that already happened. Built as `disabled`, not hidden: they are three buttons in a row, and a row that loses its middle item on some bookings reads as a layout bug rather than as an answer |
 | 7 | **Edit stays inside one session** | `POST /bookings` takes one `jamSessionId` and one `slotId`. Playing a different night is a different booking by any reading |
 | 8 | **`bandName` is not editable** | There is no PATCH, so it cannot be. Deliberately not worked around |
@@ -185,7 +185,7 @@ for nothing.
 
 | Leak | Handling |
 |---|---|
-| The old booking is now a cancelled row and would appear in the list | The filter from decision 5 hides it |
+| The old booking is now a cancelled row and would appear in the list | The filter from decision 5 hides it — **both clauses of it**. The confirmed-successor clause alone stops working the moment the new booking is cancelled too |
 | The QR token changes | Invisible in practice — the QR is only ever read from inside the app. **Do not add a "save this code" or "add to wallet" feature while this flow is a simulation** |
 | `createdAt` resets | A booking made in March and edited in August reads as made in August. Nothing displays it today |
 | Two writes where the user made one gesture | Only visible to whoever is reading the database |
@@ -201,11 +201,50 @@ modal cannot simply reuse the component untouched.
 
 ---
 
+## The cancel flow
+
+`CancelBookingDialog`, from the details page: one confirm, then
+`DELETE /bookings/group/:groupId`, then **back to `/my-bookings`**.
+
+Whole group only (decision 2). `DELETE /bookings/:id` cancels one spot and is
+never called — per-instrument removal was designed and rejected, and until edit
+is real it has nowhere to be clicked.
+
+**"Cancellation can't be undone" is true of the half that matters.** The rows
+survive as `cancelled` (BK11, a soft delete), so nothing is destroyed in the
+database — but `releaseSpot` puts the spots straight back on the board, and
+nothing in this app or the API can put them back in this musician's hands.
+Whoever books the Bass at 20:00 in the next minute has it. The sentence is about
+the spots, not about the record.
+
+**It leaves the page, and has to.** The details page draws a ticket and has
+nowhere to say "cancelled" — the badge that says it lives on the list card. Sent
+back with `replace`: the ticket they just gave up is not somewhere the back
+button should return to.
+
+Idempotence is the API's (`cancelOne` returns early on an already-cancelled row),
+so a double-press is not a 409 and the button needs no guard beyond its spinner.
+
+---
+
 ## The cancelled-shadow filter
 
 ```
-Hide a cancelled group when the same jamSession.id also has a confirmed group.
+Hide a cancelled group when the same jamSession.id also has a confirmed group,
+or when a later group exists for that session — live or cancelled.
 ```
+
+The second clause was added after the first one was caught being half a rule.
+It only hides a tombstone *while the booking that replaced it is alive*: edit a
+booking and then cancel the result, and the tombstone comes back — so one gesture
+that changed a booking and one that dropped it appear as **two cancellations for
+a night booked once**. Which is what it looked like in practice, and it looked
+like the cancel button had taken two bookings.
+
+The cost is a case it also hides: book a night, cancel, book it again, cancel
+again, and the list shows one cancellation rather than two. Accepted, because the
+two are indistinguishable in the data — nothing on a booking says "this row was a
+rebuild". That is the same absence this whole page is built around.
 
 Written as a rule about bookings rather than as a rule about edits, because it is
 true either way: if you are still playing a night, the spots you dropped for it
