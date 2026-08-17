@@ -1,6 +1,7 @@
 import ApiStatus from '@/components/ApiStatus';
 import Hero from '@/components/hero/Hero';
 import HomeSearch from '@/components/home/HomeSearch';
+import HomeTonight from '@/components/home/HomeTonight';
 
 export default function Home() {
   return (
@@ -13,6 +14,11 @@ export default function Home() {
           container from here, so the pale band runs edge to edge under the
           video the way the hero does. */}
       <HomeSearch />
+
+      {/* Every number in it is counted from the live board, so it takes itself
+          off the page when there is nothing on the board or the request fails —
+          which is why it is rendered unconditionally here. */}
+      <HomeTonight />
 
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <ApiStatus />
