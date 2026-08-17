@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { FaPlugCirclePlus } from 'react-icons/fa6';
 
 import blueRayas from '@/assets/blue-rayas.png';
@@ -60,7 +60,7 @@ const searchErrorMessage = (error: unknown): string => {
   return error.message;
 };
 
-export default function JamBrowse() {
+export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
   const [state, setState] = useState<BrowseState>({ status: 'loading' });
 
   /* The filters the list is currently drawn from. A separate piece of state from
@@ -74,10 +74,26 @@ export default function JamBrowse() {
      Null and "understood nothing" are different states: one shows the plain
      board, the other has something to explain. */
   const [reading, setReading] = useState<AiSearchResult | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
+
+  /* The home page has the same box and no list to put results in, so it sends
+     the sentence here unread. Arriving with one means the page is already
+     mid-search on its first render — which is why both flags below start from
+     it rather than from a hardcoded false. */
+  const arrivedWithQuery = initialQuery !== undefined && initialQuery.trim() !== '';
+
+  const [isSearching, setIsSearching] = useState(arrivedWithQuery);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  /* True only between mount and that sentence being read. The list effect below
+     sits still while it is up, because the first request is the search's to
+     make: fetching the unfiltered board first would draw every upcoming night
+     and then replace it with the four that match — a page that visibly answers
+     the wrong question before answering the right one. */
+  const [readingInitialQuery, setReadingInitialQuery] = useState(arrivedWithQuery);
+
   useEffect(() => {
+    if (readingInitialQuery) return;
+
     /* Cleared by the cleanup: someone who searches twice quickly would otherwise
        have the first response land after the second and win. */
     let active = true;
@@ -98,31 +114,58 @@ export default function JamBrowse() {
     return () => {
       active = false;
     };
-  }, [filters]);
+  }, [filters, readingInitialQuery]);
 
-  const runSearch = async (query: string) => {
+  /* The request itself, with every state write in a callback rather than in the
+     function body. That split is what lets the effect below start a search at
+     all: "searching, and forget the last error" is a synchronous setState, which
+     is the one thing an effect must not do — and on arrival there is nothing to
+     say, because it is what the initial state already says.
+
+     `useCallback` so the effect can depend on it honestly rather than silence
+     the rule; everything it closes over is a setter or a module-level function. */
+  const readQuery = useCallback(
+    (query: string) =>
+      searchJams(query)
+        .then((result) => {
+          setReading(result);
+          setState({ status: 'loading' });
+          /* Nothing to filter by when the sentence wasn't a search — the API
+             already returns empty filters there, and this makes that explicit
+             rather than relying on it. The board stays whole and the message
+             says why.
+
+             A fresh object every time, including when the filters are identical
+             to the ones in force: searching the same thing twice should visibly
+             re-run rather than look like a dead button. */
+          setFilters(result.understood ? { ...result.filters } : {});
+        })
+        .catch((error: unknown) => setSearchError(searchErrorMessage(error)))
+        .finally(() => setIsSearching(false)),
+    [],
+  );
+
+  const runSearch = (query: string) => {
     setIsSearching(true);
     setSearchError(null);
-
-    try {
-      const result = await searchJams(query);
-
-      setReading(result);
-      setState({ status: 'loading' });
-      /* Nothing to filter by when the sentence wasn't a search — the API already
-         returns empty filters there, and this makes that explicit rather than
-         relying on it. The board stays whole and the message says why.
-
-         A fresh object every time, including when the filters are identical to
-         the ones in force: searching the same thing twice should visibly re-run
-         rather than look like a dead button. */
-      setFilters(result.understood ? { ...result.filters } : {});
-    } catch (error) {
-      setSearchError(searchErrorMessage(error));
-    } finally {
-      setIsSearching(false);
-    }
+    void readQuery(query);
   };
+
+  /* The home page's sentence, read once on arrival.
+
+     No cleanup flag: unlike the list, a search that lands late can't show the
+     wrong thing — `setFilters` is what draws the board, and the effect above
+     already drops a stale list response. `readingInitialQuery` is lowered
+     whatever the outcome, so a 429 or a dead model leaves the whole board on
+     screen with the reason above it rather than an empty page.
+
+     It never runs twice: the flag it guards on is only ever lowered, so editing
+     the sentence in the bar re-searches through `onSearch` rather than here. */
+  useEffect(() => {
+    if (!readingInitialQuery || initialQuery === undefined) return;
+
+    void readQuery(initialQuery.trim()).finally(() => setReadingInitialQuery(false));
+  }, [readingInitialQuery, initialQuery, readQuery]);
 
   /* Whether the board below is a subset. Read off the filters actually in force
      rather than off `reading`, because a sentence the AI understood but could
@@ -151,6 +194,7 @@ export default function JamBrowse() {
   return (
     <>
       <JamSearch
+        initialQuery={initialQuery}
         onSearch={runSearch}
         isSearching={isSearching}
         filters={filters}

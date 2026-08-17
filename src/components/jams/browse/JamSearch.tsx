@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FaArrowsRotate, FaMagnifyingGlass } from 'react-icons/fa6';
 import { HiOutlineSparkles } from 'react-icons/hi';
 
+import { useTypedPlaceholder } from '@/hooks/useTypedPlaceholder';
 import { MAX_SEARCH_CHARS } from '@/services/ai';
 import type { JamSessionQuery } from '@/services/jamSessions';
 import JamFilters from './JamFilters';
@@ -15,32 +16,17 @@ import JamFilters from './JamFilters';
    reason. The moment there are two search controls on the page they disagree
    about which one the results came from.
 
-   Only the AI half is built. `POST /ai/search` reads a sentence into the filters
-   `GET /jam-sessions` already accepts, which is why this can be one text box
-   where the manual tab will be five controls. */
-
-/* Typed out one character at a time under the cursor, like the search box this
-   is modelled on. The examples are doing real work: nothing on the page says
-   what a sentence here may contain, and "jazz jam this weekend" answers that in
-   a way no hint text does — every one of these is a query the API actually
-   resolves, so they are a promise rather than a suggestion. */
-const EXAMPLES = [
-  'jazz jam this weekend',
-  'blues jam in Nürnberg',
-  'somewhere to play tonight',
-  'rock night in Berlin next week',
-  'beginner friendly jam in September',
-];
-
-const TYPE_MS = 55;
-const DELETE_MS = 30;
-/* Long enough to read the whole line after it lands, which is the only moment
-   the example is actually doing its job. */
-const HOLD_MS = 2200;
+   `POST /ai/search` reads a sentence into the filters `GET /jam-sessions`
+   already accepts, which is why the AI half is one text box where the manual tab
+   is five controls. */
 
 type Tab = 'ai' | 'manual';
 
 type JamSearchProps = {
+  /* The sentence typed on the home page, which has the same box and no list to
+     put results in. It is only the field's starting text — `JamBrowse` is what
+     actually runs it, so the reading lands next to the board it narrows. */
+  initialQuery?: string;
   /* Given the raw sentence, not filters. Reading it is the API's job and the
      result is a whole state machine — a reading, the parts it couldn't honour,
      a 429 — which belongs beside the list it changes rather than in here. */
@@ -59,6 +45,7 @@ type JamSearchProps = {
 };
 
 export default function JamSearch({
+  initialQuery,
   onSearch,
   isSearching,
   filters,
@@ -66,7 +53,7 @@ export default function JamSearch({
   onReset,
 }: JamSearchProps) {
   const [tab, setTab] = useState<Tab>('ai');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery ?? '');
 
   /* One Reset for both tabs, shown only when there is something to undo. The
      query counts alongside the filters: a sentence the AI could extract no
@@ -309,70 +296,3 @@ export default function JamSearch({
     </section>
   );
 }
-
-type TypingState = { index: number; typed: string; deleting: boolean };
-
-/* One state, advanced one step at a time, and both of those are load-bearing.
-   Three separate pieces of state would mean the "finished deleting, move to the
-   next example" transition happens in the effect body rather than in a timeout —
-   a synchronous setState during an effect, which React lints against because it
-   renders twice for one visible change. Here every transition is the timeout's
-   job, so the effect only ever schedules. */
-const nextStep = ({ index, typed, deleting }: TypingState): TypingState => {
-  const full = EXAMPLES[index] ?? '';
-
-  if (deleting) {
-    /* Emptied — take the next example rather than pausing on a blank field, so
-       the line is never gone for longer than one frame. */
-    return typed === ''
-      ? { index: (index + 1) % EXAMPLES.length, typed: '', deleting: false }
-      : { index, typed: full.slice(0, typed.length - 1), deleting: true };
-  }
-
-  return typed === full
-    ? { index, typed, deleting: true }
-    : { index, typed: full.slice(0, typed.length + 1), deleting: false };
-};
-
-/* The running example under the cursor.
-
-   Chained timeouts rather than one interval, because the three phases run at
-   three speeds — typing is slower than deleting, and the pause at the end of a
-   line is longer than both. One interval would mean ticking at the fastest of
-   them and counting, which is the same thing written less clearly.
-
-   It starts on the first example complete rather than on an empty field. That is
-   what the server renders, so it is what the client hydrates to — and it doubles
-   as the reduced-motion answer below, where the loop never starts and this is
-   simply what the field says.
-
-   `enabled` goes false the moment the musician types anything: the placeholder
-   is invisible behind their text, and a timer re-rendering the field underneath
-   what they are writing is work nobody can see. */
-const useTypedPlaceholder = (enabled: boolean): string => {
-  const [state, setState] = useState<TypingState>({
-    index: 0,
-    typed: EXAMPLES[0] ?? '',
-    deleting: false,
-  });
-
-  useEffect(() => {
-    /* Read here rather than held in state, which would need its own mount effect
-       to set it — the second thing React lints against. Someone who asks for
-       less motion gets the first example standing still: the examples are the
-       point and the typing is decoration, so dropping the decoration keeps it. */
-    if (!enabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const full = EXAMPLES[state.index] ?? '';
-    const finished = !state.deleting && state.typed === full;
-
-    const timer = setTimeout(
-      () => setState(nextStep),
-      finished ? HOLD_MS : state.deleting ? DELETE_MS : TYPE_MS,
-    );
-
-    return () => clearTimeout(timer);
-  }, [state, enabled]);
-
-  return state.typed;
-};
