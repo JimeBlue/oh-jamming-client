@@ -1,4 +1,3 @@
-import ApiStatus from '@/components/ApiStatus';
 import Hero from '@/components/hero/Hero';
 import HomeHosts from '@/components/home/HomeHosts';
 import HomeSearch from '@/components/home/HomeSearch';
@@ -31,10 +30,6 @@ export default function Home() {
           it, so the pitch to hosts reads as a conclusion rather than as a
           second product. */}
       <HomeHosts />
-
-      <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-        <ApiStatus />
-      </section>
     </main>
   );
 }
