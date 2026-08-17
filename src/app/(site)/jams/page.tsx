@@ -19,7 +19,16 @@ export const metadata: Metadata = {
    A server component wrapping a client one, same as `/my-backstage`: `metadata`
    is a server export, and the list has to be client-side because the filter bar
    it is about to grow re-runs the request on every change. */
-export default function JamsPage() {
+type JamsPageProps = {
+  /* The sentence typed on the home page, which has a search box and no list to
+     put results in. It arrives unread: `POST /ai/search` is called here, once,
+     next to the board it narrows and the reading it has to explain. */
+  searchParams: Promise<{ q?: string }>;
+};
+
+export default async function JamsPage({ searchParams }: JamsPageProps) {
+  const { q } = await searchParams;
+
   return (
     /* pt-28 clears the fixed header, which overlays every page under `(site)`.
        A tinted page because the cards are base-100 — on white they would need an
@@ -37,7 +46,7 @@ export default function JamsPage() {
             the two are one piece of state — split across this boundary it would
             need a third client component wrapping both to hold it, which is the
             same coupling with an extra file in the way. */}
-        <JamBrowse />
+        <JamBrowse initialQuery={q} />
       </div>
 
       {/* Outside the container on purpose — full-bleed is the whole point of it,
