@@ -113,7 +113,7 @@ export default function JamSearch({
      so the gap between them has to be wider than the one holding the bar to its
      own heading. */
   return (
-    <section aria-labelledby="jam-search-heading" className="mt-8 mb-6">
+    <section aria-labelledby="jam-search-heading" className="mt-8 mb-12">
       <h2 id="jam-search-heading" className="sr-only">
         Search jam sessions
       </h2>

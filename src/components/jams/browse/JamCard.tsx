@@ -7,7 +7,7 @@ import { cityFromAddress, formatShortDateParts } from '@/lib/jamListing';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
 import { utcMidnightToDateString } from '@/lib/time';
-import { ALL_GENRES, type JamSession } from '@/schemas/jamSession';
+import type { JamSession } from '@/schemas/jamSession';
 
 /* One jam on the browse.
 
@@ -167,25 +167,31 @@ export default function JamCard({ session }: { session: JamSession }) {
             </h3>
 
             <div className="flex flex-wrap items-center gap-2">
+              {/* Royal blue over a wash of itself — the same blue as the button
+                  under it, which is what makes the genres the loudest thing in
+                  the row.
+
+                  Every genre draws this chip, the catch-all included. It used to
+                  take a green wash to mark that "All genres" isn't narrowing the
+                  night down — the rule the listing's own chips still follow —
+                  but the design has one genre chip and the distinction was
+                  costing a third colour in a row two chips long. */}
               {genres.map((genre) => (
                 <span
                   key={genre}
-                  /* Green for the catch-all, read off the stored value rather
-                     than the label — same rule as the listing's chips, because
-                     it means the same thing: this one isn't narrowing the night
-                     down. The wash changes and the ink doesn't, so it reads as
-                     the same chip in a different colour rather than as a
-                     different kind of thing. */
-                  className={`rounded-field px-2.5 py-1 text-xs font-bold text-dark-teal ${
-                    genre === ALL_GENRES ? 'bg-emerald-green/20' : 'bg-pale-blue'
-                  }`}
+                  className="rounded-field bg-royal-blue/10 px-2.5 py-1 text-xs font-bold text-royal-blue"
                 >
                   {GENRE_LABELS[genre]}
                 </span>
               ))}
 
-              {/* The levels, last in the same run of chips and told apart by ink
-                  rather than by position: cyan where the genres are dark teal.
+              {/* The levels, last in the same run of chips and told apart by
+                  colour rather than by position: cyan where the genres are royal
+                  blue, each over a wash of itself. It is the quieter of the two
+                  blues on purpose — which genre the night is decides whether you
+                  read the card, and the level qualifies that answer rather than
+                  competing with it.
+
                   They used to sit at the far end of the row behind a glyph,
                   which the design drops — on a card this narrow a right-aligned
                   chip wrapped often enough that the "opposite edges" it was
@@ -193,7 +199,7 @@ export default function JamCard({ session }: { session: JamSession }) {
               {levels.map((level) => (
                 <span
                   key={level}
-                  className="rounded-field bg-pale-blue px-2.5 py-1 text-xs font-bold text-cyan-blue"
+                  className="rounded-field bg-cyan-blue/10 px-2.5 py-1 text-xs font-bold text-cyan-blue"
                 >
                   {SKILL_LEVEL_LABELS[level]}
                 </span>
