@@ -79,6 +79,25 @@ export default function JamSearch({
     onReset();
   };
 
+  /* Emptying the box gives the whole board back, and it has to: the sentence is
+     the only thing on this tab that says why the grid is a subset, so a cleared
+     field over a filtered board is a page with no visible reason for what it is
+     showing and — since Reset only appears on the Manual tab — no way back.
+
+     The `×` inside a `type="search"` field is the browser's own control and
+     fires nothing but an ordinary change, which is why this lives here rather
+     than on an event of its own. Backspacing the sentence out by hand therefore
+     clears it too, which is the same promise kept: the board matches the box.
+
+     Guarded on there being filters in force, so typing and deleting a character
+     on an unfiltered board doesn't fire a pointless request for a list that is
+     already on screen. */
+  const change = (value: string) => {
+    setQuery(value);
+
+    if (value === '' && Object.keys(filters).length > 0) reset();
+  };
+
   const trimmed = query.trim();
   const tooLong = query.length > MAX_SEARCH_CHARS;
   const canSearch = trimmed !== '' && !tooLong && !isSearching;
@@ -246,7 +265,7 @@ export default function JamSearch({
               id="jam-search-query"
               type="search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => change(event.target.value)}
               disabled={isSearching}
               /* The animating text is an example, never the field's name —
                  a placeholder that changes under a screen reader is a label
