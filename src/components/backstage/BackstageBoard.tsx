@@ -194,49 +194,23 @@ export default function BackstageBoard() {
         (sessions.length === 0 ? (
           <BackstageEmpty />
         ) : (
-          /* Lifted off the page rather than outlined. The page sits on base-200
-             and the board is base-100, so a border was drawing a line between
-             two colours that already differed — the shadow is what makes it read
-             as a panel resting on the page instead of a region marked out on
-             it. */
-          <div className="mt-8 overflow-hidden rounded-box bg-base-100 shadow-xl">
-            {/* The column headings from the design, and only from lg up — below
-                that the rows stop being columns, so a header naming them would
-                be labelling something that isn't there. `aria-hidden` because
-                the headings are decorative: each row already says its own venue,
-                date and status in words. */}
-            {/* base-300, not base-200: the page itself is base-200, so a header
-                tinted with it was the same colour as the space around the board
-                and read as a gap rather than a heading. */}
-            {/* Three columns, and the third has no heading — the buttons label
-                themselves. It is still declared, as an empty span of the width
-                the actions occupy, because that is what holds "Status" over the
-                badges: the heading row and every jam row now end with the same
-                two fixed widths and the same gap, so their flex-1 columns stop
-                at the same x and everything to the right of it lines up. Drop
-                the spacer and "Status" slides over the buttons. */}
-            <div
-              aria-hidden
-              className="hidden gap-5 bg-base-300 px-6 py-4 font-bold lg:flex"
-            >
-              <span className="flex-1">Jam sessions</span>
-              <span className="w-40">Status</span>
-              <span className="w-48" />
-            </div>
-
-            <ul>
-              {inBoardOrder(sessions).map((session) => (
-                <BackstageRow
-                  key={session.id}
-                  session={session}
-                  onCancel={() => {
-                    setCancelError(null);
-                    setTarget(session);
-                  }}
-                />
-              ))}
-            </ul>
-          </div>
+          /* Free-standing cards rather than one panel of rows. The panel and its
+             column headings went together: each card now carries its status as
+             its own fill, so there is nothing left to line up under a heading
+             called "Status", and a white board behind cards this saturated only
+             added an edge between them and the page. */
+          <ul className="mt-8 space-y-5">
+            {inBoardOrder(sessions).map((session) => (
+              <BackstageRow
+                key={session.id}
+                session={session}
+                onCancel={() => {
+                  setCancelError(null);
+                  setTarget(session);
+                }}
+              />
+            ))}
+          </ul>
         ))}
 
       <CancelJamDialog

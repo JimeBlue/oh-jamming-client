@@ -53,8 +53,51 @@ const STATUS = {
   { label: string; className: string; dot: string; ping: boolean }
 >;
 
-export default function JamStatusBadge({ status }: { status: JamStatus }) {
-  const { label, className, dot, ping } = STATUS[status];
+/* The same four states seen from a coloured card rather than from white. The
+   board's rows carry their status as the card's own fill now, so the chip on top
+   of one can't also be a wash of that status — it would be the card's colour
+   twice. A white chip instead, lettered in the card's own colour, so the badge
+   reads as cut out of the card rather than laid on it.
+
+   Today is the exception, the way it was against white: the green is what makes
+   it the one row a venue's eye lands on, and that has to survive being on a card
+   that is already a colour.
+
+   Past and cancelled go translucent rather than white: on the grey card a white
+   chip is the brightest thing in the row, which is the opposite of what a night
+   that is over should be. */
+const PILL = 'rounded-full px-4 py-1';
+
+/* Squarer and tighter than the pill the surface badges wear — this one shares a
+   card with the Cancel button, and two different roundings an inch apart read as
+   an accident. */
+const CHIP = 'rounded-field px-3 py-0.5';
+
+const ON_COLOR = {
+  upcoming: {
+    className: `${CHIP} bg-base-100 text-royal-blue`,
+    dot: 'bg-royal-blue',
+  },
+  today: { className: `${CHIP} bg-emerald-green text-white`, dot: 'bg-white' },
+  past: { className: `${CHIP} bg-white/25 text-white`, dot: 'bg-white/70' },
+  cancelled: { className: `${CHIP} bg-white/25 text-white`, dot: 'bg-white/70' },
+} as const satisfies Record<JamStatus, { className: string; dot: string }>;
+
+export default function JamStatusBadge({
+  status,
+  tone = 'surface',
+}: {
+  status: JamStatus;
+  tone?: 'surface' | 'onColor';
+}) {
+  const { label, ping } = STATUS[status];
+  const onColor = tone === 'onColor';
+  const { className, dot } = onColor ? ON_COLOR[status] : STATUS[status];
+
+  /* Shape rides with the colour rather than sitting on the wrapper, because the
+     on-colour Today is the one badge that isn't a pill and a `rounded-full` in
+     the base would be there to be fought with. */
+  const shape = onColor ? '' : PILL;
 
   return (
     /* border-0 because daisyUI gives every badge a 1px border from `--border`,
@@ -65,19 +108,15 @@ export default function JamStatusBadge({ status }: { status: JamStatus }) {
        `height: var(--size)`, so padding alone changes nothing and the pill stays
        the height daisyUI picked. Releasing the height lets the content set it.
 
-       The padding is deliberately lopsided — 1rem beside the words, 0.25rem
-       above and below. A pill wants to be wider than it is tall, and matching
-       the two turns it into a lozenge with a lot of dead colour in it.
-
-       `rounded-full` over the theme's `--radius-selector` (0.5rem) — at this
-       height that reads as a rounded rectangle, and the design's badges are
-       pills.
+       The pill's padding is deliberately lopsided — 1rem beside the words,
+       0.25rem above and below. A pill wants to be wider than it is tall, and
+       matching the two turns it into a lozenge with a lot of dead colour in it.
 
        No `badge-lg`: its only remaining job here was the font size, since
        `h-auto` already gave the height away, and at that size the label competed
        with the row's own heading. `text-sm` sets it directly. */
     <span
-      className={`badge h-auto gap-2 rounded-full border-0 px-4 py-1 text-sm font-bold ${className}`}
+      className={`badge h-auto gap-2 border-0 text-sm font-bold ${shape} ${className}`}
     >
       {/* aria-hidden on the whole thing: it carries no meaning the label doesn't
           already, which is what makes the animation safe to hide outright below
