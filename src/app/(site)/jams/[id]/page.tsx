@@ -14,10 +14,11 @@ export const metadata: Metadata = {
    unreadable from this server. What this file owns is the ground and the column
    width.
 
-   Indigo rather than the browse's `brand-paper`. The cards are base-100 either
-   way, and the browse is a grid of twelve of them where a near-white ground
-   reads as space between cards; here there is one column and the ground is the
-   page, so it carries the brand instead. */
+   `pale-blue`, the same ground the musician's bookings sit on — and the reason
+   the page reads the way it does. The colour is now carried by the blocks: an
+   indigo card for the night's name, a cyan one for the slots, white panels
+   between them. On an indigo page none of that would be visible, because the
+   loudest thing would be the part with nothing on it. */
 type JamDetailPageProps = {
   params: Promise<{ id: string }>;
   /* Set when a musician is coming back from the login gate — it is what they had
@@ -37,10 +38,13 @@ export default async function JamDetailPage({
     /* pt-28 clears the fixed header, same as the browse. The horizontal padding
        is on the inner container so a future full-bleed band can sit outside it
        and still run edge to edge. */
-    <main className="min-h-screen flex-1 bg-primary pt-28">
-      {/* Narrower than the browse's 7xl: the card inside splits 3/2, and at the
-          browse's width the left column's paragraphs stop being readable. */}
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
+    <main className="min-h-screen flex-1 bg-pale-blue pt-28">
+      {/* Wider than it was, because the two columns are now 1.65/1 rather than
+          3/2 and the right one is a stack of panels that go ragged when they get
+          narrow. The left column's own paragraphs are held at 62ch regardless,
+          so the extra width goes to the photo and the map rather than to line
+          length. */}
+      <div className="mx-auto flex w-full max-w-[77.5rem] flex-col gap-9 px-4 pb-20 sm:px-6 lg:gap-14 lg:px-10">
         <JamDetailView id={id} initialSlotId={slot} />
       </div>
     </main>
