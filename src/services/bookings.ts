@@ -54,3 +54,20 @@ export const getMyBookings = (): Promise<Booking[]> =>
    Returns one booking per spot, all sharing a `groupId`. */
 export const createBooking = (payload: BookingPayload): Promise<CreatedBooking[]> =>
   api.post('/bookings', payload, z.array(createdBookingSchema));
+
+/* Drops a whole booking — every spot claimed in one submission — and puts the
+   spots back on the board.
+
+   The group, not the row. `DELETE /bookings/:id` exists and cancels one spot,
+   but a booking is what the musician made and the group is what they see, so
+   that endpoint has nowhere to be clicked (see `docs/my-bookings.md`).
+
+   A soft delete on the API's side (BK11): the rows survive as `cancelled`, which
+   is why `toBookingCards` has a filter for the ones that shouldn't be listed.
+   Idempotent too — `cancelOne` returns early on an already-cancelled row — so a
+   double-click is not a 409 and this needs no guard beyond a spinner.
+
+   Musician-only and own-bookings-only (BK12): a venue cannot pull one player off
+   a night it is still running. */
+export const cancelBookingGroup = (groupId: string): Promise<void> =>
+  api.del(`/bookings/group/${encodeURIComponent(groupId)}`);

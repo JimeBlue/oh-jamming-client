@@ -2,7 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'react-qr-code';
 import { FaArrowLeft } from 'react-icons/fa6';
 
@@ -20,7 +21,9 @@ import type { JamSession } from '@/schemas/jamSession';
 import { ApiError } from '@/services/api';
 import { getMyBookings } from '@/services/bookings';
 import { getJamSession } from '@/services/jamSessions';
+import CancelBookingDialog from './CancelBookingDialog';
 import Perforation from './Perforation';
+import RescheduleDialog from './RescheduleDialog';
 
 /* One booking, in full: the QR to present at the door, what was claimed, and
    where to turn up.
@@ -55,6 +58,12 @@ type DetailsState =
          same `toBookingCards` the list uses rather than passed through the URL —
          a colour in a query string is a colour that can be wrong. */
       index: number;
+      /* Every spot in the group, which is the one thing the card view model
+         doesn't carry: it holds the venue's *labels*, and the reschedule flow
+         has to name spots by id — to pre-select them, to leave them selectable
+         while they are booked by this musician, and to put them back if the new
+         selection fails. */
+      spotIds: string[];
       /* Absent when `/jam-sessions/:id` failed or hasn't answered yet. Every
          panel that reads it is conditional on it. */
       session?: JamSession;
@@ -139,7 +148,36 @@ const Chips = ({ items, tone }: { items: string[]; tone: 'royal' | 'cyan' }) => 
 );
 
 export default function BookingDetails({ groupId }: { groupId: string }) {
+  const router = useRouter();
   const [state, setState] = useState<DetailsState>({ status: 'loading' });
+
+  /* Bumped to re-run the fetch below. A counter rather than lifting the request
+     out into a callback: the effect already owns the cancellation flag that
+     keeps a late response from writing to an unmounted component, and pulling
+     the request out would mean maintaining that in two places. */
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const reload = useCallback(() => setReloadKey((key) => key + 1), []);
+
+  /* Where the page goes when the reschedule flow finishes.
+
+     It nearly always goes somewhere: this flow cancels and re-creates, so a
+     successful change hands back a *different* groupId and the URL in the
+     address bar now names a cancelled booking. Replacing rather than pushing —
+     the old id is not a place worth having in the back button. Same id back
+     means nothing was written, and a refetch is all that's owed. */
+  const afterReschedule = useCallback(
+    (nextGroupId: string) => {
+      if (nextGroupId === groupId) {
+        reload();
+
+        return;
+      }
+
+      router.replace(`/my-bookings/${encodeURIComponent(nextGroupId)}`);
+    },
+    [groupId, reload, router],
+  );
 
   useEffect(() => {
     let active = true;
@@ -176,7 +214,13 @@ export default function BookingDetails({ groupId }: { groupId: string }) {
           return;
         }
 
-        setState({ status: 'ready', card, booking: first, index });
+        setState({
+          status: 'ready',
+          card,
+          booking: first,
+          index,
+          spotIds: rows.map(({ spotId }) => spotId),
+        });
 
         /* Second, and separately: the ticket is already drawable. Anything this
            adds is detail around it, so it neither blocks the render nor takes it
@@ -198,7 +242,7 @@ export default function BookingDetails({ groupId }: { groupId: string }) {
     return () => {
       active = false;
     };
-  }, [groupId]);
+  }, [groupId, reloadKey]);
 
   if (state.status === 'loading') {
     return (
@@ -224,7 +268,18 @@ export default function BookingDetails({ groupId }: { groupId: string }) {
     );
   }
 
-  return <BookingDetailsView {...state} />;
+  return (
+    <BookingDetailsView
+      {...state}
+      onRescheduled={afterReschedule}
+      /* Back to the list rather than staying here. This page draws a ticket and
+         has nowhere to say "cancelled" — the card in the list does, in words, on
+         a badge — so leaving them on an unchanged-looking ticket would be the
+         page disagreeing with what just happened. `replace`, because the ticket
+         they just gave up is not a place the back button should return to. */
+      onCancelled={() => router.replace('/my-bookings')}
+    />
+  );
 }
 
 /* The drawing, with no idea where any of it came from. Split out so the layout
@@ -236,15 +291,36 @@ export function BookingDetailsView({
   booking,
   session,
   index,
+  spotIds = [],
+  onRescheduled,
+  onCancelled,
 }: {
   card: BookingCardView;
   booking: Booking;
   session?: JamSession;
   index: number;
+  spotIds?: string[];
+  /* Both absent when this is drawn from fixtures, which is what leaves the two
+     actions inert there: each flow needs somewhere to send the page afterwards,
+     and neither leaves the booking where it was, so there is no sensible
+     no-op. */
+  onRescheduled?: (groupId: string) => void;
+  onCancelled?: () => void;
 }) {
   const address = session?.address;
   const hasPin = address?.lat !== undefined && address?.lng !== undefined;
   const cyan = isCyanCard(index);
+
+  const [rescheduling, setRescheduling] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  /* Decision 6: no actions on a night that has already happened or has been
+     called off. The API has no date rule on cancelling — `cancelOne` checks the
+     status and nothing else — so on past bookings this check is the only thing
+     standing between a musician and cancelling a gig they already played. */
+  const live = card.status === 'confirmed';
+  const canReschedule = live && onRescheduled !== undefined;
+  const canCancel = live && onCancelled !== undefined;
 
   return (
     <div className="space-y-5">
@@ -472,29 +548,63 @@ export function BookingDetailsView({
             Overview
           </Link>
 
-          {/* Both inert on purpose. `docs/my-bookings.md` has the flows behind
-              them — Cancel is `DELETE /bookings/group/:groupId` plus a confirm,
-              and Reschedule is the simulated edit — and neither is built yet.
-              Real `<button disabled>` rather than styled-to-look-clickable: a
-              control that takes a click and does nothing is the version that
-              gets reported as a bug. */}
+          {/* Reschedule opens the simulated edit — see `RescheduleDialog` and
+              `docs/my-bookings.md`. Both are disabled rather than hidden on a
+              past or cancelled booking: they are three buttons in a row, and a
+              row that loses items on some bookings reads as a layout bug rather
+              than as an answer. */}
           <button
             type="button"
-            disabled
-            className="btn h-12 border-none bg-pale-blue font-bold text-royal-blue sm:flex-1"
+            disabled={!canReschedule}
+            onClick={() => setRescheduling(true)}
+            /* Fills with the blue it is already lettered in. The other two
+               hovers move towards their own ink as well — one row, one idea,
+               three different destinations. */
+            className="btn h-12 border-none bg-pale-blue font-bold text-royal-blue transition-colors hover:bg-royal-blue hover:text-white sm:flex-1"
           >
             Reschedule
           </button>
 
+          {/* The quietest of the three, and the only one that destroys
+              something. It opens a dialog rather than cancelling, so this button
+              commits nothing — which is what lets it sit in a row with the other
+              two instead of being fenced off from them. */}
           <button
             type="button"
-            disabled
-            className="btn h-12 border-base-300 bg-base-100 font-bold text-dark-teal sm:flex-1"
+            disabled={!canCancel}
+            onClick={() => setCancelling(true)}
+            /* The only hover in the row that darkens rather than lightens. It
+               is the button that leads somewhere destructive, and an outlined
+               button with no hover at all reads as disabled next to two filled
+               ones. Not red: nothing is destroyed by pressing it — the dialog
+               it opens is where that is decided. */
+            className="btn h-12 border-base-300 bg-base-100 font-bold text-dark-teal transition-colors hover:border-dark-teal hover:bg-dark-teal hover:text-white sm:flex-1"
           >
             Cancel booking
           </button>
         </div>
       </Panel>
+
+      {/* Mounted only while open, so every reopening is a fresh fetch of the
+          session's slots and a selection seeded from the booking — rather than
+          whatever was on screen when it was last dismissed. */}
+      {rescheduling && onRescheduled && (
+        <RescheduleDialog
+          jamSessionId={card.jamSessionId}
+          groupId={card.groupId}
+          current={{ slotId: booking.slotId, spotIds, bandName: card.bandName }}
+          onClose={() => setRescheduling(false)}
+          onDone={onRescheduled}
+        />
+      )}
+
+      {cancelling && onCancelled && (
+        <CancelBookingDialog
+          groupId={card.groupId}
+          onClose={() => setCancelling(false)}
+          onCancelled={onCancelled}
+        />
+      )}
     </div>
   );
 }
