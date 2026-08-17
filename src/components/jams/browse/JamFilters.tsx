@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FaChartSimple, FaLocationDot, FaMusic, FaRegCalendar } from 'react-icons/fa6';
 
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
 import {
@@ -83,39 +82,40 @@ const datePresets = (): { id: string; label: string; range: DateRange }[] => {
   ];
 };
 
-const FILTER_ICON = 'size-4 shrink-0 text-primary';
+/* A pale field inside the white card the row is drawn on, which is the design's
+   shape and the same one the AI tab's bar has: a white plate with the controls
+   sitting in it, rather than four outlined boxes on the page.
 
-/* Same construction as the guest list's filter strip, and deliberately the same
-   component shape: daisyUI 5 puts a glyph inside a select by making the *label*
-   the `select` and leaving the control unclassed, so this can't be done with a
-   className on the `<select>` alone.
+   The glyph each of these used to lead with is gone — the design has none, and
+   with the controls now filling the row edge to edge the icons were four small
+   marks competing with the four words that actually say what the control is.
+   Losing the label-wrapper daisyUI needs for an inner icon is what lets the
+   class go back on the `<select>` itself.
 
-   `ms-0!` because that wrapper gives its child an inline-start margin meant to
-   clear a leading label, which here just pushes the text away from the icon. */
+   `flex-1` with a floor: four equal fields at desktop width, wrapping to two and
+   then one rather than shrinking until "This weekend" no longer fits. */
+const FILTER_FIELD =
+  'h-12 min-w-40 flex-1 border-0 bg-pale-blue text-dark-teal ring-1 ring-dark-teal/10 focus:outline-2 focus:outline-offset-[-2px] focus:outline-royal-blue';
+
 const FilterSelect = ({
-  icon,
   label,
   value,
   onChange,
   children,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string;
   onChange: (value: string) => void;
   children: React.ReactNode;
 }) => (
-  <label className="filter-select select w-44 gap-2 border-primary/30 bg-base-100">
-    {icon}
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="ms-0!"
-    >
-      {children}
-    </select>
-  </label>
+  <select
+    aria-label={label}
+    value={value}
+    onChange={(event) => onChange(event.target.value)}
+    className={`browse-select select font-medium ${FILTER_FIELD}`}
+  >
+    {children}
+  </select>
 );
 
 type JamFiltersProps = {
@@ -183,10 +183,11 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
      the question a label would ask. `aria-label` carries the name for anyone who
      isn't reading the option. */
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <FilterSelect
-        icon={<FaRegCalendar aria-hidden className={FILTER_ICON} />}
-        label="Date"
+    /* The white plate the AI tab's bar is also drawn on, at the same padding, so
+       switching tabs swaps the controls inside one card rather than replacing
+       one card with another of a different height. */
+    <div className="flex flex-wrap items-center gap-3 rounded-box bg-base-100 p-2 shadow-sm ring-1 ring-dark-teal/10">
+      <FilterSelect label="Date"
         value={showCustom ? 'custom' : activePreset}
         onChange={(chosen) => {
           if (chosen === 'custom') {
@@ -217,7 +218,7 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
           <input
             type="date"
             aria-label="From"
-            className="input input-primary w-40"
+            className={`input ${FILTER_FIELD}`}
             value={filters.from ?? ''}
             /* Nothing stops a range ending before it starts, because the API
                already refuses that with a message worth reading and this control
@@ -225,14 +226,14 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
             onChange={(event) => update({ from: event.target.value })}
           />
 
-          <span aria-hidden className="opacity-60">
+          <span aria-hidden className="text-dark-teal/60">
             to
           </span>
 
           <input
             type="date"
             aria-label="To"
-            className="input input-primary w-40"
+            className={`input ${FILTER_FIELD}`}
             value={filters.to ?? ''}
             onChange={(event) => update({ to: event.target.value })}
           />
@@ -240,7 +241,6 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
       )}
 
       <FilterSelect
-        icon={<FaLocationDot aria-hidden className={FILTER_ICON} />}
         label="City"
         value={filters.city ?? ''}
         onChange={(city) => update({ city })}
@@ -254,7 +254,6 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
       </FilterSelect>
 
       <FilterSelect
-        icon={<FaMusic aria-hidden className={FILTER_ICON} />}
         label="Genre"
         value={filters.genre ?? ''}
         onChange={(genre) => update({ genre: genre as Genre })}
@@ -270,7 +269,6 @@ export default function JamFilters({ filters, onChange }: JamFiltersProps) {
       {/* The same glyph the card and the listing use for skill level, so the
           control that sets it and the places that show it agree. */}
       <FilterSelect
-        icon={<FaChartSimple aria-hidden className={FILTER_ICON} />}
         label="Level"
         value={filters.skillLevel ?? ''}
         onChange={(skillLevel) => update({ skillLevel: skillLevel as SkillLevel })}

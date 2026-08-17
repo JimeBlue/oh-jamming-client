@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaArrowsRotate, FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaArrowsRotate, FaMagnifyingGlass, FaSliders } from 'react-icons/fa6';
 import { HiOutlineSparkles } from 'react-icons/hi';
 
 import { useTypedPlaceholder } from '@/hooks/useTypedPlaceholder';
@@ -79,74 +79,140 @@ export default function JamSearch({
     onReset();
   };
 
+  /* Emptying the box gives the whole board back, and it has to: the sentence is
+     the only thing on this tab that says why the grid is a subset, so a cleared
+     field over a filtered board is a page with no visible reason for what it is
+     showing and — since Reset only appears on the Manual tab — no way back.
+
+     The `×` inside a `type="search"` field is the browser's own control and
+     fires nothing but an ordinary change, which is why this lives here rather
+     than on an event of its own. Backspacing the sentence out by hand therefore
+     clears it too, which is the same promise kept: the board matches the box.
+
+     Guarded on there being filters in force, so typing and deleting a character
+     on an unfiltered board doesn't fire a pointless request for a list that is
+     already on screen. */
+  const change = (value: string) => {
+    setQuery(value);
+
+    if (value === '' && Object.keys(filters).length > 0) reset();
+  };
+
   const trimmed = query.trim();
   const tooLong = query.length > MAX_SEARCH_CHARS;
   const canSearch = trimmed !== '' && !tooLong && !isSearching;
 
   const placeholder = useTypedPlaceholder(query === '');
 
+  /* Below the page's heading rather than above it, which is the design and also
+     the right order to read: the title says what the board is, and the bar
+     narrows it.
+
+     More air underneath than above, and on top of the margin whatever follows
+     already carries: the bar is a control and the grid under it is the answer,
+     so the gap between them has to be wider than the one holding the bar to its
+     own heading. */
   return (
-    <section aria-labelledby="jam-search-heading" className="mb-10">
+    <section aria-labelledby="jam-search-heading" className="mt-8 mb-12">
       <h2 id="jam-search-heading" className="sr-only">
         Search jam sessions
       </h2>
 
-      {/* Stacked below md, side by side above it. The tabs go on top rather than
-          beside on a phone because the bar underneath needs the full width to be
-          typeable at all — two tabs and an input sharing 375px leaves a box too
-          narrow to see what you have written. */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
-        {/* Outlined buttons rather than daisyUI's `tab`, which is why the `tabs`
-            class is gone with the tray it drew: `.tab` and `.btn` both own the
-            element's height, padding and background, so they can't be stacked —
-            the list keeps `role="tablist"` and does its own layout.
+      {/* Tabs on their own row with the controls under them at every width, which
+          is what the design shows and what the bar underneath needs: the AI box
+          is one long sentence, and beside a pair of buttons it never had the
+          width to show what had been typed into it. */}
+      <div className="flex flex-col gap-4">
+        {/* Buttons rather than daisyUI's `tab`, which is why the `tabs` class is
+            gone with the tray it drew: `.tab` and `.btn` both own the element's
+            height, padding and background, so they can't be stacked — the list
+            keeps `role="tablist"` and does its own layout.
 
-            The live one is solid, the other an outline — the strongest signal
-            available for the only thing this pair has to say, which is which set
-            of controls is on screen.
-
-            Both invert on hover, which is the opposite of daisyUI's own outline
-            behaviour and deliberate. Its `btn-outline` fills on hover, so left
-            alone the inactive tab would go solid indigo under the pointer and
-            look exactly like the active one — hover would be announcing a state
-            change that hasn't happened. Swapping the fill instead keeps the two
-            distinguishable in every combination of hover and selection. */}
-        <div role="tablist" className="flex shrink-0 gap-2 self-start md:self-auto">
+            The live one is solid royal blue, the other a white tile with a
+            hairline — the strongest signal available for the only thing this
+            pair has to say, which is which set of controls is on screen. The
+            inactive one only takes the blue as ink on hover, never as a fill:
+            filling it would make hover announce a selection that hasn't
+            happened. */}
+        <div role="tablist" className="flex gap-2 self-start">
           <button
             type="button"
             role="tab"
             aria-selected={tab === 'ai'}
-            className={`btn gap-2 whitespace-nowrap font-bold ${
-              tab === 'ai'                ? 'btn-primary hover:border-primary hover:bg-transparent hover:text-primary'
-                : 'btn-outline border-base-300 text-base-content/60 hover:border-primary hover:bg-transparent hover:text-primary'
+            className={`btn gap-2 whitespace-nowrap border-0 font-bold ${
+              tab === 'ai'
+                ? 'bg-royal-blue text-white hover:bg-royal-blue/90'
+                : 'bg-base-100 text-dark-teal/60 shadow-none ring-1 ring-dark-teal/10 hover:bg-base-100 hover:text-royal-blue hover:ring-royal-blue'
             }`}
             onClick={() => setTab('ai')}
           >
             <HiOutlineSparkles className="size-4" />
-            AI-search
+            AI search
           </button>
 
           <button
             type="button"
             role="tab"
             aria-selected={tab === 'manual'}
-            className={`btn gap-2 whitespace-nowrap font-bold ${
-              tab === 'manual'                ? 'btn-primary hover:border-primary hover:bg-transparent hover:text-primary'
-                : 'btn-outline border-base-300 text-base-content/60 hover:border-primary hover:bg-transparent hover:text-primary'
+            className={`btn gap-2 whitespace-nowrap border-0 font-bold ${
+              tab === 'manual'
+                ? 'bg-royal-blue text-white hover:bg-royal-blue/90'
+                : 'bg-base-100 text-dark-teal/60 shadow-none ring-1 ring-dark-teal/10 hover:bg-base-100 hover:text-royal-blue hover:ring-royal-blue'
             }`}
             onClick={() => setTab('manual')}
           >
-            <FaMagnifyingGlass className="size-3.5" />
+            {/* Sliders, not the magnifying glass it used to wear. The bar beside
+                it now ends in a magnifier of its own, and two of them on one row
+                meaning different things is a glyph that has stopped saying
+                anything. */}
+            <FaSliders className="size-3.5" />
             Manual
           </button>
         </div>
 
         {/* The manual panel, in the same place the AI bar occupies — both are the
-            one row beside the tabs, so switching swaps the controls without the
-            page below moving. */}
+            row under the tabs, so switching swaps the controls without the page
+            below moving. */}
         {tab === 'manual' && (
-          <div className="min-w-0 flex-1">
-            <JamFilters key={resetCount} filters={filters} onChange={onFiltersChange} />
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+            <div className="min-w-0 flex-1">
+              <JamFilters key={resetCount} filters={filters} onChange={onFiltersChange} />
+            </div>
+
+            {/* The manual tab only, and inside its row rather than beside the
+                tabs. Four controls set independently are the case that needs
+                one way back — undoing them one at a time is four moves and it
+                is easy to lose track of which are still set. A sentence is one
+                thing to clear and the field clears itself.
+
+                It still resets everything either tab set, including the
+                sentence and the reading above the grid, so the board a musician
+                lands back on is the whole board rather than one with an
+                invisible filter left on it.
+
+                Absent rather than disabled when there is nothing to undo: a
+                disabled control asks the reader to work out why, and the answer
+                here — "you haven't filtered anything" — is already obvious from
+                the row it would be sitting in. */}
+            {canReset && (
+              /* A royal-blue wash rather than the pink one the guest list's
+                 Reset filters still wears: this row is the page's blue now, and
+                 the one control that undoes it shouldn't be the only thing on
+                 the tab in a colour of its own.
+                 A wash rather than the solid blue the tabs and the Search button
+                 use — it undoes work rather than doing any, so it should be
+                 findable without competing with them. `border-0` because `.btn`
+                 draws one by default and this is meant to read as a tint, not as
+                 a fifth outlined box in a row of four. */
+              <button
+                type="button"
+                onClick={reset}
+                className="btn h-12 shrink-0 gap-2 self-start border-0 bg-royal-blue/10 font-bold text-royal-blue hover:bg-royal-blue/20 md:self-auto"
+              >
+                <FaArrowsRotate aria-hidden className="size-4" />
+                Reset filters
+              </button>
+            )}
           </div>
         )}
 
@@ -166,68 +232,56 @@ export default function JamSearch({
             event.preventDefault();
             if (canSearch) onSearch(trimmed);
           }}
-          className="min-w-0 flex-1"
+          className="min-w-0"
         >
           <label htmlFor="jam-search-query" className="sr-only">
             Describe the jam session you are looking for
           </label>
 
-          {/* `join` for the attached bar: it rounds only the outer corners, and
-              with `--radius-field` at 0.5rem that is the wizard's radius rather
-              than the design's pill.
+          {/* The design's bar is one white card with the button sitting inside
+              it, which is why daisyUI's `input` and `join` are both gone: those
+              draw an outlined field with a button welded to its edge, and the
+              two radii can't be made to nest. This is a plain flex row wearing
+              the card's own `rounded-box` and a pad, and the button inside it
+              keeps a radius of its own.
 
-              Default size, not `lg`. From `md` up the tabs sit on the same line
-              as this, and they are buttons at daisyUI's default height — an `lg`
-              bar beside them made the pair look like a control and its caption
-              rather than one row. */}
-          <div className="join w-full">
-            {/* daisyUI 5 puts the icon inside by making the wrapper the `input`
-                — the control itself carries no `input` class. Indigo border and
-                indigo glyph; `input-primary` alone leaves the icon at body
-                colour, which reads as a disabled field next to a primary button. */}
-            {/* Focus leaves the edge exactly as it is at rest. daisyUI draws a
-                2px ring at `outline-offset: 2px`, which sits in the gap outside
-                the border and makes the focused field read as taller than the
-                button joined to it — an outline takes no layout space, so the
-                two are the same 48px either way and it is purely the second
-                line doing it.
+              Taller than a default field, because at this width and on its own
+              row it is the page's main control rather than one input among
+              several. */}
+          <div
+            className={`flex w-full items-center gap-3 rounded-box bg-base-100 p-2 pl-5 shadow-sm ring-1 transition-shadow focus-within:ring-2 ${
+              tooLong ? 'ring-error focus-within:ring-error' : 'ring-dark-teal/10 focus-within:ring-cyan-blue'
+            }`}
+          >
+            {/* The focus ring is on the card rather than on the `<input>`, which
+                is what the `focus-within` above is for — a ring drawn around the
+                bare field would sit inside the white card and read as a second
+                box. `outline-none` on the input itself so the browser's own one
+                doesn't draw it twice. */}
+            <HiOutlineSparkles
+              aria-hidden
+              className={`size-5 shrink-0 ${tooLong ? 'text-error' : 'text-cyan-blue'}`}
+            />
 
-                1px wide at -1px offset lands the ring exactly on the border it
-                already has, covering it rather than adding to it. Kept rather
-                than removed with `outline-none`: the caret is the only other
-                thing saying where focus is, and it disappears every time the
-                animated placeholder repaints. */}
-            <label
-              className={`input join-item flex w-full items-center gap-3 focus-within:outline-1 focus-within:outline-offset-[-1px] ${
-                tooLong ? 'input-error' : 'input-primary'
-              }`}
-            >
-              <HiOutlineSparkles
-                aria-hidden
-                className={`size-5 shrink-0 ${tooLong ? 'text-error' : 'text-primary'}`}
-              />
-
-              <input
-                id="jam-search-query"
-                type="search"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                disabled={isSearching}
-                /* The animating text is an example, never the field's name —
-                   a placeholder that changes under a screen reader is a label
-                   that will not hold still. The real name is the sr-only label
-                   above, so this stays purely visual. */
-                placeholder={placeholder}
-                className="grow"
-              />
-            </label>
+            <input
+              id="jam-search-query"
+              type="search"
+              value={query}
+              onChange={(event) => change(event.target.value)}
+              disabled={isSearching}
+              /* The animating text is an example, never the field's name —
+                 a placeholder that changes under a screen reader is a label
+                 that will not hold still. The real name is the sr-only label
+                 above, so this stays purely visual. */
+              placeholder={placeholder}
+              className="min-w-0 grow bg-transparent text-dark-teal outline-none placeholder:text-dark-teal/40"
+            />
 
             {/* Still `disabled` — an empty box is nothing to search and the
-                button must not fire — but it keeps the indigo instead of taking
+                button must not fire — but it keeps the blue instead of taking
                 daisyUI's grey. The grey read as a broken control rather than an
-                unfinished one: the field beside it is empty and outlined in
-                indigo, and a dead grey block on the end of it looked like the
-                bar had failed to load.
+                unfinished one: it sits inside the white bar, and a dead grey
+                block in the corner of it looked like the bar had failed to load.
 
                 The `!`s are unavoidable: daisyUI's disabled rule nests a
                 `:not(.btn-link, .btn-ghost)` inside `.btn:disabled`, which
@@ -238,7 +292,7 @@ export default function JamSearch({
             <button
               type="submit"
               disabled={!canSearch}
-              className="btn btn-primary join-item gap-2 font-bold disabled:cursor-not-allowed disabled:border-primary! disabled:bg-primary! disabled:text-primary-content!"
+              className="btn h-12 shrink-0 gap-2 border-0 bg-royal-blue px-6 font-bold text-white hover:bg-royal-blue/90 disabled:cursor-not-allowed disabled:bg-royal-blue! disabled:text-white!"
             >
               {isSearching ? (
                 <span className="loading loading-spinner loading-sm" />
@@ -262,35 +316,6 @@ export default function JamSearch({
             </p>
           )}
         </form>
-        )}
-
-        {/* The manual tab only. Four controls set independently are the case that
-            needs one way back — undoing them one at a time is four moves and it
-            is easy to lose track of which are still set. A sentence is one thing
-            to clear and the field clears itself.
-
-            It still resets everything either tab set, including the sentence and
-            the reading above the grid, so the board a musician lands back on is
-            the whole board rather than one with an invisible filter left on it.
-
-            Absent rather than disabled when there is nothing to undo: a disabled
-            control asks the reader to work out why, and the answer here — "you
-            haven't filtered anything" — is already obvious from the row it would
-            be sitting in. */}
-        {tab === 'manual' && canReset && (
-          /* The soft pink wash the guest list's Reset filters wears, so the one
-             control that undoes a filter strip looks the same on both sides of
-             the app. `border-0` because `.btn` draws one by default and the wash
-             is meant to read as a tint rather than as a fourth outlined box in a
-             row of three. */
-          <button
-            type="button"
-            onClick={reset}
-            className="btn shrink-0 gap-2 self-start border-0 bg-status-taken/10 font-bold text-status-taken hover:bg-status-taken/20 md:self-auto"
-          >
-            <FaArrowsRotate aria-hidden className="size-4" />
-            Reset filters
-          </button>
         )}
       </div>
     </section>

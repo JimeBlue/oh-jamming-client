@@ -131,6 +131,95 @@
   color: var(--color-primary);
 }
 
+/* The browse's four filters, popup included.
+ *
+ * A class of its own rather than more rules on `.filter-select`, which the
+ * backstage guest list also wears and which is still indigo — the two strips
+ * look alike but are on opposite sides of the app and only one has been
+ * re-branded.
+ *
+ * `appearance: base-select` is the opt-in that makes a select's dropdown part of
+ * the page at all; without it the list is drawn by the OS and nothing below
+ * applies. It is Chromium-only for now, which is what the `@supports` is for:
+ * everywhere else the control keeps daisyUI's chevron and the platform's own
+ * popup, which is a perfectly good select and the reason none of this is worth
+ * doing with a div and a keydown handler. */
+@supports (appearance: base-select) {
+  .browse-select,
+  .browse-select::picker(select) {
+    appearance: base-select;
+  }
+
+  /* daisyUI draws its chevron as a background image and hides the real
+     `::picker-icon` that `base-select` adds, so that its own is the only one.
+     This swaps which of the two survives — the generated icon is the one that
+     can rotate when the list opens, where a background image can't.
+     Both halves have to be inside the `@supports`: dropping the background
+     image in a browser that ignores `base-select` would leave no arrow at all,
+     which is exactly what happened before this rule turned the other one on. */
+  .browse-select {
+    background-image: none;
+  }
+
+  /* The generated icon is a solid triangle — the platform's own disclosure mark,
+     and nothing like the thin chevron daisyUI drew or the design shows. Emptying
+     `content` and painting a masked SVG instead keeps the element (so it still
+     rotates on open) while replacing what it looks like. `currentColor` through
+     the mask rather than a fill baked into the data URI, so the colour stays one
+     declaration. */
+  .browse-select::picker-icon {
+    display: block;
+    content: '';
+    width: 0.85rem;
+    height: 0.85rem;
+    background-color: var(--color-dark-teal);
+    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>")
+      center / contain no-repeat;
+    transition: transform 0.2s;
+  }
+
+  .browse-select:open::picker-icon {
+    transform: rotate(180deg);
+  }
+
+  .browse-select::picker(select) {
+    margin-block-start: 0.375rem;
+    border: 1px solid color-mix(in oklab, var(--color-dark-teal) 12%, transparent);
+    border-radius: var(--radius-box);
+    background-color: var(--color-base-100);
+    padding: 0.375rem;
+    box-shadow: 0 18px 40px -18px rgb(0 0 0 / 0.35);
+  }
+
+  .browse-select option {
+    border-radius: var(--radius-field);
+    padding: 0.5rem 0.75rem;
+    color: var(--color-dark-teal);
+    font-weight: 500;
+  }
+
+  /* Keyboard and pointer land on the same wash, so arrowing down the list looks
+     like pointing at it. */
+  .browse-select option:hover,
+  .browse-select option:focus {
+    background-color: color-mix(in oklab, var(--color-royal-blue) 10%, transparent);
+  }
+
+  /* The one already chosen, solid — it is the only row in the list that is a
+     fact rather than an offer. */
+  .browse-select option:checked {
+    background-color: var(--color-royal-blue);
+    color: #ffffff;
+  }
+
+  /* The tick `base-select` adds in front of the chosen row. Gone: it sits in a
+     reserved column that indents every other option to line up with it, and the
+     solid blue above already says which one it is. */
+  .browse-select option::checkmark {
+    display: none;
+  }
+}
+
 
 .rich-text {
   & p {

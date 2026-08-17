@@ -1,19 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  FaArrowRight,
-  FaChartSimple,
-  FaLocationDot,
-  FaRegClock,
-  FaRegImage,
-} from 'react-icons/fa6';
+import { FaArrowRight, FaLocationDot, FaRegClock, FaRegImage } from 'react-icons/fa6';
 
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
-import { cityFromAddress, formatShortDate } from '@/lib/jamListing';
+import { cityFromAddress, formatShortDateParts } from '@/lib/jamListing';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
 import { utcMidnightToDateString } from '@/lib/time';
-import { ALL_GENRES, type JamSession } from '@/schemas/jamSession';
+import type { JamSession } from '@/schemas/jamSession';
 
 /* One jam on the browse.
 
@@ -27,14 +21,6 @@ import { ALL_GENRES, type JamSession } from '@/schemas/jamSession';
    No heart, unlike the design it comes from: favourites don't exist, and a
    control that visibly does nothing is worse than one that isn't there. */
 
-/* The eight hover zones daisyUI's `hover-3d` reads. They are children 2–9 of the
-   container, laid over the card in a 3×3 grid with the middle cell left out, and
-   which one the pointer is in is the entire input to the effect: the component
-   selects on `:has(> :nth-child(n):hover)` and sets the tilt, the shine position
-   and the shadow offset from it. Empty and `aria-hidden` — there is nothing in
-   them to read, and their only job is to be somewhere the pointer can be. */
-const HOVER_ZONES = [0, 1, 2, 3, 4, 5, 6, 7];
-
 export default function JamCard({ session }: { session: JamSession }) {
   const day = utcMidnightToDateString(session.date);
 
@@ -45,16 +31,23 @@ export default function JamCard({ session }: { session: JamSession }) {
      second implementation of that sum is a second answer waiting to disagree. */
   const { free } = jamReport(session);
 
-  /* `skillLevel` is an array on the wire and the API requires at least one, so
-     this is only ever undefined for a document written before that rule — worth
-     guarding rather than indexing blind. */
-  const [level] = session.skillLevel;
+  /* Three chips on a card, never a fourth, and the genres get first refusal:
+     two of them and one level, or one and two levels when the venue only tagged
+     one genre. Past three they wrap into a second row and push the button off
+     the fold, and a musician filtering by genre already knows which one they
+     asked for.
+
+     Both arrays are required by the API and both can hold more than the card
+     shows, so this is a display cap rather than a guard — but `slice` is also
+     what makes the empty case safe for a document written before either rule. */
+  const genres = session.genres.slice(0, 2);
+  const levels = session.skillLevel.slice(0, Math.min(2, 3 - genres.length));
 
   /* "Tonight" reads better than today's own date on a card whose whole job is
      urgency — and it is the same day-granular answer the board's badge gives,
      from the same function, so the two can't disagree about which day it is. */
   const isToday = jamStatus(session) === 'today';
-  const when = isToday ? 'Tonight' : formatShortDate(day);
+  const when = isToday ? null : formatShortDateParts(day);
 
   const cta = free === 0 ? 'See the night' : 'Book a spot';
 
@@ -76,28 +69,26 @@ export default function JamCard({ session }: { session: JamSession }) {
           the button's words run together into one announcement — which is what
           a card link usually sounds like and is worth overriding.
 
-          THE LINK IS ALSO THE `hover-3d` CONTAINER, and it has to be. The zones
-          above sit over the card with a z-index of their own, so beside the link
-          they would swallow every click outside the middle third of it — and a
-          link laid over them would mean the pointer never reaches a zone, so
-          nothing would ever tilt. Making the link the container resolves both:
-          the zones are inside the anchor, so a click on one still navigates.
+          The card lifts and deepens its shadow under the pointer while the photo
+          grows inside its own frame. It replaced daisyUI's `hover-3d`, which
+          tilted the card towards the cursor and needed eight empty absolutely
+          positioned zones laid over it to know where the cursor was — an effect
+          this grid didn't need and a layer of decoy elements between every card
+          and its own contents.
 
-          `h-full w-full` because `hover-3d` sets `display: inline-grid`, which
-          on its own shrinks the card to its content and leaves it short of the
-          row height its neighbours stretch to. */}
+          `block h-full` because an anchor is inline by default and would sit at
+          its content's height, leaving the card short of the row its neighbours
+          stretch to. `hover-3d` used to supply that by making it a grid. */}
       <Link
         href={`/jams/${session.id}`}
         aria-label={session.title}
-        className="hover-3d h-full w-full"
+        className="group block h-full w-full transition-transform duration-300 motion-safe:hover:-translate-y-2"
       >
-        {/* The first child is the one daisyUI tilts, so everything visible lives
-            in here rather than on the link. `relative` for the shine, which the
-            component paints as an absolutely positioned `::before` on this
-            element; the clipping that rounds the corners is the component's own
-            `overflow: hidden`. */}
-        <div className="relative flex h-full flex-col rounded-box bg-base-100 shadow-lg">
-          <div className="relative aspect-video w-full bg-primary/10">
+        {/* `overflow-hidden` is what keeps the growing photo inside the card's
+            rounded top corners — it came free with `hover-3d`'s own clipping
+            before, and without it the image squares them off on hover. */}
+        <div className="relative flex h-full flex-col overflow-hidden rounded-box bg-base-100 shadow-lg transition-shadow duration-300 group-hover:shadow-2xl">
+          <div className="relative aspect-video w-full bg-cyan-blue/10">
             {session.image ? (
               <Image
                 src={session.image}
@@ -112,49 +103,57 @@ export default function JamCard({ session }: { session: JamSession }) {
                    past `xl` the container is capped at 7xl, so the card stops
                    growing with the window. */
                 sizes="(min-width: 1280px) 18rem, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 100vw"
-                className="object-cover"
+                /* The photo grows a little inside a frame that doesn't, which
+                   is the half of the hover that says the card is a door. Only
+                   the image scales — the date badge is a sibling in this box
+                   and stays where it is. */
+                className="object-cover transition-transform duration-300 motion-safe:group-hover:scale-105"
               />
             ) : (
               <div aria-hidden className="grid h-full place-items-center">
-                <FaRegImage className="size-10 text-primary/40" />
+                <FaRegImage className="size-10 text-cyan-blue/40" />
               </div>
             )}
 
-            {/* Pink tonight, indigo otherwise. The one card a musician can act
-                on today is the one that should be findable by colour while
-                scanning a grid of twelve — the same job the board's inverted
-                "Today" badge does, said in the palette this side of the app
-                uses. */}
-            {when && (
-              <span
-                className={`absolute left-3 top-3 rounded-field px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-                  isToday
-                    ? 'bg-brand-pink-deep text-white'
-                    : 'bg-primary text-primary-content'
-                }`}
-              >
-                {when}
+            {/* Dark teal carrying a lime weekday, which is the design's badge —
+                the weekday is what the eye lands on when scanning a grid for a
+                night that suits, and the date it belongs to follows in white.
+
+                Tonight inverts the whole tile to lime instead. The one card a
+                musician can act on today has to be findable by colour rather
+                than by reading, and inverting is the strongest signal the two
+                colours already on the badge can make between them. */}
+            {isToday ? (
+              <span className="absolute left-3 top-3 rounded-field bg-accent px-3 py-1 text-xs font-bold text-dark-teal">
+                Tonight
               </span>
+            ) : (
+              when && (
+                <span className="absolute left-3 top-3 rounded-field bg-dark-teal px-3 py-1 text-xs font-bold text-white">
+                  <span className="text-accent">{when.weekday}</span> {when.rest}
+                </span>
+              )
             )}
           </div>
 
           <div className="flex flex-1 flex-col gap-3 p-4">
-            {/* Full-strength base-content and bold, glyphs included — when and
-                where are the two facts a musician scans a grid for, so this row
-                is read before the title rather than after it. Nothing sets a
-                colour, which is what keeps the icons in step with the words
-                beside them.
+            {/* When and where are the two facts a musician scans a grid for, so
+                this row is read before the title rather than after it. The
+                glyphs take the cyan and the words the dark teal: the icon is
+                the thing that makes the row scannable at a glance and the words
+                are what is actually read, and giving them one colour flattened
+                the pair into a line of text.
 
                 min-w-0 on the place half and nowhere else: a flex item refuses
                 to shrink below its content by default, so a long name pushes
                 the time off the row instead of truncating itself. */}
-            <p className="flex items-center gap-4 text-sm font-bold">
+            <p className="flex items-center gap-4 text-sm font-bold text-dark-teal">
               <span className="flex shrink-0 items-center gap-1.5">
-                <FaRegClock aria-hidden className="size-3.5" />
+                <FaRegClock aria-hidden className="size-3.5 text-cyan-blue" />
                 <span className="tabular-nums">{session.startTime}</span>
               </span>
               <span className="flex min-w-0 items-center gap-1.5">
-                <FaLocationDot aria-hidden className="size-3.5 shrink-0" />
+                <FaLocationDot aria-hidden className="size-3.5 shrink-0 text-cyan-blue" />
                 <span className="truncate">{where}</span>
               </span>
             </p>
@@ -163,51 +162,48 @@ export default function JamCard({ session }: { session: JamSession }) {
                 stops being a name and starts being a sentence, and cutting one
                 of those at the first line loses the half that says what the
                 night is. */}
-            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight">
+            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-dark-teal">
               {session.title}
             </h3>
 
             <div className="flex flex-wrap items-center gap-2">
-              {/* The first two only, and silently — every genre on a card this
-                  wide wraps into three rows and pushes the button off the fold,
-                  and a musician filtering by genre already knows which one they
-                  asked for. */}
-              {session.genres.slice(0, 2).map((genre) => (
+              {/* Royal blue over a wash of itself — the same blue as the button
+                  under it, which is what makes the genres the loudest thing in
+                  the row.
+
+                  Every genre draws this chip, the catch-all included. It used to
+                  take a green wash to mark that "All genres" isn't narrowing the
+                  night down — the rule the listing's own chips still follow —
+                  but the design has one genre chip and the distinction was
+                  costing a third colour in a row two chips long. */}
+              {genres.map((genre) => (
                 <span
                   key={genre}
-                  /* Green for the catch-all, read off the stored value rather
-                     than the label — same rule as the listing's chips, because
-                     it means the same thing: this one isn't narrowing the night
-                     down. */
-                  className={`rounded-field px-2.5 py-1 text-xs font-bold ${
-                    genre === ALL_GENRES
-                      ? 'bg-brand-green/25 text-status-upcoming'
-                      : 'bg-secondary/15 text-brand-pink-deep'
-                  }`}
+                  className="rounded-field bg-royal-blue/10 px-2.5 py-1 text-xs font-bold text-royal-blue"
                 >
                   {GENRE_LABELS[genre]}
                 </span>
               ))}
 
-              {/* The level, at the far end of the genre row. Two answers to "is
-                  this night for me?" reading from opposite edges rather than as
-                  a third chip in the same run — which is also what stops it
-                  being mistaken for a genre.
+              {/* The levels, last in the same run of chips and told apart by
+                  colour rather than by position: cyan where the genres are royal
+                  blue, each over a wash of itself. It is the quieter of the two
+                  blues on purpose — which genre the night is decides whether you
+                  read the card, and the level qualifies that answer rather than
+                  competing with it.
 
-                  The first only, like the genres: a session tagged for two
-                  levels is rare, and the space here is one pill wide.
-
-                  `FaChartSimple` is the listing's own mark for skill level, so
-                  the browse and the page it leads to agree about what the glyph
-                  means. It takes the pill's colour rather than the listing's
-                  green, because there it sits on white with a heading beside it
-                  and here it is inside a tinted lozenge. */}
-              {level && (
-                <span className="ml-auto flex shrink-0 items-center gap-1.5 rounded-field bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                  <FaChartSimple aria-hidden className="size-3.5" />
+                  They used to sit at the far end of the row behind a glyph,
+                  which the design drops — on a card this narrow a right-aligned
+                  chip wrapped often enough that the "opposite edges" it was
+                  arranged for were rarely both there. */}
+              {levels.map((level) => (
+                <span
+                  key={level}
+                  className="rounded-field bg-cyan-blue/10 px-2.5 py-1 text-xs font-bold text-cyan-blue"
+                >
                   {SKILL_LEVEL_LABELS[level]}
                 </span>
-              )}
+              ))}
             </div>
 
             {/* mt-auto is what makes a grid of cards line their buttons up: the
@@ -221,17 +217,27 @@ export default function JamCard({ session }: { session: JamSession }) {
                   already the link. It is the affordance, not the control — so no
                   `aria-label` and nothing focusable: a screen reader meets one
                   link named after the session, which is the whole card. */}
-              <span className="btn btn-primary w-full justify-between font-bold">
+              {/* Spelled out rather than `btn-primary`: the page's blue is the
+                  royal blue of the bookings palette, and daisyUI has no slot
+                  for it — `primary` is still the site's indigo everywhere else.
+
+                  It empties out to an outline on hover, the same move the band
+                  at the foot of the page makes. The border is there at rest in
+                  the fill's own colour, so gaining a visible edge doesn't change
+                  the button's height and shift the card under it.
+
+                  `group-hover` rather than `hover`: the entire card is one link,
+                  so pointing anywhere on it should light the thing that says
+                  what clicking does — a button that only answers the pointer
+                  over its own 40 pixels reads as the one clickable part of a
+                  card that is clickable all over. */}
+              <span className="btn w-full gap-2 border-royal-blue bg-royal-blue font-bold text-white transition-colors group-hover:bg-transparent group-hover:text-royal-blue">
                 {cta}
                 <FaArrowRight aria-hidden className="size-4" />
               </span>
             </div>
           </div>
         </div>
-
-        {HOVER_ZONES.map((zone) => (
-          <div key={zone} aria-hidden />
-        ))}
       </Link>
     </li>
   );

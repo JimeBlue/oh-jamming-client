@@ -1,13 +1,11 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { FaPlugCirclePlus } from 'react-icons/fa6';
 
-import blueRayas from '@/assets/blue-rayas.png';
 import type { JamSession } from '@/schemas/jamSession';
-import { type AiSearchResult, searchJams } from '@/services/ai';
+import { searchJams } from '@/services/ai';
 import { ApiError } from '@/services/api';
 import { type JamSessionQuery, getJamSessions } from '@/services/jamSessions';
 import JamCard from './JamCard';
@@ -63,17 +61,12 @@ const searchErrorMessage = (error: unknown): string => {
 export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
   const [state, setState] = useState<BrowseState>({ status: 'loading' });
 
-  /* The filters the list is currently drawn from. A separate piece of state from
-     the reading below rather than a field on it, because it is the only one the
-     fetch depends on — the explanation and the ignored parts are things to say
-     about a request, not inputs to it, and having them in the dependency list
-     would re-fetch every time the wording changed. */
+  /* The filters the list is currently drawn from, and the only thing the AI's
+     answer leaves behind: the explanation and the list of parts it couldn't
+     honour used to be held here too and shown in a panel over the grid, which
+     is gone. What the sentence was understood to mean is now readable in the
+     Manual tab, whose controls the search writes. */
   const [filters, setFilters] = useState<JamSessionQuery>({});
-
-  /* What the AI made of the last sentence, or null when nobody has searched.
-     Null and "understood nothing" are different states: one shows the plain
-     board, the other has something to explain. */
-  const [reading, setReading] = useState<AiSearchResult | null>(null);
 
   /* The home page has the same box and no list to put results in, so it sends
      the sentence here unread. Arriving with one means the page is already
@@ -128,12 +121,11 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
     (query: string) =>
       searchJams(query)
         .then((result) => {
-          setReading(result);
           setState({ status: 'loading' });
           /* Nothing to filter by when the sentence wasn't a search — the API
              already returns empty filters there, and this makes that explicit
-             rather than relying on it. The board stays whole and the message
-             says why.
+             rather than relying on it. The board stays whole, and with the panel
+             gone it is now the *only* thing that says so.
 
              A fresh object every time, including when the filters are identical
              to the ones in force: searching the same thing twice should visibly
@@ -157,7 +149,7 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
      wrong thing — `setFilters` is what draws the board, and the effect above
      already drops a stale list response. `readingInitialQuery` is lowered
      whatever the outcome, so a 429 or a dead model leaves the whole board on
-     screen with the reason above it rather than an empty page.
+     screen with the error above it rather than an empty page.
 
      It never runs twice: the flag it guards on is only ever lowered, so editing
      the sentence in the bar re-searches through `onSearch` rather than here. */
@@ -168,24 +160,18 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
   }, [readingInitialQuery, initialQuery, readQuery]);
 
   /* Whether the board below is a subset. Read off the filters actually in force
-     rather than off `reading`, because a sentence the AI understood but could
+     rather than off what the AI said, because a sentence it understood but could
      express no filter for — "a friendly jam" — leaves the board whole. */
   const hasFilters = Object.keys(filters).length > 0;
 
-  /* A hand-made change to any one control. The reading goes with it: "Beginner
-     jazz nights this weekend" stops describing the board the moment somebody
-     changes the city underneath it, and a sentence that no longer matches what
-     is on screen is worse than no sentence — it is the page telling the reader
-     something untrue about itself. */
+  /* A hand-made change to any one control. */
   const changeFilters = (next: JamSessionQuery) => {
-    setReading(null);
     setSearchError(null);
     setState({ status: 'loading' });
     setFilters(next);
   };
 
   const clearSearch = () => {
-    setReading(null);
     setSearchError(null);
     setState({ status: 'loading' });
     setFilters({});
@@ -193,6 +179,22 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
 
   return (
     <>
+      {/* The eyebrow the cyan band on the home page wears, in the same cyan:
+          both are a word above a heading saying which slice of the board is
+          below it, and they should be recognisable as the same device. */}
+      <p className="font-display text-sm font-bold uppercase tracking-[0.2em] text-cyan-blue">
+        Upcoming
+      </p>
+
+      <h1 className="mt-3 font-display text-4xl font-bold text-dark-teal sm:text-5xl">
+        All jam sessions
+      </h1>
+
+      <p className="mt-4 max-w-xl text-dark-teal/80">
+        Every night still to come, soonest first. Pick one, pick a slot, bring
+        your instrument.
+      </p>
+
       <JamSearch
         initialQuery={initialQuery}
         onSearch={runSearch}
@@ -205,66 +207,15 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
       {searchError && (
         <div
           role="alert"
-          className="mb-8 rounded-box border border-error/40 bg-error/5 px-4 py-3 text-sm"
+          className="mt-8 rounded-box border border-error/40 bg-error/5 px-4 py-3 text-sm"
         >
           {searchError}
         </div>
       )}
 
-      {/* The reading, above the heading it changes the meaning of. A musician who
-          searched is looking at a filtered board and has to be told so — an
-          unannounced subset of the list is the failure that looks like missing
-          data rather than like a filter. */}
-      {reading && !searchError && (
-        <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-box border border-primary/40 bg-primary/10 px-4 py-3">
-          <p className="text-sm">
-            {reading.understood ? (
-              <>
-                Showing: <span className="font-bold">{reading.explanation}</span>
-              </>
-            ) : (
-              reading.explanation
-            )}
-          </p>
-
-          {/* Said plainly rather than swallowed. These are the parts of the
-              sentence the filters can't express — an instrument, "with spots
-              left" — and a search that quietly drops them answers a different
-              question than the one asked. */}
-          {reading.ignored.length > 0 && (
-            <p className="text-sm opacity-70">
-              Couldn&apos;t filter by: {reading.ignored.join(', ')}
-            </p>
-          )}
-
-          {/* No Clear of its own. Reset lives in the bar above and undoes both
-              tabs; a second control here would be a third way to do the same
-              thing, and the one furthest from the controls it resets. */}
-        </div>
-      )}
-
-      <div className="flex items-center gap-3">
-        <h1 className="font-display text-3xl font-bold sm:text-4xl">All jam sessions</h1>
-
-        {/* Decorative, so `alt=""` and nothing else — the heading beside it is
-            already the page's name, and a scribble with a description would just
-            make a screen reader read the title twice.
-
-            Static import, which is what gives next/image the intrinsic size and
-            keeps the line from jumping once the file lands. Height set off the
-            heading with `w-auto` so the 2:1 artwork keeps its proportions at
-            both breakpoints. */}
-        <Image src={blueRayas} alt="" priority className="h-6 w-auto sm:h-8" />
-      </div>
-
-      <p className="mt-2 max-w-2xl">
-        Every night still to come, soonest first. Pick one, pick a slot, bring
-        your instrument.
-      </p>
-
       {state.status === 'loading' && (
         <div className="flex justify-center py-24">
-          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="loading loading-spinner loading-lg text-cyan-blue" />
           <span className="sr-only">Loading jam sessions</span>
         </div>
       )}
@@ -289,10 +240,10 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
              the one that gives it back. Showing the venue CTA there would answer
              a musician's empty search by suggesting they open a bar. */
           hasFilters ? (
-            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
-              <p className="font-heading text-xl">Nothing matches that search</p>
+            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-cyan-blue/30 bg-base-100 p-10 text-center">
+              <p className="font-heading text-xl text-dark-teal">Nothing matches that search</p>
 
-              <p className="mt-2 text-sm text-base-content/80">
+              <p className="mt-2 text-sm text-dark-teal/80">
                 No upcoming night fits all of it. Try a wider date, drop the city,
                 or start again from the whole board.
               </p>
@@ -300,16 +251,16 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
               <button
                 type="button"
                 onClick={clearSearch}
-                className="btn btn-primary mt-6 font-bold"
+                className="btn mt-6 border-0 bg-royal-blue font-bold text-white hover:bg-royal-blue/90"
               >
                 Show every jam
               </button>
             </div>
           ) : (
-            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
-              <p className="font-heading text-xl">No jam sessions coming up</p>
+            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-cyan-blue/30 bg-base-100 p-10 text-center">
+              <p className="font-heading text-xl text-dark-teal">No jam sessions coming up</p>
 
-              <p className="mt-2 text-sm text-base-content/80">
+              <p className="mt-2 text-sm text-dark-teal/80">
                 Nothing is on the board right now. If you run a room, yours could
                 be the first.
               </p>
@@ -318,7 +269,10 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
                   purpose: a musician reading this has nothing to do here, and
                   the only thing that fills the page is somebody posting a
                   night. */}
-              <Link href="/jams/new" className="btn btn-primary mt-6 gap-2 font-bold">
+              <Link
+                href="/jams/new"
+                className="btn mt-6 gap-2 border-0 bg-royal-blue font-bold text-white hover:bg-royal-blue/90"
+              >
                 <FaPlugCirclePlus className="size-5" />
                 Insert your Jam
               </Link>

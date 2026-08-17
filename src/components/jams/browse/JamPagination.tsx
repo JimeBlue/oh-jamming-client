@@ -22,12 +22,12 @@ export default function JamPagination() {
         <span
           key={page}
           /* The first is the current page in the design, so it takes the solid
-             indigo. Everything else is an outlined tile on the page's own
-             white. */
+             blue. Everything else is a white tile with a hairline, the same
+             pair the search tabs above are drawn from. */
           className={`grid size-10 place-items-center rounded-field text-sm font-bold ${
             index === 0
-              ? 'bg-primary text-primary-content'
-              : 'border border-base-300 bg-base-100'
+              ? 'bg-royal-blue text-white'
+              : 'bg-base-100 text-dark-teal ring-1 ring-dark-teal/10'
           }`}
         >
           {page}
@@ -36,7 +36,7 @@ export default function JamPagination() {
 
       {/* Worded rather than a glyph, like the design — and unboxed, so it reads
           as the way onward rather than as a tenth page. */}
-      <span className="ml-2 flex items-center gap-1.5 text-sm font-bold">
+      <span className="ml-2 flex items-center gap-1.5 text-sm font-bold text-dark-teal">
         Next
         <FaChevronRight className="size-3" />
       </span>
