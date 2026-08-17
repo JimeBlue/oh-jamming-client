@@ -379,7 +379,12 @@ export default function InstrumentPicker({
             onClick={() =>
               router.push(`/jams/${id}/book/summary${stepQuery(chosen, bandName)}`)
             }
-            className="btn border-royal-blue bg-royal-blue font-bold text-white hover:border-royal-blue/90 hover:bg-royal-blue/90"
+            /* The disabled treatment is written out rather than left to
+               daisyUI, and it is the one the slot step's Next wears: a muted
+               dark teal that still reads as a button waiting for something.
+               daisyUI's own is a grey fill, which on a white card reads as a
+               hole in it. */
+            className="btn border-royal-blue bg-royal-blue font-bold text-white hover:border-royal-blue/90 hover:bg-royal-blue/90 disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60"
           >
             Next
             <FaArrowRight aria-hidden className="size-4" />
