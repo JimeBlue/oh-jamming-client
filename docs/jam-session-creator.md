@@ -279,6 +279,11 @@ listing can't say: what publishing will *create*.
 - `src/lib/jamListing.ts` — `JamListingView`, and both adapters that fill it
 - `src/components/jams/listing/JamListing.tsx` — the listing itself
 - `src/components/jams/listing/JamSlotList.tsx` — the bookable slots
+
+**Superseded by the re-branding** (Phase 9): `JamSlotList` is gone
+and `JamListing` no longer draws anything itself. Both the preview and the
+musician's page are now compositions of `listing/JamIntroCard` and
+`listing/JamSlotBoard` — see CLAUDE.md, "One listing, three places".
 - `VenueMap` moved up to `src/components/jams/` — it is no longer a step's
 
 The layout follows the wireframe: what the session **is** on the left (image,
@@ -674,6 +679,45 @@ message, keeps the notes and stays on the tab. No console errors on a clean run;
 375px has no horizontal overflow and both tabs share a row.
 
 ---
+
+### Phase 9 — The preview wears the re-branding ✅ done
+
+The musician's detail page was re-branded first (`/jams/[id]`: indigo title
+block, pale ground, cyan slot board). For a while the preview and the venue's
+Listing panel kept drawing the old white-slab layout — which is exactly the
+failure the preview step exists to prevent, since the venue was approving a page
+that no longer shipped.
+
+Fixed by making the re-branded blocks the shared ones rather than restyling a
+second copy:
+
+- `detail/JamIntroCard` → `listing/JamIntroCard`, with `as` (heading level) and
+  `cancelled` as its only variations
+- `detail/JamSlotPicker`'s cyan box → `listing/JamSlotBoard`; the picker now
+  wraps it and keeps only what the box has no business knowing — the selection,
+  the login gate and the Next button
+- `listing/JamListing` is now just those two, on a pale-blue ground it brings
+  itself (both its hosts are a white card)
+- `listing/JamSlotList` deleted — superseded by the board's tiles
+
+Decisions and traps:
+
+- **The preview step is wider than every other step** (`max-w-[77.5rem]` vs
+  `max-w-4xl`), because the grid it is previewing only opens two columns at
+  `lg`. Held to 56rem the venue would approve the phone layout and publish the
+  desktop one
+- **The listing carries its own ground.** The intro's collapse fades to
+  `from-pale-blue`, and the aside's white panels need something to be white
+  against. Asking two unrelated hosts to change their background was the
+  alternative
+- **The venue's board is titled "What a musician books"**, not "Time slots" —
+  the grid inside it is already headed that, and the two sat four lines apart
+  saying the same word
+- **No venue-only panels.** An "In every slot" line-up panel was tried and
+  removed: this screen answers "what am I publishing?", and anything on it the
+  musician won't see is one more thing that answer has to be qualified about.
+  The instrument counts are already on the Instruments step, and the strip above
+  the preview carries the spot total
 
 ## Deferred, deliberately
 

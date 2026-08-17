@@ -83,15 +83,33 @@ Root `app/layout.tsx` holds only `<AuthProvider>` and the fonts.
   hoping they're ignored.
 - Dates arrive as ISO strings; coerce with `z.coerce.date()`.
 
-### One listing, two sources
+### One listing, three places
 
-`components/jams/listing/JamListing.tsx` is the musician-facing session view, and
-it renders both as the builder's last step and (once that page exists) as the
-page a musician books from. Neither the form nor the API response is passed to it
-directly — both go through `JamListingView` in `src/lib/jamListing.ts`, which is
-where their differences are reconciled. Add a field by extending the view model
-and both adapters, not by handing the component a second shape; the moment it
-knows which source it is drawing, the preview has stopped predicting the listing.
+A session is drawn on the musician's page (`/jams/[id]`), as the builder's last
+step, and on the venue's Listing panel (`/my-backstage/[id]/listing`). All three
+render the same two blocks, both in `components/jams/listing/`:
+
+- **`JamIntroCard`** — the indigo title block, the photo, Description/Where, and
+  the aside of white panels.
+- **`JamSlotBoard`** — the cyan box: the night's hours and the grid of slot
+  tiles.
+
+The musician's page composes them itself (`detail/JamDetailView`, with
+`detail/JamSlotPicker` wrapping the board to add selection, the login gate and
+Next). The two venue-facing views both render `listing/JamListing`, which is that
+same pair plus a pale-blue ground of its own — both its hosts are a white card,
+and the panels and the collapse fade need the ground the musician's page gets
+from the page itself.
+
+Exactly two things differ: the heading level (`as`), and whether a slot handler
+was passed. **Anything else that differs is a bug** — the failure this shape
+exists to prevent is a venue approving one layout and publishing another, so the
+venue is shown no more of the session than a musician is.
+
+Neither the form nor the API response reaches these components directly; both go
+through `JamListingView` in `src/lib/jamListing.ts`, where their differences are
+reconciled. Add a field by extending the view model and both adapters, not by
+handing a component a second shape.
 
 ### Images go through the API, never straight to Cloudinary
 

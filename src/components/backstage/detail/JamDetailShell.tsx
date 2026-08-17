@@ -106,6 +106,14 @@ export default function JamDetailShell({
      page about a session, so it wants the room and it names itself. */
   const isGuestList = pathname === `/my-backstage/${id}/guests`;
 
+  /* The listing drops the session card too, for a different reason: it *is* the
+     session, opening on the night's name in an indigo block a few centimetres
+     below where the card would sit. Two titles, two dates and two photos, one
+     above the other, and the one at the top is the venue's paraphrase of the one
+     underneath. Only the cockpit still wears it — there the card is the subject
+     and the panels below are figures about it. */
+  const isListing = pathname === `/my-backstage/${id}/listing`;
+
   return (
     /* The rail has to reach the bottom of the window even when the panel beside
        it is short, and it can only do that against a definite height — `h-full`
@@ -145,7 +153,9 @@ export default function JamDetailShell({
               />
             ) : (
               <>
-                {!isGuestList && <JamDetailHeader session={state.session} />}
+                {!isGuestList && !isListing && (
+                  <JamDetailHeader session={state.session} />
+                )}
 
                 <JamDetailProvider
                   value={{ session: state.session, bookings: state.bookings }}
