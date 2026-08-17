@@ -1,15 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  FaArrowRight,
-  FaChartSimple,
-  FaLocationDot,
-  FaRegClock,
-  FaRegImage,
-} from 'react-icons/fa6';
+import { FaLocationDot, FaRegClock, FaRegImage, FaTicket } from 'react-icons/fa6';
 
 import { GENRE_LABELS, SKILL_LEVEL_LABELS } from '@/config/jamOptions';
-import { cityFromAddress, formatShortDate } from '@/lib/jamListing';
+import { cityFromAddress, formatShortDateParts } from '@/lib/jamListing';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
 import { utcMidnightToDateString } from '@/lib/time';
@@ -54,7 +48,7 @@ export default function JamCard({ session }: { session: JamSession }) {
      urgency — and it is the same day-granular answer the board's badge gives,
      from the same function, so the two can't disagree about which day it is. */
   const isToday = jamStatus(session) === 'today';
-  const when = isToday ? 'Tonight' : formatShortDate(day);
+  const when = isToday ? null : formatShortDateParts(day);
 
   const cta = free === 0 ? 'See the night' : 'Book a spot';
 
@@ -97,7 +91,7 @@ export default function JamCard({ session }: { session: JamSession }) {
             element; the clipping that rounds the corners is the component's own
             `overflow: hidden`. */}
         <div className="relative flex h-full flex-col rounded-box bg-base-100 shadow-lg">
-          <div className="relative aspect-video w-full bg-primary/10">
+          <div className="relative aspect-video w-full bg-cyan-blue/10">
             {session.image ? (
               <Image
                 src={session.image}
@@ -116,45 +110,49 @@ export default function JamCard({ session }: { session: JamSession }) {
               />
             ) : (
               <div aria-hidden className="grid h-full place-items-center">
-                <FaRegImage className="size-10 text-primary/40" />
+                <FaRegImage className="size-10 text-cyan-blue/40" />
               </div>
             )}
 
-            {/* Pink tonight, indigo otherwise. The one card a musician can act
-                on today is the one that should be findable by colour while
-                scanning a grid of twelve — the same job the board's inverted
-                "Today" badge does, said in the palette this side of the app
-                uses. */}
-            {when && (
-              <span
-                className={`absolute left-3 top-3 rounded-field px-3 py-1 text-xs font-bold uppercase tracking-wide ${
-                  isToday
-                    ? 'bg-brand-pink-deep text-white'
-                    : 'bg-primary text-primary-content'
-                }`}
-              >
-                {when}
+            {/* Dark teal carrying a lime weekday, which is the design's badge —
+                the weekday is what the eye lands on when scanning a grid for a
+                night that suits, and the date it belongs to follows in white.
+
+                Tonight inverts the whole tile to lime instead. The one card a
+                musician can act on today has to be findable by colour rather
+                than by reading, and inverting is the strongest signal the two
+                colours already on the badge can make between them. */}
+            {isToday ? (
+              <span className="absolute left-3 top-3 rounded-field bg-accent px-3 py-1 text-xs font-bold text-dark-teal">
+                Tonight
               </span>
+            ) : (
+              when && (
+                <span className="absolute left-3 top-3 rounded-field bg-dark-teal px-3 py-1 text-xs font-bold text-white">
+                  <span className="text-accent">{when.weekday}</span> {when.rest}
+                </span>
+              )
             )}
           </div>
 
           <div className="flex flex-1 flex-col gap-3 p-4">
-            {/* Full-strength base-content and bold, glyphs included — when and
-                where are the two facts a musician scans a grid for, so this row
-                is read before the title rather than after it. Nothing sets a
-                colour, which is what keeps the icons in step with the words
-                beside them.
+            {/* When and where are the two facts a musician scans a grid for, so
+                this row is read before the title rather than after it. The
+                glyphs take the cyan and the words the dark teal: the icon is
+                the thing that makes the row scannable at a glance and the words
+                are what is actually read, and giving them one colour flattened
+                the pair into a line of text.
 
                 min-w-0 on the place half and nowhere else: a flex item refuses
                 to shrink below its content by default, so a long name pushes
                 the time off the row instead of truncating itself. */}
-            <p className="flex items-center gap-4 text-sm font-bold">
+            <p className="flex items-center gap-4 text-sm font-bold text-dark-teal">
               <span className="flex shrink-0 items-center gap-1.5">
-                <FaRegClock aria-hidden className="size-3.5" />
+                <FaRegClock aria-hidden className="size-3.5 text-cyan-blue" />
                 <span className="tabular-nums">{session.startTime}</span>
               </span>
               <span className="flex min-w-0 items-center gap-1.5">
-                <FaLocationDot aria-hidden className="size-3.5 shrink-0" />
+                <FaLocationDot aria-hidden className="size-3.5 shrink-0 text-cyan-blue" />
                 <span className="truncate">{where}</span>
               </span>
             </p>
@@ -163,7 +161,7 @@ export default function JamCard({ session }: { session: JamSession }) {
                 stops being a name and starts being a sentence, and cutting one
                 of those at the first line loses the half that says what the
                 night is. */}
-            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight">
+            <h3 className="line-clamp-2 font-display text-lg font-bold leading-tight text-dark-teal">
               {session.title}
             </h3>
 
@@ -178,33 +176,28 @@ export default function JamCard({ session }: { session: JamSession }) {
                   /* Green for the catch-all, read off the stored value rather
                      than the label — same rule as the listing's chips, because
                      it means the same thing: this one isn't narrowing the night
-                     down. */
-                  className={`rounded-field px-2.5 py-1 text-xs font-bold ${
-                    genre === ALL_GENRES
-                      ? 'bg-brand-green/25 text-status-upcoming'
-                      : 'bg-secondary/15 text-brand-pink-deep'
+                     down. The wash changes and the ink doesn't, so it reads as
+                     the same chip in a different colour rather than as a
+                     different kind of thing. */
+                  className={`rounded-field px-2.5 py-1 text-xs font-bold text-dark-teal ${
+                    genre === ALL_GENRES ? 'bg-emerald-green/20' : 'bg-pale-blue'
                   }`}
                 >
                   {GENRE_LABELS[genre]}
                 </span>
               ))}
 
-              {/* The level, at the far end of the genre row. Two answers to "is
-                  this night for me?" reading from opposite edges rather than as
-                  a third chip in the same run — which is also what stops it
-                  being mistaken for a genre.
+              {/* The level, last in the same run of chips and told apart by ink
+                  rather than by position: cyan where the genres are dark teal.
+                  It used to sit at the far end of the row behind a glyph, which
+                  the design drops — on a card this narrow two genres and a
+                  right-aligned third chip wrapped often enough that the
+                  "opposite edges" it was arranged for were rarely both there.
 
                   The first only, like the genres: a session tagged for two
-                  levels is rare, and the space here is one pill wide.
-
-                  `FaChartSimple` is the listing's own mark for skill level, so
-                  the browse and the page it leads to agree about what the glyph
-                  means. It takes the pill's colour rather than the listing's
-                  green, because there it sits on white with a heading beside it
-                  and here it is inside a tinted lozenge. */}
+                  levels is rare, and the space here is one pill wide. */}
               {level && (
-                <span className="ml-auto flex shrink-0 items-center gap-1.5 rounded-field bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary">
-                  <FaChartSimple aria-hidden className="size-3.5" />
+                <span className="rounded-field bg-pale-blue px-2.5 py-1 text-xs font-bold text-cyan-blue">
                   {SKILL_LEVEL_LABELS[level]}
                 </span>
               )}
@@ -221,9 +214,18 @@ export default function JamCard({ session }: { session: JamSession }) {
                   already the link. It is the affordance, not the control — so no
                   `aria-label` and nothing focusable: a screen reader meets one
                   link named after the session, which is the whole card. */}
-              <span className="btn btn-primary w-full justify-between font-bold">
+              {/* Spelled out rather than `btn-primary`: the page's blue is the
+                  royal blue of the bookings palette, and daisyUI has no slot
+                  for it — `primary` is still the site's indigo everywhere else.
+
+                  The ticket leads the words instead of an arrow trailing them.
+                  An arrow at the far edge said "there is more page this way",
+                  which is true of the card as a whole; the ticket says what the
+                  click is for, which is the thing worth saying twice on a grid
+                  of twelve. */}
+              <span className="btn w-full gap-2 border-0 bg-royal-blue font-bold text-white hover:bg-royal-blue/90">
+                <FaTicket aria-hidden className="size-4" />
                 {cta}
-                <FaArrowRight aria-hidden className="size-4" />
               </span>
             </div>
           </div>

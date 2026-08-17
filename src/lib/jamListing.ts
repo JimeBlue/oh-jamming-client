@@ -199,6 +199,37 @@ export const formatListingDate = (date: string): string | null =>
 export const formatShortDate = (date: string): string | null =>
   formatWith(shortDateFormatter, date);
 
+/* The same string, split at the weekday — the browse's date badge sets "Tue" in
+   lime over "18 Aug" in white, and one `<span>` can only be one colour.
+
+   `formatToParts` rather than splitting the formatted string on its first space:
+   the formatter is en-GB today, and a locale that puts the weekday last would
+   quietly colour the month instead. The literal between them carries en-GB's
+   comma, which the design doesn't have — hence the trim. */
+export const formatShortDateParts = (
+  date: string,
+): { weekday: string; rest: string } | null => {
+  if (!date) return null;
+
+  const parsed = new Date(`${date}T00:00:00Z`);
+
+  if (Number.isNaN(parsed.getTime())) return null;
+
+  const parts = shortDateFormatter.formatToParts(parsed);
+  const weekday = parts.find(({ type }) => type === 'weekday')?.value;
+
+  if (!weekday) return null;
+
+  return {
+    weekday,
+    rest: parts
+      .filter(({ type }) => type !== 'weekday')
+      .map(({ value }) => value)
+      .join('')
+      .replace(/^[,\s]+/, ''),
+  };
+};
+
 /* "Königstraße 93, 90402 Nürnberg" -> "Nürnberg".
  *
  * The same heuristic `GET /jam-sessions/cities` runs on the API, and it is

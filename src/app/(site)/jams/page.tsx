@@ -34,10 +34,15 @@ export default async function JamsPage({ searchParams }: JamsPageProps) {
        A tinted page because the cards are base-100 — on white they would need an
        outline to be cards at all, and the design's are lifted, not drawn.
 
+       The tint is `pale-blue`, the same ground `/my-bookings` sits on: this page
+       and that one are the two halves of the musician's side, and the browse is
+       where they pick the night the ticket comes from. It replaced
+       `brand-paper`, the near-neutral off-white the indigo version used.
+
        The horizontal padding is on the inner container rather than here, which
        is what lets the band below run edge to edge: it sits outside that
        container and carries its own. */
-    <main className="min-h-screen flex-1 bg-brand-paper pt-28">
+    <main className="min-h-screen flex-1 bg-pale-blue pt-28">
       {/* max-w-7xl with the same padding steps as the header's own bar, so the
           first card starts where the logo does. */}
       <div className="mx-auto w-full max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">

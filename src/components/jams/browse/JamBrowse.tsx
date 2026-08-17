@@ -1,11 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { FaPlugCirclePlus } from 'react-icons/fa6';
 
-import blueRayas from '@/assets/blue-rayas.png';
 import type { JamSession } from '@/schemas/jamSession';
 import { type AiSearchResult, searchJams } from '@/services/ai';
 import { ApiError } from '@/services/api';
@@ -193,6 +191,22 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
 
   return (
     <>
+      {/* The eyebrow the cyan band on the home page wears, in the same cyan:
+          both are a word above a heading saying which slice of the board is
+          below it, and they should be recognisable as the same device. */}
+      <p className="font-display text-sm font-bold uppercase tracking-[0.2em] text-cyan-blue">
+        Upcoming
+      </p>
+
+      <h1 className="mt-3 font-display text-4xl font-bold text-dark-teal sm:text-5xl">
+        All jam sessions
+      </h1>
+
+      <p className="mt-4 max-w-xl text-dark-teal/80">
+        Every night still to come, soonest first. Pick one, pick a slot, bring
+        your instrument.
+      </p>
+
       <JamSearch
         initialQuery={initialQuery}
         onSearch={runSearch}
@@ -205,7 +219,7 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
       {searchError && (
         <div
           role="alert"
-          className="mb-8 rounded-box border border-error/40 bg-error/5 px-4 py-3 text-sm"
+          className="mt-8 rounded-box border border-error/40 bg-error/5 px-4 py-3 text-sm"
         >
           {searchError}
         </div>
@@ -216,7 +230,7 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
           unannounced subset of the list is the failure that looks like missing
           data rather than like a filter. */}
       {reading && !searchError && (
-        <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-box border border-primary/40 bg-primary/10 px-4 py-3">
+        <div className="mt-8 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-box border border-cyan-blue/40 bg-cyan-blue/10 px-4 py-3 text-dark-teal">
           <p className="text-sm">
             {reading.understood ? (
               <>
@@ -243,28 +257,9 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
         </div>
       )}
 
-      <div className="flex items-center gap-3">
-        <h1 className="font-display text-3xl font-bold sm:text-4xl">All jam sessions</h1>
-
-        {/* Decorative, so `alt=""` and nothing else — the heading beside it is
-            already the page's name, and a scribble with a description would just
-            make a screen reader read the title twice.
-
-            Static import, which is what gives next/image the intrinsic size and
-            keeps the line from jumping once the file lands. Height set off the
-            heading with `w-auto` so the 2:1 artwork keeps its proportions at
-            both breakpoints. */}
-        <Image src={blueRayas} alt="" priority className="h-6 w-auto sm:h-8" />
-      </div>
-
-      <p className="mt-2 max-w-2xl">
-        Every night still to come, soonest first. Pick one, pick a slot, bring
-        your instrument.
-      </p>
-
       {state.status === 'loading' && (
         <div className="flex justify-center py-24">
-          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="loading loading-spinner loading-lg text-cyan-blue" />
           <span className="sr-only">Loading jam sessions</span>
         </div>
       )}
@@ -289,10 +284,10 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
              the one that gives it back. Showing the venue CTA there would answer
              a musician's empty search by suggesting they open a bar. */
           hasFilters ? (
-            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
-              <p className="font-heading text-xl">Nothing matches that search</p>
+            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-cyan-blue/30 bg-base-100 p-10 text-center">
+              <p className="font-heading text-xl text-dark-teal">Nothing matches that search</p>
 
-              <p className="mt-2 text-sm text-base-content/80">
+              <p className="mt-2 text-sm text-dark-teal/80">
                 No upcoming night fits all of it. Try a wider date, drop the city,
                 or start again from the whole board.
               </p>
@@ -300,16 +295,16 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
               <button
                 type="button"
                 onClick={clearSearch}
-                className="btn btn-primary mt-6 font-bold"
+                className="btn mt-6 border-0 bg-royal-blue font-bold text-white hover:bg-royal-blue/90"
               >
                 Show every jam
               </button>
             </div>
           ) : (
-            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
-              <p className="font-heading text-xl">No jam sessions coming up</p>
+            <div className="mt-8 grid place-items-center rounded-box border border-dashed border-cyan-blue/30 bg-base-100 p-10 text-center">
+              <p className="font-heading text-xl text-dark-teal">No jam sessions coming up</p>
 
-              <p className="mt-2 text-sm text-base-content/80">
+              <p className="mt-2 text-sm text-dark-teal/80">
                 Nothing is on the board right now. If you run a room, yours could
                 be the first.
               </p>
@@ -318,7 +313,10 @@ export default function JamBrowse({ initialQuery }: { initialQuery?: string }) {
                   purpose: a musician reading this has nothing to do here, and
                   the only thing that fills the page is somebody posting a
                   night. */}
-              <Link href="/jams/new" className="btn btn-primary mt-6 gap-2 font-bold">
+              <Link
+                href="/jams/new"
+                className="btn mt-6 gap-2 border-0 bg-royal-blue font-bold text-white hover:bg-royal-blue/90"
+              >
                 <FaPlugCirclePlus className="size-5" />
                 Insert your Jam
               </Link>
