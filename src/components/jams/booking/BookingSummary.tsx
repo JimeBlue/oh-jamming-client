@@ -3,16 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaArrowLeft, FaRegCalendar } from 'react-icons/fa6';
-import { HiUserGroup } from 'react-icons/hi';
-import { MdFactCheck } from 'react-icons/md';
-import { RiTimerFlashLine } from 'react-icons/ri';
-import { VscPreview } from 'react-icons/vsc';
+import { FaArrowLeft } from 'react-icons/fa6';
+import { IoTicketSharp } from 'react-icons/io5';
 
-import rockHand from '@/assets/rock-hand.png';
-import MaskIcon from '@/components/ui/MaskIcon';
 import { useAuth } from '@/context/AuthContext';
-import { formatListingDate } from '@/lib/jamListing';
+import { cityFromAddress, formatListingDate } from '@/lib/jamListing';
 import { utcMidnightToDateString } from '@/lib/time';
 import type { JamSession } from '@/schemas/jamSession';
 import { ApiError } from '@/services/api';
@@ -27,7 +22,13 @@ import { getJamSession } from '@/services/jamSessions';
    is a question worth answering on the page that commits, and because a musician
    who spots the wrong address should find out here rather than after the QR
    code. Editing them is a profile job, which is a different page and a different
-   request. */
+   request.
+
+   The same three grounds as the instrument step, doing the same three jobs:
+   royal blue for what is being asked, cyan for the part of the booking that is
+   the musician's own choice, white for the facts and the two ways out. What
+   moved between the two steps is the shape of the middle block — there it is a
+   grid to pick from, here it is a list to check. */
 
 type SummaryState =
   | { status: 'loading' }
@@ -37,31 +38,56 @@ type SummaryState =
 const asMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
 
-const Card = ({ children }: { children: React.ReactNode }) => (
-  <section className="rounded-box bg-base-100 p-6 text-base-content shadow-lg sm:p-8">
+const Card = ({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <section
+    className={`rounded-box bg-base-100 px-6 py-7 shadow-sm ring-1 ring-dark-teal/5 sm:px-8 ${className}`}
+  >
     {children}
   </section>
 );
 
+/* The small uppercase line every block and every fact opens with — the same
+   device the instrument step uses, and the only thing carrying the label now
+   that the icons are gone. The design has none: on a page of eight short
+   labels they were eight marks competing with the words that say what the
+   value is. */
+const Eyebrow = ({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <p className={`font-display text-xs font-bold uppercase tracking-[0.18em] ${className}`}>
+    {children}
+  </p>
+);
+
 /* A labelled fact, not a field. Nothing on this page is editable, and disabled
    inputs said "you could have typed here" about values that come off the account
-   and the step before. The label carries the icon, the same way the section
-   headings on the two steps before it do. */
+   and the step before.
+
+   `className` carries the rules between them rather than a `divide-*` on the
+   grid: the four sit in one column on a phone and two on a desktop, and a
+   divider that is right in one of those is wrong in the other. */
 const Fact = ({
-  icon,
   label,
+  className = '',
   children,
 }: {
-  icon: React.ReactNode;
   label: string;
+  className?: string;
   children: React.ReactNode;
 }) => (
-  <div>
-    <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
-      {icon}
-      {label}
-    </p>
-    <div className="mt-1.5">{children}</div>
+  <div className={className}>
+    <Eyebrow className="text-royal-blue">{label}</Eyebrow>
+    <div className="mt-1.5 text-lg font-bold text-dark-teal">{children}</div>
   </div>
 );
 
@@ -117,7 +143,7 @@ export default function BookingSummary({
     return (
       <Card>
         <div className="flex justify-center py-12">
-          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="loading loading-spinner loading-lg text-royal-blue" />
           <span className="sr-only">Loading your booking</span>
         </div>
       </Card>
@@ -127,12 +153,10 @@ export default function BookingSummary({
   if (state.status === 'error') {
     return (
       <Card>
-        <p role="alert" className="text-sm">
+        <p role="alert" className="text-sm text-dark-teal">
           {state.message}
         </p>
-        <Link href={`/jams/${id}`} className="btn btn-outline btn-primary mt-6 font-bold">
-          Back to the jam
-        </Link>
+        <BackLink href={`/jams/${id}`} />
       </Card>
     );
   }
@@ -148,13 +172,13 @@ export default function BookingSummary({
   if (!slot || chosen.length === 0) {
     return (
       <Card>
-        <h1 className="font-heading text-2xl">This booking is no longer valid</h1>
-        <p className="mt-3 text-sm opacity-80">
+        <h1 className="font-display text-2xl font-bold text-dark-teal">
+          This booking is no longer valid
+        </h1>
+        <p className="mt-3 text-sm text-dark-teal/80">
           The session may have been edited since you started. Pick your slot again.
         </p>
-        <Link href={`/jams/${id}`} className="btn btn-outline btn-primary mt-6 font-bold">
-          Back to the jam
-        </Link>
+        <BackLink href={`/jams/${id}`} />
       </Card>
     );
   }
@@ -199,127 +223,189 @@ export default function BookingSummary({
     }
   };
 
+  /* The city, falling back to the venue's name alone when the address line has
+     no postcode to read one off — the same call `JamCard` makes, so the town a
+     musician picked the night by is the town this page names it with. */
+  const city = cityFromAddress(state.session.address.formatted);
+
   return (
-    <Card>
-      {/* The same header the two steps before it wear: icon, then the title in
-          Space Grotesk. */}
-      <div className="flex items-start gap-3">
-        <VscPreview
-          aria-hidden
-          className="size-7 shrink-0 text-primary sm:size-9"
-        />
-        <h1 className="font-display text-xl font-bold">Booking summary</h1>
-      </div>
+    <>
+      <section className="rounded-box bg-royal-blue px-6 py-7 text-white sm:px-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="lg:max-w-lg">
+            <Eyebrow className="text-white/70">Open jam</Eyebrow>
 
-      {/* Who the booking is for, in a panel rather than in fields — see `Fact`.
-          The initials stand in for an avatar the account doesn't have; they are
-          decoration beside the name they are drawn from, so nothing is lost by
-          hiding them from a screen reader. */}
-      {authStatus === 'authenticated' && (
-        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4 rounded-box border border-base-300 bg-base-200 p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <span
-              aria-hidden
-              className="grid size-11 shrink-0 place-items-center rounded-full bg-primary font-bold text-primary-content"
-            >
-              {`${user.firstName.charAt(0)}${user.lastName.charAt(0)}`}
-            </span>
-            <div>
-              <p className="font-bold">
-                {user.firstName} {user.lastName}
-              </p>
-              <p className="text-sm text-base-content/60">{user.email}</p>
+            <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">
+              Booking summary
+            </h1>
+
+            {/* The whole reason a summary step exists, said in one line: nothing
+                below this has happened yet. */}
+            <p className="mt-3 text-white/85">
+              Check the details below. Nothing is reserved until you confirm.
+            </p>
+          </div>
+
+          {/* Who the booking is for, in a panel of the same blue lightened —
+              the same device the instrument step's date panel is, in the same
+              corner, so the two steps put "the thing you already settled" in one
+              place. The initials stand in for an avatar the account doesn't
+              have; they are decoration beside the name they are drawn from, so
+              nothing is lost by hiding them from a screen reader. */}
+          {authStatus === 'authenticated' && (
+            <div className="flex w-fit shrink-0 items-center gap-3 rounded-box bg-white/15 px-4 py-3">
+              <span
+                aria-hidden
+                className="grid size-11 shrink-0 place-items-center rounded-field bg-base-100 font-display font-bold text-royal-blue"
+              >
+                {`${user.firstName.charAt(0)}${user.lastName.charAt(0)}`}
+              </span>
+              <div className="min-w-0">
+                <p className="font-bold">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="truncate text-sm text-white/70">{user.email}</p>
+              </div>
             </div>
-          </div>
-
-          {/* The venue is the reason this exists: its guest list already has a
-              Band column, and without a name three spots held by one account
-              look like a mistake rather than a group. Stated either way, because
-              "nothing here" and "we forgot to show it" look identical when the
-              row is simply absent — and it is the last screen before the name
-              is committed. */}
-          <div className="sm:border-l sm:border-base-300 sm:pl-6">
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-primary">
-              <HiUserGroup aria-hidden className="size-4" />
-              Band name
-            </p>
-            {/* A step down from the name above it: this is the one value on the
-                panel that may say nothing at all, and at full size an absence
-                carries as much weight as the booking. */}
-            <p
-              className={`mt-1.5 text-sm ${
-                bandName ? 'font-bold' : 'text-base-content/60'
-              }`}
-            >
-              {bandName || 'No band name provided'}
-            </p>
-          </div>
+          )}
         </div>
-      )}
+      </section>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2">
-        <Fact
-          icon={<RiTimerFlashLine aria-hidden className="size-4" />}
-          label="Time slot"
+      {/* The facts and the spots side by side from `lg`, stacked below it — and
+          the spots come first in the source so a phone meets them first. What a
+          musician wants confirmed on a small screen is which instruments they
+          just claimed; the date and the venue are the things they already knew
+          when they picked the night. */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Cyan, because these are the choices made two steps ago and cyan is
+            what that block was — the colour is the link back to where they were
+            picked. */}
+        <section
+          aria-labelledby="spots-heading"
+          className="order-1 rounded-box bg-cyan-blue px-6 py-6 lg:order-2 lg:col-span-1"
         >
-          <p className="font-bold tabular-nums">
-            {slot.startTime} – {slot.endTime}
-          </p>
-        </Fact>
+          <Eyebrow className="text-white">
+            <span id="spots-heading">Spots you booked</span>
+          </Eyebrow>
 
-        {/* The labels only. Every other fact about these spots — the time, the
-            day, who they are for — is already on this page, and repeating it per
-            row would bury the one thing that differs. */}
-        <Fact icon={<MdFactCheck aria-hidden className="size-4" />} label="Spots">
-          <ul className="flex flex-wrap gap-2">
+          {/* The labels only. Every other fact about these spots — the time, the
+              day, who they are for — is already on this page, and repeating it
+              per row would bury the one thing that differs.
+
+              The same white tile the instrument step's pills are, unpicked: it
+              is the same object, one step on, and now with nothing to click. */}
+          <ul className="mt-4 space-y-3">
             {chosen.map((spot) => (
               <li
                 key={spot.spotId}
-                className="rounded-field border border-primary/40 bg-primary/10 px-3 py-1.5 text-sm font-bold text-primary"
+                className="rounded-field bg-base-100 px-5 py-3 font-bold text-dark-teal"
               >
                 {spot.label}
               </li>
             ))}
           </ul>
-        </Fact>
+        </section>
 
-        <Fact icon={<FaRegCalendar aria-hidden className="size-4" />} label="Date">
-          <p>{formatListingDate(utcMidnightToDateString(state.session.date))}</p>
-        </Fact>
+        <Card className="order-2 lg:order-1 lg:col-span-2">
+          {/* Two by two from `sm`, one column below it. The rules run between
+              rows rather than around each fact — four boxed values read as four
+              things to do something about, and there is nothing to do here.
+
+              Written as two rows rather than one four-cell grid, and that is
+              what makes the rule continuous: a border on each cell stops at the
+              column gap, leaving a line with a notch cut out of it. Below `sm`
+              the rows collapse and the borders move back onto the cells, because
+              in one column every fact is its own row. */}
+          <div className="grid gap-x-10 sm:grid-cols-2 sm:border-b sm:border-dark-teal/10 sm:pb-5">
+            <Fact
+              label="Date"
+              className="border-b border-dark-teal/10 pb-5 sm:border-b-0 sm:pb-0"
+            >
+              {formatListingDate(utcMidnightToDateString(state.session.date))}
+            </Fact>
+
+            <Fact
+              label="Time slot"
+              className="border-b border-dark-teal/10 py-5 sm:border-b-0 sm:py-0"
+            >
+              <span className="tabular-nums">
+                {slot.startTime} – {slot.endTime}
+              </span>
+            </Fact>
+          </div>
+
+          <div className="grid gap-x-10 pt-5 sm:grid-cols-2">
+            {/* The venue is the reason the band name is here at all: its guest
+                list already has a Band column, and without a name three spots
+                held by one account look like a mistake rather than a group.
+                Stated either way, because "nothing here" and "we forgot to show
+                it" look identical when the row is simply absent — and this is
+                the last screen before the name is committed. */}
+            <Fact
+              label="Band name"
+              className="border-b border-dark-teal/10 pb-5 sm:border-b-0 sm:pb-0"
+            >
+              <span className={bandName ? '' : 'font-normal text-dark-teal/50'}>
+                {bandName || 'No band name provided'}
+              </span>
+            </Fact>
+
+            <Fact label="Venue" className="pt-5 sm:pt-0">
+              {city ? `${city} · ${state.session.venueName}` : state.session.venueName}
+            </Fact>
+          </div>
+        </Card>
       </div>
 
       {submitError && (
-        <div role="alert" className="mt-6 rounded-box border border-error/40 bg-error/5 p-4">
+        <div
+          role="alert"
+          className="rounded-box border border-error/40 bg-error/5 px-5 py-4"
+        >
           <p className="text-sm font-bold">{submitError}</p>
         </div>
       )}
 
-      <div className="mt-10 flex items-center justify-between gap-3 border-t border-base-200 pt-8">
-        <Link href={backHref} className="btn btn-outline btn-primary font-bold">
-          <FaArrowLeft aria-hidden className="size-4" />
-          Back
-        </Link>
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href={backHref}
+            className="btn border-royal-blue bg-transparent font-bold text-royal-blue shadow-none hover:bg-royal-blue hover:text-white"
+          >
+            <FaArrowLeft aria-hidden className="size-4" />
+            Back
+          </Link>
 
-        {/* Disabled while the request is out, and it has to be: a second click
-            is a second submission with a second groupId, and the spots claimed
-            by the first would make it fail — a musician double-clicking would
-            see "that spot was just taken" about a spot they had just been
-            given. */}
-        <button
-          type="button"
-          onClick={submit}
-          disabled={submitting}
-          className="btn btn-primary font-bold"
-        >
-          {submitting && <span className="loading loading-spinner" />}
-          {submitting ? 'Booking…' : 'Confirm booking'}
-          {/* After the words, and `bg-current` rather than a named colour: the
-              artwork is black on transparency, so the mask paints it in whatever
-              the button's own text colour is — which keeps it right if this
-              button ever stops being indigo. */}
-          {!submitting && <MaskIcon src={rockHand.src} className="size-5 bg-current" />}
-        </button>
-      </div>
-    </Card>
+          {/* Disabled while the request is out, and it has to be: a second click
+              is a second submission with a second groupId, and the spots claimed
+              by the first would make it fail — a musician double-clicking would
+              see "that spot was just taken" about a spot they had just been
+              given.
+
+              The disabled treatment is the one both steps before it wear, rather
+              than daisyUI's grey fill. */}
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting}
+            className="btn border-royal-blue bg-royal-blue font-bold text-white hover:border-royal-blue/90 hover:bg-royal-blue/90 disabled:border-transparent disabled:bg-dark-teal/25 disabled:text-white/60"
+          >
+            {submitting && <span className="loading loading-spinner" />}
+            {submitting ? 'Booking…' : 'Confirm booking'}
+            {!submitting && <IoTicketSharp aria-hidden className="size-5" />}
+          </button>
+        </div>
+      </Card>
+    </>
   );
 }
+
+const BackLink = ({ href }: { href: string }) => (
+  <Link
+    href={href}
+    className="btn mt-6 border-royal-blue bg-transparent font-bold text-royal-blue shadow-none hover:bg-royal-blue hover:text-white"
+  >
+    <FaArrowLeft aria-hidden className="size-4" />
+    Back to the jam
+  </Link>
+);

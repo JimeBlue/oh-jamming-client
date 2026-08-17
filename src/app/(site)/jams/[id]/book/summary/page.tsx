@@ -41,8 +41,11 @@ export default async function BookingSummaryPage({
   const trimmedBand = band?.trim() ?? '';
   const bandName = trimmedBand.length >= 2 ? trimmedBand : '';
 
+  /* Pale blue, matching the step before: the summary draws its own royal-blue
+     and cyan blocks now, and a coloured page under them left the white cards
+     with nothing to sit against. */
   return (
-    <main className="min-h-screen flex-1 bg-primary pt-28">
+    <main className="min-h-screen flex-1 bg-pale-blue pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <RequireRole role="musician">
           <BookingSummary
