@@ -36,8 +36,11 @@ export default async function BookPage({ params, searchParams }: BookPageProps) 
      is one page away. */
   if (!slot) redirect(`/jams/${id}`);
 
+  /* Pale blue, not the indigo it was: the step now draws its own royal-blue and
+     cyan blocks, and a coloured page under them left the card edges with nothing
+     to sit against. Same ground as the browse a musician arrives from. */
   return (
-    <main className="min-h-screen flex-1 bg-primary pt-28">
+    <main className="min-h-screen flex-1 bg-pale-blue pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
         <RequireRole role="musician">
           <InstrumentPicker

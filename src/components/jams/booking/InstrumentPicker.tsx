@@ -3,13 +3,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { FaArrowLeft, FaArrowRight, FaRegCalendar } from 'react-icons/fa6';
-import { HiUserGroup } from 'react-icons/hi';
-import { MdFactCheck } from 'react-icons/md';
-import { RiTimerFlashLine } from 'react-icons/ri';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 
-import electricGuitar from '@/assets/electric-guitar.png';
-import MaskIcon from '@/components/ui/MaskIcon';
 import { formatListingDate } from '@/lib/jamListing';
 import { utcMidnightToDateString } from '@/lib/time';
 import { MAX_SPOTS_PER_BOOKING } from '@/schemas/booking';
@@ -27,7 +22,13 @@ import { getJamSession } from '@/services/jamSessions';
    `label` is the API's own wording ("First Guitar", or bare "Drums" where the
    venue offered one), generated in `generateSlots`. Composing it here from the
    instrument and an index would be a second implementation of a name a musician
-   will see again on their booking card and on the venue's guest list. */
+   will see again on their booking card and on the venue's guest list.
+
+   Three blocks rather than one card, which is the re-brand: royal blue for what
+   is being asked, cyan for the instruments themselves, white for the two things
+   that finish the step. The colours are the browse's — royal blue is the action,
+   cyan is the full-bleed band — so a musician arriving from a card meets the
+   same two blues doing the same two jobs. */
 
 type PickerState =
   | { status: 'loading' }
@@ -36,6 +37,21 @@ type PickerState =
 
 const asMessage = (error: unknown): string =>
   error instanceof ApiError ? error.message : 'Something went wrong. Please try again.';
+
+/* The small uppercase line each block opens with. One component because there
+   are four of them across three grounds and only the colour changes — the
+   tracking and the weight are what make them read as the same device. */
+const Eyebrow = ({
+  children,
+  className = '',
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <p className={`font-display text-xs font-bold uppercase tracking-[0.18em] ${className}`}>
+    {children}
+  </p>
+);
 
 export default function InstrumentPicker({
   id,
@@ -131,7 +147,7 @@ export default function InstrumentPicker({
     return (
       <Card>
         <div className="flex justify-center py-12">
-          <span className="loading loading-spinner loading-lg text-primary" />
+          <span className="loading loading-spinner loading-lg text-royal-blue" />
           <span className="sr-only">Loading this jam session</span>
         </div>
       </Card>
@@ -141,7 +157,7 @@ export default function InstrumentPicker({
   if (state.status === 'error') {
     return (
       <Card>
-        <p role="alert" className="text-sm">
+        <p role="alert" className="text-sm text-dark-teal">
           {state.message}
         </p>
         <BackLink href={`/jams/${id}`} />
@@ -157,8 +173,10 @@ export default function InstrumentPicker({
   if (!slot) {
     return (
       <Card>
-        <h1 className="font-heading text-2xl">That time slot isn&rsquo;t available</h1>
-        <p className="mt-3 text-sm">
+        <h1 className="font-display text-2xl font-bold text-dark-teal">
+          That time slot isn&rsquo;t available
+        </h1>
+        <p className="mt-3 text-sm text-dark-teal/80">
           It may have been changed since you opened this page. Pick another one.
         </p>
         <BackLink href={`/jams/${id}`} />
@@ -169,169 +187,220 @@ export default function InstrumentPicker({
   const atLimit = chosen.size >= MAX_SPOTS_PER_BOOKING;
 
   return (
-    <Card>
-      {/* The same header the slot card wears, one step on: what to do on the
-          left, and on the right the two facts a musician would otherwise have to
-          remember across a login — the night's date, and the slot they picked. */}
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-base-200 pb-6">
-        <div className="flex items-start gap-3">
-          {/* Black artwork on transparency, painted indigo through its own alpha
-              rather than committed a second time in a second colour. */}
-          {/* Smaller on a phone, where the header has wrapped and a 36px glyph
-              sits next to a title that has broken onto two lines. */}
-          <MaskIcon src={electricGuitar.src} className="size-7 bg-primary sm:size-9" />
-          <div>
-            <h1 className="font-display text-xl font-bold">Choose your instruments</h1>
-            {/* Two lines by construction rather than by where the box happens to
-                wrap: they are two separate instructions, and the second one is
-                the surprising half. */}
-            <p className="mt-1 text-sm">
-              <span className="block">Click on an instrument to select it.</span>
-              <span className="block">
-                You can book more than one spot in this slot.
-              </span>
+    <>
+      {/* What is being asked, on the page's action colour. The guitar glyph that
+          used to lead it is gone with the design: on a solid blue block the
+          heading is already the loudest thing, and a masked PNG beside it was
+          competing with it in the same white. */}
+      <section className="rounded-box bg-royal-blue px-6 py-7 text-white sm:px-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="lg:max-w-lg">
+            {/* The kind of night, not its length. The slot's own minutes are one
+                line to the right in the hours a musician actually turns up at,
+                which is the form the same fact is useful in. */}
+            <Eyebrow className="text-white/70">Open jam</Eyebrow>
+
+            <h1 className="mt-2 font-display text-3xl font-bold sm:text-4xl">
+              Choose your instruments
+            </h1>
+
+            {/* Two sentences, and the second is the surprising half — the list
+                below takes as many taps as you like, which is not what a list of
+                options usually means. */}
+            <p className="mt-3 text-white/85">
+              Pick one or more spots for this slot. Every instrument you take is one
+              seat on stage.
             </p>
           </div>
+
+          {/* The two facts a musician would otherwise have to remember across a
+              login, in a panel of the same blue lightened rather than a second
+              colour: it belongs to the heading beside it, and a white card here
+              would read as the first thing to interact with.
+
+              Dots rather than the calendar and stopwatch glyphs it used to
+              carry. Two icons on a block this dense were decoration standing
+              where the words are, and the cyan one still does the one job an
+              icon was doing — marking which of the two lines is the choice
+              already made. */}
+          {/* `shrink-0` and no wrapping inside: the heading beside it is the
+              half that should reflow, and left to itself this panel broke
+              "21:00 – 21:15" away from the label it belongs to. */}
+          <dl className="w-fit shrink-0 space-y-1.5 rounded-box bg-white/15 px-5 py-4 text-sm whitespace-nowrap">
+            <div className="flex items-center gap-3">
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-white/50" />
+              <dt className="sr-only">Date</dt>
+              {/* Set exactly like the line under it. The two are the same kind
+                  of fact — when the night is, and when your part of it is — and
+                  dimming one of them made the panel read as a heading over a
+                  detail rather than as a pair. */}
+              <dd className="font-bold">
+                {formatListingDate(utcMidnightToDateString(state.session.date))}
+              </dd>
+            </div>
+            <div className="flex items-center gap-3">
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-cyan-blue" />
+              <dt className="font-bold">Your time slot:</dt>
+              <dd className="font-bold tabular-nums">
+                {slot.startTime} – {slot.endTime}
+              </dd>
+            </div>
+          </dl>
         </div>
+      </section>
 
-        {/* Pushed right as a block, not row by row: right-aligning each line
-            separately puts the two icons in different columns.
+      {/* The instruments, on the cyan the browse's band and the home page's
+          stats are drawn on. It is the block a musician is here to work in, and
+          giving it the page's other colour is what stops the white pills reading
+          as a continuation of the form below them. */}
+      <section aria-labelledby="instruments-heading" className="rounded-box bg-cyan-blue px-6 py-7 sm:px-8">
+        <Eyebrow className="text-white">
+          <span id="instruments-heading">Available instruments</span>
+        </Eyebrow>
 
-            Only from `sm` up. On a phone the header has wrapped to two rows, and
-            `ml-auto` would strand these against the right edge — under a title
-            that starts at the left, with nothing above them to line up with. */}
-        <dl className="w-fit space-y-1 text-sm sm:ml-auto">
-          <div className="flex items-center gap-2">
-            <FaRegCalendar aria-hidden className="size-4 shrink-0 text-primary" />
-            <dt className="sr-only">Date</dt>
-            <dd>{formatListingDate(utcMidnightToDateString(state.session.date))}</dd>
-          </div>
-          <div className="flex items-center gap-2">
-            <RiTimerFlashLine aria-hidden className="size-4 shrink-0 text-primary" />
-            <dt>Your time slot:</dt>
-            <dd className="font-bold tabular-nums">
-              {slot.startTime} – {slot.endTime}
-            </dd>
-          </div>
-        </dl>
-      </div>
+        {/* One flat run in the order the slot carries them, which is the order
+            the venue typed the line-up in — so "First Guitar" comes before
+            "Second Guitar" and the guitars stay together without anything here
+            deciding that they should.
 
-      <p className="mt-6 flex items-center gap-2 text-sm font-bold text-primary">
-        <MdFactCheck aria-hidden className="size-4" />
-        Available instruments
-      </p>
+            Four across at the widest, matching the block's own width rather than
+            the pills' content: a row of even columns is what makes "First
+            Guitar" and "Bass" read as the same kind of choice. */}
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {slot.spots.map((spot) => {
+            const isTaken = spot.bookingId !== null;
+            const isChosen = chosen.has(spot.spotId);
 
-      <ul className="mt-3 space-y-2.5">
-        {slot.spots.map((spot) => {
-          const isTaken = spot.bookingId !== null;
-          const isChosen = chosen.has(spot.spotId);
+            return (
+              <li key={spot.spotId}>
+                <button
+                  type="button"
+                  onClick={() => toggle(spot.spotId)}
+                  /* Taken spots stay on the list — a musician deciding whether
+                     to come wants to see the band that is already forming, not a
+                     shorter list with no explanation. Nothing is behind them.
 
-          return (
-            <li key={spot.spotId}>
-              <button
-                type="button"
-                onClick={() => toggle(spot.spotId)}
-                /* Taken spots stay on the list — a musician deciding whether to
-                   come wants to see the band that is already forming, not a
-                   shorter list with no explanation. Nothing is behind them.
+                     The limit disables what isn't already chosen, so the
+                     eleventh click does nothing rather than being accepted here
+                     and refused by the API after the summary. Deselecting still
+                     works. */
+                  disabled={isTaken || (atLimit && !isChosen)}
+                  aria-pressed={isChosen}
+                  /* Royal blue for chosen, white for free, and the hover is the
+                     lift the slot tiles on the step before make — the same
+                     gesture for the same kind of choice, one page apart. Nothing
+                     is added to the pill's edge: on this cyan a white tile is
+                     already the loudest thing in the grid, and an outline on
+                     hover was drawing a line around something nobody could
+                     miss. */
+                  className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-field px-5 py-3 text-left font-bold transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:translate-y-0 disabled:cursor-not-allowed ${
+                    isChosen
+                      ? 'bg-royal-blue text-white'
+                      : 'bg-base-100 text-dark-teal disabled:bg-base-100/50 disabled:text-dark-teal/50'
+                  }`}
+                >
+                  <span>{spot.label}</span>
+                  {isTaken && (
+                    <span className="text-xs font-bold uppercase tracking-wider">Taken</span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
 
-                   The limit disables what isn't already chosen, so the eleventh
-                   click does nothing rather than being accepted here and refused
-                   by the API after the summary. Deselecting still works. */
-                disabled={isTaken || (atLimit && !isChosen)}
-                aria-pressed={isChosen}
-                className={`flex w-full cursor-pointer items-center justify-between gap-4 rounded-box border px-5 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                  isChosen
-                    ? 'border-primary bg-primary text-primary-content'
-                    : 'border-base-300 bg-base-100 hover:border-primary'
-                }`}
-              >
-                <span className="font-bold">{spot.label}</span>
-                {isTaken && (
-                  <span className="text-sm font-bold text-base-content/60">Taken</span>
-                )}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+        {atLimit && (
+          <p className="mt-5 text-sm font-medium text-white/85">
+            {MAX_SPOTS_PER_BOOKING} spots is the most you can book in one go.
+          </p>
+        )}
+      </section>
 
-      {atLimit && (
-        <p className="mt-3 text-sm text-base-content/60">
-          {MAX_SPOTS_PER_BOOKING} spots is the most you can book in one go.
-        </p>
-      )}
+      {/* The band name and the two ways out of the step, on one white card:
+          together they are what a musician does once the choosing is finished,
+          and the design's ground change is what says the list above is done. */}
+      <Card>
+        {/* Under the instruments because it describes them: every spot in a
+            booking is inside the same slot, so two of them is two people, and
+            this is what the venue's guest list calls that group.
 
-      {/* Under the instruments because it describes them: every spot in a
-          booking is inside the same slot, so two of them is two people, and this
-          is what the venue's guest list calls that group.
+            Never required — BK09, "required when claiming more than one spot",
+            is deferred on the API, and enforcing it here alone would be a rule
+            only half the system believes in. Plenty of pairs have no name. */}
+        <label className="block">
+          <Eyebrow className="text-royal-blue">Band name (optional)</Eyebrow>
 
-          Never required — BK09, "required when claiming more than one spot", is
-          deferred on the API, and enforcing it here alone would be a rule only
-          half the system believes in. Plenty of pairs have no name. */}
-      {/* A wider gap than the one between the sections above it: the list ends
-          and a different kind of question starts, and at `mt-6` the label read
-          as a caption on the last instrument. */}
-      <label className="mt-10 block">
-        {/* The same line as "Available instruments" above it — icon, indigo,
-            small and bold — so the field reads as the next section of the step
-            rather than as a stray input. */}
-        <span className="flex items-center gap-2 text-sm font-bold text-primary">
-          <HiUserGroup aria-hidden className="size-4" />
-          Band name (optional)
-        </span>
-        <input
-          type="text"
-          value={bandName}
-          onChange={(event) => setBandName(event.target.value)}
-          placeholder="The name your venue should expect at the door"
-          /* The API's ceiling, enforced by the browser so a long name is stopped
-             as it is typed rather than refused after the button. */
-          maxLength={120}
-          aria-invalid={bandNameTooShort ? true : undefined}
-          aria-describedby={bandNameTooShort ? 'band-name-error' : undefined}
-          className={`input mt-2 w-full ${bandNameTooShort ? 'input-error' : ''}`}
-        />
-      </label>
+          <input
+            type="text"
+            value={bandName}
+            onChange={(event) => setBandName(event.target.value)}
+            placeholder="The name your venue should expect at the door"
+            /* The API's ceiling, enforced by the browser so a long name is
+               stopped as it is typed rather than refused after the button. */
+            maxLength={120}
+            aria-invalid={bandNameTooShort ? true : undefined}
+            aria-describedby={bandNameTooShort ? 'band-name-error' : undefined}
+            /* The pale field the browse's filters use, on the same white plate.
+               Borderless with a hairline ring, so the box is legible against the
+               card without drawing a second edge inside it. */
+            className={`input mt-3 h-12 w-full border-0 bg-pale-blue text-dark-teal ring-1 focus:outline-2 focus:outline-offset-[-2px] ${
+              bandNameTooShort
+                ? 'ring-error focus:outline-error'
+                : 'ring-dark-teal/10 focus:outline-royal-blue'
+            }`}
+          />
+        </label>
 
-      {bandNameTooShort && (
-        <p id="band-name-error" role="alert" className="mt-2 text-sm text-error">
-          Use at least 2 characters, or leave it empty
-        </p>
-      )}
+        {bandNameTooShort && (
+          <p id="band-name-error" role="alert" className="mt-2 text-sm text-error">
+            Use at least 2 characters, or leave it empty
+          </p>
+        )}
 
-      <div className="mt-10 flex items-center justify-between gap-3">
-        <Link href={backHref} className="btn btn-outline btn-primary font-bold">
-          <FaArrowLeft aria-hidden className="size-4" />
-          Back
-        </Link>
+        {/* A rule rather than a gap: the field above is a question and the row
+            below is the answer to the whole step, and at this width nothing else
+            separates them. */}
+        <div className="mt-6 flex items-center justify-between gap-3 border-t border-dark-teal/10 pt-6">
+          {/* The arrows sit on the side they point to, which is the only thing
+              telling these two apart at a glance once both are the same blue. */}
+          <Link
+            href={backHref}
+            className="btn border-royal-blue bg-transparent font-bold text-royal-blue shadow-none hover:bg-royal-blue hover:text-white"
+          >
+            <FaArrowLeft aria-hidden className="size-4" />
+            Back
+          </Link>
 
-        <button
-          type="button"
-          /* Nothing to confirm without a spot, and `spotIds` has to hold at
-             least one for the API to accept the booking at all. */
-          disabled={chosen.size === 0 || bandNameTooShort}
-          onClick={() =>
-            router.push(`/jams/${id}/book/summary${stepQuery(chosen, bandName)}`)
-          }
-          className="btn btn-primary font-bold"
-        >
-          Next
-          <FaArrowRight aria-hidden className="size-4" />
-        </button>
-      </div>
-    </Card>
+          <button
+            type="button"
+            /* Nothing to confirm without a spot, and `spotIds` has to hold at
+               least one for the API to accept the booking at all. */
+            disabled={chosen.size === 0 || bandNameTooShort}
+            onClick={() =>
+              router.push(`/jams/${id}/book/summary${stepQuery(chosen, bandName)}`)
+            }
+            className="btn border-royal-blue bg-royal-blue font-bold text-white hover:border-royal-blue/90 hover:bg-royal-blue/90"
+          >
+            Next
+            <FaArrowRight aria-hidden className="size-4" />
+          </button>
+        </div>
+      </Card>
+    </>
   );
 }
 
 const Card = ({ children }: { children: React.ReactNode }) => (
-  <section className="rounded-box bg-base-100 p-6 text-base-content shadow-lg sm:p-8">
+  <section className="rounded-box bg-base-100 px-6 py-7 shadow-sm ring-1 ring-dark-teal/5 sm:px-8">
     {children}
   </section>
 );
 
 const BackLink = ({ href }: { href: string }) => (
-  <Link href={href} className="btn btn-outline btn-primary mt-6 font-bold">
+  <Link
+    href={href}
+    className="btn mt-6 border-royal-blue bg-transparent font-bold text-royal-blue shadow-none hover:bg-royal-blue hover:text-white"
+  >
     <FaArrowLeft aria-hidden className="size-4" />
     Back to the jam
   </Link>
