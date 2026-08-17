@@ -195,17 +195,19 @@ export default function JamSearch({
                 here — "you haven't filtered anything" — is already obvious from
                 the row it would be sitting in. */}
             {canReset && (
-              /* The soft pink wash the guest list's Reset filters wears, so the
-                 one control that undoes a filter strip looks the same on both
-                 sides of the app — and it is still the palette the controls
-                 beside it are in, which is the half of this page the re-brand
-                 hasn't reached yet. `border-0` because `.btn` draws one by
-                 default and the wash is meant to read as a tint rather than as
-                 a fourth outlined box in a row of three. */
+              /* A royal-blue wash rather than the pink one the guest list's
+                 Reset filters still wears: this row is the page's blue now, and
+                 the one control that undoes it shouldn't be the only thing on
+                 the tab in a colour of its own.
+                 A wash rather than the solid blue the tabs and the Search button
+                 use — it undoes work rather than doing any, so it should be
+                 findable without competing with them. `border-0` because `.btn`
+                 draws one by default and this is meant to read as a tint, not as
+                 a fifth outlined box in a row of four. */
               <button
                 type="button"
                 onClick={reset}
-                className="btn shrink-0 gap-2 self-start border-0 bg-status-taken/10 font-bold text-status-taken hover:bg-status-taken/20 md:self-auto"
+                className="btn h-12 shrink-0 gap-2 self-start border-0 bg-royal-blue/10 font-bold text-royal-blue hover:bg-royal-blue/20 md:self-auto"
               >
                 <FaArrowsRotate aria-hidden className="size-4" />
                 Reset filters
