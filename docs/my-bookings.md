@@ -11,7 +11,11 @@ cancel followed by a create. What it cannot show is that this is a deliberate
 stand-in for an endpoint that doesn't exist yet, why the safer-looking order was
 rejected, and what has to change to make it real.
 
-**Nothing here is built yet.**
+**Built so far:** the list at `/my-bookings`, and the details page at
+`/my-bookings/[group]` — ticket, QR, spots, genres, skill levels, address and
+map. **Reschedule and Cancel are rendered `disabled` on the details page**: the
+layout is settled, the flows below are not written. Everything from
+[The edit flow](#the-edit-flow) down is still a plan.
 
 > ## Read this first if you are picking this up after demo day
 >

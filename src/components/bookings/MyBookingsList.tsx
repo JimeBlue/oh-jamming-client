@@ -81,10 +81,22 @@ export default function MyBookingsList() {
     <ul className="space-y-5">
       {state.cards.map((card, index) => (
         <li key={card.groupId}>
-          {/* The index is the card's colour, not its identity — `groupId` is
-              still the key, so re-sorting or a cancellation moves the colours
-              with the positions rather than with the bookings. */}
-          <BookingCard booking={card} index={index} />
+          {/* The whole card is the link, and it is the only control on it — the
+              actions live on the details page (decision 9). Wrapped here rather
+              than inside the card so the card stays a drawing of a booking and
+              nothing in it has to know where clicking goes.
+
+              `rounded-box` on the link itself so the focus ring follows the
+              ticket's corners instead of boxing it. */}
+          <Link
+            href={`/my-bookings/${card.groupId}`}
+            className="block rounded-box focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-blue"
+          >
+            {/* The index is the card's colour, not its identity — `groupId` is
+                still the key, so re-sorting or a cancellation moves the colours
+                with the positions rather than with the bookings. */}
+            <BookingCard booking={card} index={index} />
+          </Link>
         </li>
       ))}
     </ul>

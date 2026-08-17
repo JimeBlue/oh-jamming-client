@@ -148,6 +148,43 @@ const toCard = (rows: Booking[], today: string): BookingCardView | null => {
   };
 };
 
+/* Cyan on the first card and every third one after it — 1, 4, 7 — with royal
+   blue on the two in between.
+
+   Colour is a property of the *position*, not of the booking. It was the status
+   at first, and that read as meaning: two cancelled bookings in a row became one
+   long blue block, and a musician with nothing but past nights got a page with
+   no cyan on it at all. As a rhythm it does the job colour is actually good at
+   here — separating one ticket from the next — and leaves saying what a booking
+   *is* to the badge, which says it in words.
+
+   Here rather than in the card that draws it, because the details page has to
+   answer the same question: a ticket that was royal blue in the list and cyan
+   when you tapped it reads as a different booking. Both callers ask this, so
+   neither owns it. */
+export const isCyanCard = (index: number): boolean => index % 3 === 0;
+
+/* One group, for `/my-bookings/[group]`.
+
+   Deliberately not routed through `toBookingCards`: that applies the
+   cancelled-shadow filter, which exists to keep a superseded booking off a
+   *list*. Asked for one booking by its id, hiding it is the wrong answer — the
+   link may be in someone's history, and "this doesn't exist" about something
+   that does is worse than showing a cancelled night. */
+export const toBookingCard = (rows: Booking[]): BookingCardView | null =>
+  toCard(rows, nowInAppTimezone().date);
+
+/* "JSB-4F2A0C" — the group's own id, shortened to something a person can read
+   out over a phone.
+
+   A rendering of `groupId`, not a second identifier: nothing is stored, and
+   nothing is ever looked up by it. The full uuid is what the URL and every
+   request carry, and the QR carries `qrCode`, which is a different token again.
+   Six hex characters can collide in principle; they cannot collide *for one
+   musician*, which is the only place this is ever read. */
+export const bookingReference = (groupId: string): string =>
+  `JSB-${groupId.replace(/-/g, '').slice(-6).toUpperCase()}`;
+
 export const toBookingCards = (bookings: Booking[]): BookingCardView[] => {
   /* The app's timezone, not the browser's. A musician in another country
      shouldn't see tonight's session filed under yesterday because their clock

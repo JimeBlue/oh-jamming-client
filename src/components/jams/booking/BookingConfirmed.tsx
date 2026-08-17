@@ -107,12 +107,15 @@ export default function BookingConfirmed({
         See this QR code. Cancel or edit your booking.
       </p>
 
-      {/* Not a link, because the page doesn't exist yet — and a Link to a 404 is
-          worse than a button that plainly does nothing. It is here so the shape
-          of the page is right; give it an href the day /my-bookings lands. */}
-      <button type="button" className="btn btn-outline btn-primary mt-4 font-bold">
-        My bookings
-      </button>
+      {/* Straight to this booking rather than to the list: the musician has just
+          made it, and it is the one they came here about. The list is one tap
+          further on from there. */}
+      <Link
+        href={`/my-bookings/${groupId}`}
+        className="btn btn-outline btn-primary mt-4 font-bold"
+      >
+        My booking
+      </Link>
 
       {qr ? (
         /* White ground and a quiet zone around it, both of which a scanner needs

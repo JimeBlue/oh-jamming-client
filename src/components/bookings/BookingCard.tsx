@@ -1,13 +1,14 @@
 import type { IconType } from 'react-icons/lib';
 import { FaCircleCheck, FaCircleXmark, FaRegClock } from 'react-icons/fa6';
 
-import type { BookingCardStatus, BookingCardView } from '@/lib/myBookings';
+import { isCyanCard, type BookingCardStatus, type BookingCardView } from '@/lib/myBookings';
+import Perforation from './Perforation';
 
 /* One booking, drawn as a ticket: a coloured stub carrying the details and a
    white one carrying the date, the way a paper ticket puts the date where a
    thumb can find it in a pocket.
 
-   Nothing on it is clickable yet. The whole card becomes a link to
+   Nothing on it is a control. The list wraps the whole card in a link to
    `/my-bookings/[group]` — that is where Cancel, Change and the QR live, and
    deliberately not here (see `docs/my-bookings.md`, decision 9). */
 
@@ -37,17 +38,6 @@ const STATUS: Record<
     className: 'bg-status-cancelled text-white',
   },
 };
-
-/* Cyan on the first card and every third one after it — 1, 4, 7 — with royal
-   blue on the two in between.
-
-   Colour is a property of the *position*, not of the booking. It was the status
-   at first, and that read as meaning: two cancelled bookings in a row became one
-   long blue block, and a musician with nothing but past nights got a page with
-   no cyan on it at all. As a rhythm it does the job colour is actually good at
-   here — separating one ticket from the next — and leaves saying what a booking
-   *is* to the badge, which says it in words. */
-const isCyan = (index: number): boolean => index % 3 === 0;
 
 /* The label above every value on the coloured stub. Small, and held back from
    white so the value it names is the thing that is read first. */
@@ -82,7 +72,7 @@ export default function BookingCard({
 }) {
   const status = STATUS[booking.status];
   const StatusIcon = status.icon;
-  const cyan = isCyan(index);
+  const cyan = isCyanCard(index);
 
   return (
     <article
@@ -249,29 +239,10 @@ export default function BookingCard({
           className="absolute bottom-0 left-0 size-5 -translate-x-1/2 translate-y-1/2 rounded-full bg-pale-blue"
         />
 
-        {/* The perforation between the two notches. A repeated radial gradient
-            rather than `border-dotted`, for two reasons: a dotted border draws
-            its dots at the border's own width, so round ones mean a thick border
-            pushing the layout around — and at the 2px that didn't, they were
-            invisible on the cyan. This paints the dots at whatever size looks
-            right without occupying any space at all.
-
-            Inset past the notch radius at both ends, so the line stops where the
-            holes start instead of running through them. */}
-        <span
-          aria-hidden
-          className="absolute inset-y-3 -left-1 w-1"
-          style={{
-            /* 4px dots on a 7px pitch — the gap is smaller than the dot, which is
-               what makes this read as a tear line rather than as a dotted rule.
-               Widening the gap turns it into punctuation; shrinking the dot makes
-               it disappear into the cyan. */
-            backgroundImage:
-              'radial-gradient(circle, rgb(255 255 255 / 0.8) 45%, transparent 46%)',
-            backgroundSize: '4px 7px',
-            backgroundRepeat: 'repeat-y',
-          }}
-        />
+        {/* The perforation between the two notches. Inset past the notch radius
+            at both ends, so the line stops where the holes start instead of
+            running through them. */}
+        <Perforation orientation="vertical" className="inset-y-3 -left-1" />
         <p className="text-sm font-bold tracking-wide text-dark-teal">
           {booking.dateParts.month}
         </p>
