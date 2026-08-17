@@ -91,12 +91,21 @@ export default function BackstageRow({
        movement gets the card without it and nothing else missing. */
     <li className="relative flex cursor-pointer items-stretch transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:z-10 motion-safe:will-change-transform motion-safe:hover:scale-[1.03]">
       <div
-        className={`relative z-10 flex flex-1 gap-4 rounded-box p-4 text-white sm:gap-6 sm:p-6 ${CARD[status].fill}`}
+        /* min-w-0 on the pane as well as on the text column inside it. `flex-1`
+           alone doesn't let it shrink: a flex item defaults to min-width:auto and
+           refuses to go below its own content, so on a phone the card grew wider
+           than the screen instead of the title truncating. */
+        className={`relative z-10 flex min-w-0 flex-1 gap-4 rounded-box p-4 text-white sm:gap-6 sm:p-6 ${CARD[status].fill}`}
       >
         {/* The date, as the thing the eye lands on first. A tint of white rather
             than a colour of its own, so it holds against all three card fills
             without a fourth entry in the map above. */}
-        <div className="w-20 shrink-0 rounded-box bg-white/20 px-2 py-4 text-center sm:w-28 sm:px-5 sm:py-5">
+        {/* `self-start` below `sm`, where the card is tall because the badge,
+            title, time and buttons are stacked — left to stretch, the date block
+            grew to that whole height and became a column of empty colour. From
+            `sm` up the card is only as tall as this block wants to be, so
+            stretching is what makes it the full-height panel the design has. */}
+        <div className="w-20 shrink-0 self-start rounded-box bg-white/20 px-2 py-4 text-center sm:w-28 sm:self-stretch sm:px-5 sm:py-5">
           <p className="font-display text-xs font-bold tracking-[0.18em] uppercase text-white/80">
             {month}
           </p>
@@ -110,21 +119,32 @@ export default function BackstageRow({
             card — a flex item defaults to min-width:auto and refuses to shrink
             below its own content. */}
         <div className="flex min-w-0 flex-1 flex-col gap-5">
-          <div className="flex items-start gap-4">
-            <div className="min-w-0 flex-1">
+          {/* The badge takes a line of its own at every width — `col-reverse`
+              puts it above the title rather than beside it. Sharing the row cost
+              the title the width the badge took, which on a phone left it about
+              eight characters to truncate into. It stays right-aligned from `sm`,
+              where the card is wide enough that the status belongs at the end of
+              the row a venue scans down. */}
+          <div className="flex flex-col-reverse items-start gap-2">
+            <div className="w-full min-w-0">
               <Eyebrow>Jam Session</Eyebrow>
               <h3 className="truncate font-display text-xl font-bold sm:text-2xl">
                 {session.title}
               </h3>
             </div>
 
-            <JamStatusBadge status={status} tone="onColor" />
+            {/* Wrapped because the alignment belongs to the slot, not to the
+                badge — it is drawn on the detail header too, where it is not a
+                flex child of anything. */}
+            <div className="sm:self-end">
+              <JamStatusBadge status={status} tone="onColor" />
+            </div>
           </div>
 
           {/* Time and the actions on one line, pushed apart — and `mt-auto` is
               what pins them to the bottom of a card whose height is set by the
               date block beside them. */}
-          <div className="flex flex-wrap items-end justify-between gap-4 sm:mt-auto">
+          <div className="flex flex-col items-start gap-4 sm:mt-auto sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
             <div>
               <Eyebrow>Time</Eyebrow>
               <p className="font-display text-lg font-bold">
