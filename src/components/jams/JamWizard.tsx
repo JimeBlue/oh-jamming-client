@@ -262,10 +262,17 @@ function JamWizardForm() {
                 onClick={goBack}
                 /* Written out rather than `btn-outline`, which takes its colour
                    from the button's text and would need a second class to say
-                   which colour anyway. Cyan is the step back because indigo is
-                   the step forward — the pair reads as a direction, not as two
-                   equally weighted choices. */
-                className="btn gap-2 border-cyan-blue bg-transparent font-bold text-cyan-blue transition-colors hover:border-cyan-blue hover:bg-cyan-blue hover:text-white"
+                   which colour anyway.
+                   The same royal blue as the button opposite, hollow rather than
+                   filled: back and forward are one control in two halves, and
+                   giving the two directions two different hues said they were
+                   two unrelated choices. Weight carries which one is the way on.
+
+                   Transparent at rest — the page shows through, not a white fill
+                   — and solid on hover, which is the exact inverse of the button
+                   opposite. The two trade places under the cursor, so the row
+                   never holds two solid buttons at once. */
+                className="btn gap-2 border-royal-blue bg-transparent font-bold text-royal-blue shadow-none transition-colors hover:border-royal-blue hover:bg-royal-blue hover:text-white"
               >
                 <FaArrowLeft className="size-4" />
                 Back
@@ -295,7 +302,7 @@ function JamWizardForm() {
                    read on two buttons sitting in the same row.
                    `disabled:` keeps the filled look while publishing, so the
                    spinner isn't sitting in an outline that looks switched off. */
-                className="btn btn-primary gap-2 font-bold transition-colors hover:border-primary hover:bg-transparent hover:text-primary disabled:border-transparent disabled:bg-primary disabled:text-primary-content"
+                className="btn gap-2 border-royal-blue bg-royal-blue font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-royal-blue disabled:border-royal-blue disabled:bg-royal-blue disabled:text-white"
               >
                 {/* The same arrow the Next button carries, because this is the
                     same gesture — forward, out of the wizard. It replaced the
@@ -321,11 +328,13 @@ function JamWizardForm() {
                 key="next"
                 type="button"
                 onClick={goNext}
-                /* Hollows out on hover, the same way Publish does in the same
-                   corner — and the inverse of Back, which fills. Two buttons in
-                   one row both getting brighter on hover is what makes neither
-                   of them look like it moved. */
-                className="btn btn-primary gap-2 font-bold transition-colors hover:border-primary hover:bg-transparent hover:text-primary"
+                /* Solid at rest, hollowed out on hover — the same way Publish
+                   behaves in the same corner. Hovering takes weight off the
+                   forward button rather than adding it, which is what keeps the
+                   row from having two solid buttons in it at any moment.
+                   Royal blue written out rather than `btn-primary`: the wizard's
+                   indigo is the app chrome, and this row belongs to the form. */
+                className="btn gap-2 border-royal-blue bg-royal-blue font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-royal-blue"
               >
                 Go to the next step
                 <FaArrowRight className="size-4" />
