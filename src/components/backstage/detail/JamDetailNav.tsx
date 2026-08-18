@@ -30,7 +30,11 @@ export default function JamDetailNav({ id }: { id: string }) {
   return (
     <nav
       aria-label="Jam session sections"
-      className="shrink-0 bg-brand-indigo-deep lg:w-60 xl:w-auto"
+      /* The header's own navy, not a second dark. The rail runs from directly
+         under `JamBuilderHeader` to the foot of the window, so any other dark
+         reads as a seam an inch below the bar rather than as the same furniture
+         continuing down the side. */
+      className="shrink-0 bg-brand-navy lg:w-60 xl:w-auto"
     >
       {/* Left-aligned at every width. As a horizontal strip this is the only
           thing on its row, so centring floated it away from the page's own left
@@ -54,8 +58,8 @@ export default function JamDetailNav({ id }: { id: string }) {
                 data-tip={label}
                 className={`max-sm:tooltip max-sm:tooltip-bottom font-bold xl:tooltip xl:tooltip-right ${
                   active
-                    ? 'bg-base-100 text-primary hover:bg-base-100'
-                    : 'text-primary-content/75 hover:bg-white/10 hover:text-primary-content'
+                    ? 'bg-royal-blue text-white hover:bg-royal-blue'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 {/* Bigger where it is the only thing there is to aim at — a

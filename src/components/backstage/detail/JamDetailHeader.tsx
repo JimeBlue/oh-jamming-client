@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { AiFillClockCircle } from 'react-icons/ai';
-import { FaArrowLeftLong, FaLocationDot, FaRegCalendar } from 'react-icons/fa6';
+import { FaArrowLeftLong, FaRegCalendar, FaRegClock } from 'react-icons/fa6';
+import { IoLocationOutline } from 'react-icons/io5';
 
 import { formatListingDate } from '@/lib/jamListing';
 import { jamStatus } from '@/lib/jamStatus';
@@ -82,7 +82,7 @@ export default function JamDetailHeader({ session }: { session: JamSession }) {
         <div className="contents sm:col-start-2 sm:row-start-1 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
           {/* min-w-0 so a long title wraps inside its own column instead of
               widening it and pushing the badge off the row. */}
-          <h1 className="row-start-1 min-w-0 font-heading text-2xl sm:text-3xl">
+          <h1 className="row-start-1 min-w-0 font-display text-[23px] font-bold text-dark-teal sm:text-[29px]">
             {session.title}
           </h1>
 
@@ -100,10 +100,10 @@ export default function JamDetailHeader({ session }: { session: JamSession }) {
         </div>
 
         <div className="row-start-4 min-w-0 min-[480px]:col-span-full min-[480px]:row-start-3 sm:col-span-1 sm:col-start-2 sm:row-start-2">
-          <p className="flex items-start gap-2 text-sm text-base-content/80">
-            <FaLocationDot aria-hidden className="mt-1 size-3.5 shrink-0 text-primary" />
+          <p className="flex items-start gap-2 text-[13px] text-dark-teal/60">
+            <IoLocationOutline aria-hidden className="mt-0.5 size-4 shrink-0 text-royal-blue" />
             <span>
-              <span className="font-medium">{session.venueName}</span>
+              <span className="font-bold text-dark-teal">{session.venueName}</span>
               {session.address.formatted && (
                 <span className="block">{session.address.formatted}</span>
               )}
@@ -123,8 +123,8 @@ export default function JamDetailHeader({ session }: { session: JamSession }) {
               own, so repeating it here would be the same information twice in
               one card. Only the time is left, and it gets the clock. */}
           {fullDate && (
-            <p className="mt-1 flex items-start gap-2 text-sm text-base-content/80 sm:hidden">
-              <FaRegCalendar aria-hidden className="mt-1 size-3.5 shrink-0 text-primary" />
+            <p className="mt-1 flex items-start gap-2 text-[13px] text-dark-teal/60 sm:hidden">
+              <FaRegCalendar aria-hidden className="mt-1 size-3.5 shrink-0 text-royal-blue" />
               <span>
                 <span className="block">{fullDate}</span>
                 <span className="block tabular-nums">
@@ -134,8 +134,8 @@ export default function JamDetailHeader({ session }: { session: JamSession }) {
             </p>
           )}
 
-          <p className="mt-1 hidden items-center gap-2 text-sm text-base-content/80 sm:flex">
-            <AiFillClockCircle aria-hidden className="size-3.5 shrink-0 text-primary" />
+          <p className="mt-1 hidden items-center gap-2 text-[13px] text-dark-teal/60 sm:flex">
+            <FaRegClock aria-hidden className="size-3.5 shrink-0 text-royal-blue" />
             <span className="tabular-nums">
               {session.startTime} – {session.endTime}
             </span>
@@ -148,12 +148,17 @@ export default function JamDetailHeader({ session }: { session: JamSession }) {
               calendar line above now says in a sentence. It earns its space from
               `sm`, where it sits in a column of its own rather than eating a
               block of the card's only one. */}
-          <div className="hidden w-24 overflow-hidden rounded-box border border-secondary text-center sm:block">
-            <p className="bg-secondary px-2 py-1 text-xs font-bold tracking-wide text-secondary-content uppercase">
+          <div className="hidden w-24 overflow-hidden rounded-box border border-dark-teal/25 text-center sm:block">
+            {/* The lime the header's own "Back to home" wears, and at medium
+                rather than bold: it is a caption over the number, and at 12px
+                bold on navy the month was competing with the day it labels. */}
+            <p className="bg-brand-navy px-2 py-1 text-[11px] font-medium tracking-wide text-brand-green uppercase">
               {month}
             </p>
-            <p className="px-2 pt-2 font-heading text-3xl leading-none">{day}</p>
-            <p className="px-2 pb-2 text-xs text-base-content/60">{year}</p>
+            <p className="px-2 pt-2 font-display text-[29px] leading-none font-bold text-dark-teal">
+              {day}
+            </p>
+            <p className="px-2 pb-2 text-[11px] text-dark-teal/50">{year}</p>
           </div>
 
           {/* The only way out. `sm:mt-auto` pins it to the bottom of the column
@@ -162,11 +167,11 @@ export default function JamDetailHeader({ session }: { session: JamSession }) {
 
               Colour rather than an underline on hover: the arrow and the weight
               already say this is a link, so the underline was only ever adding
-              a second signal — and the pink is the site's accent, so hovering
-              here answers in the app's own voice. */}
+              a second signal. It darkens to the teal the card's own headings
+              wear, rather than to a second accent — this page has one. */}
           <Link
             href="/my-backstage"
-            className="flex items-center gap-2 font-bold text-primary hover:text-secondary sm:mt-auto"
+            className="flex items-center gap-2 font-bold text-royal-blue transition-colors hover:text-dark-teal sm:mt-auto"
           >
             <FaArrowLeftLong aria-hidden className="size-4" />
             My backstage
