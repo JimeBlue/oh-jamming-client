@@ -18,6 +18,22 @@ const ENTER_RATIO = 0.15;
  * thing that happens on arrival rather than a hover state for the scrollbar. */
 const THRESHOLDS = [0, ENTER_RATIO];
 
+/* The bottom quarter of the screen doesn't count as on screen.
+ *
+ * A ratio alone is a fraction of the *element*, which means it says something
+ * completely different depending on how big that element is: 15% of a 400px
+ * block is 60px and reads as "this has arrived", while 15% of a 36px badge is
+ * five pixels clearing the bottom edge of a phone. The second is technically
+ * visible and practically not — on a tall card the badge crosses that line
+ * while the reader is still looking at the section above it, and a 0.7s
+ * animation is over before they get there. Something that leaves a permanent
+ * result survives being triggered early; something that plays once and returns
+ * to where it started is simply missed.
+ *
+ * Shrinking the root instead makes the trigger a fixed distance up the screen
+ * for every element, whatever its height. */
+const ROOT_MARGIN = '0px 0px -25% 0px';
+
 /* Is this element on screen?
  *
  * Hand-rolled rather than `react-intersection-observer`, which is what the
@@ -56,7 +72,7 @@ export default function useInView<T extends HTMLElement>() {
         if (entry.intersectionRatio >= ENTER_RATIO) setInView(true);
         if (entry.intersectionRatio === 0) setInView(false);
       },
-      { threshold: THRESHOLDS },
+      { threshold: THRESHOLDS, rootMargin: ROOT_MARGIN },
     );
 
     observer.observe(element);
