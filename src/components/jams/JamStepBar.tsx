@@ -10,7 +10,13 @@ type JamStepBarProps = {
    is an outlined circle, not a filled one, and daisyUI draws its circles with
    ::before content that can't take a ring without a fight. Eight steps also sit
    badly in its equal-column grid. This is about forty lines and does exactly
-   what the design asks. */
+   what the design asks.
+
+   Set in the body face rather than in either display one. Changa One's single
+   heavy weight can't tell the current label from the seven around it at 12px,
+   which is the bar's whole job; Space Grotesk can, but it is the voice of the
+   headings, and putting it on eight 12px labels made the bar compete with the
+   title under it. Inter is what small text is set in everywhere else. */
 export default function JamStepBar({ currentIndex }: JamStepBarProps) {
   const current = JAM_STEPS[currentIndex];
 
@@ -19,7 +25,7 @@ export default function JamStepBar({ currentIndex }: JamStepBarProps) {
       {/* Below md there is no room for eight labels, so the position is stated
           in words instead. Not merely decorative — it's the only place the step
           name appears at that width. */}
-      <p className="text-center text-sm font-medium md:hidden">
+      <p className="text-center text-sm md:hidden">
         <span className="opacity-60">
           Step {currentIndex + 1} of {JAM_STEPS.length}
         </span>
@@ -68,9 +74,14 @@ export default function JamStepBar({ currentIndex }: JamStepBarProps) {
               </span>
 
               <span
+                /* Medium rather than bold on the current step. The circles
+                   above already carry the state in colour and the two are read
+                   together — a bold label under a lit circle was the same thing
+                   said twice, and loudly. The contrast against 70% and 40% is
+                   still the thing that picks it out. */
                 className={`mt-2 hidden px-1 text-center text-xs leading-tight md:block ${
                   isCurrent
-                    ? 'font-bold'
+                    ? 'font-medium'
                     : isDone
                       ? 'opacity-70'
                       : 'opacity-40'

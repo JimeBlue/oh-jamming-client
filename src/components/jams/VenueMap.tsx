@@ -36,6 +36,14 @@ type VenueMapProps = {
      zero. The detail page wants a shorter map on a phone than on a desktop, and
      everywhere else the default is the right answer. */
   heightClass?: string;
+  /* The frame — corners and edge. A prop because the builder squares the bottom
+     two corners to sit a note flush underneath, and everywhere else the map is
+     a rounded box on its own. */
+  frameClass?: string;
+  /* Given only by the builder: the pin becomes draggable and reports where it
+     was let go. The listing passes nothing, and a musician reading a published
+     session can't move the venue's door. */
+  onPinMove?: (lat: number, lng: number) => void;
 };
 
 /* Germany at country scale. Not a guess at where the venue is — a frame that
@@ -49,6 +57,15 @@ const PIN_ZOOM = 16;
    marker silently comes out as a broken image. A divIcon sidesteps the whole
    mechanism, and as a bonus the pin can wear the theme's colours instead of
    Leaflet's blue. Anchored at the tip, not the middle: a pin points at a place. */
+/* Exact equality, not a distance: these are the same float64s that went out of
+   `getLatLng` and came back through the form untouched. Anything the venue
+   picked from the address list is a different number entirely. */
+const isOwnDrag = (
+  dragged: L.LatLngTuple | null,
+  position: L.LatLngTuple,
+): boolean =>
+  dragged !== null && dragged[0] === position[0] && dragged[1] === position[1];
+
 const pinIcon = () =>
   L.divIcon({
     html: `
@@ -70,10 +87,31 @@ export default function VenueMap({
   lng,
   label,
   heightClass = 'h-64',
+  frameClass = 'rounded-box border border-base-300',
+  onPinMove,
 }: VenueMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+
+  /* In a ref so the dragend handler below can be attached once, at the moment
+     the marker is created, and still call the latest callback. Listing it in the
+     effect's deps instead would tear the marker down and rebuild it every time
+     the parent re-renders with a new closure — which is every keystroke in the
+     address field. */
+  const onPinMoveRef = useRef(onPinMove);
+
+  /* In an effect rather than straight in the body: a ref written during render
+     is a side effect in a phase React is allowed to run twice and throw away.
+     Seeded by the useRef above, so the marker created on mount already sees it. */
+  useEffect(() => {
+    onPinMoveRef.current = onPinMove;
+  }, [onPinMove]);
+
+  /* Where this map last put the pin itself. The coordinates come back down as
+     props a moment later, and the effect below needs to tell "the venue picked
+     a new address" from "the venue dragged the pin I already have". */
+  const draggedToRef = useRef<L.LatLngTuple | null>(null);
 
   /* Built once and kept. Tearing the map down whenever the pin moves would
      re-request every tile in view, and this is a volunteer-funded tile server. */
@@ -129,8 +167,15 @@ export default function VenueMap({
     const position: L.LatLngTuple = [lat, lng];
 
     /* setView rather than flyTo: the animated version is prettier and drags a
-       corridor of tiles across half of Germany out of OSM's servers on the way. */
-    map.setView(position, PIN_ZOOM);
+       corridor of tiles across half of Germany out of OSM's servers on the way.
+
+       Skipped when these coordinates are the ones this map just reported from a
+       drag. Recentring then would yank the view out from under the hand that
+       moved the pin, and re-zoom to 16 if they had zoomed out to find the
+       street. */
+    if (!isOwnDrag(draggedToRef.current, position)) {
+      map.setView(position, PIN_ZOOM);
+    }
 
     if (markerRef.current) {
       markerRef.current.setLatLng(position);
@@ -139,13 +184,26 @@ export default function VenueMap({
       return;
     }
 
-    markerRef.current = L.marker(position, {
+    const marker = L.marker(position, {
       icon: pinIcon(),
       alt: label,
       title: label,
       /* Nothing happens when it's activated, so it shouldn't be a tab stop. */
       keyboard: false,
+      draggable: onPinMoveRef.current !== undefined,
     }).addTo(map);
+
+    /* On dragend rather than on drag: the form would otherwise take a new value
+       for every frame of the gesture, each one written to the draft in
+       sessionStorage. Where it was let go is the only position anyone meant. */
+    marker.on('dragend', () => {
+      const { lat: movedLat, lng: movedLng } = marker.getLatLng();
+
+      draggedToRef.current = [movedLat, movedLng];
+      onPinMoveRef.current?.(movedLat, movedLng);
+    });
+
+    markerRef.current = marker;
   }, [lat, lng, label]);
 
   return (
@@ -156,7 +214,7 @@ export default function VenueMap({
       /* `isolate` matters: Leaflet gives its internal panes z-indexes up to 800,
          and without a stacking context of its own the map would paint straight
          over the suggestion list hanging down from the input above it. */
-      className={`isolate w-full overflow-hidden rounded-box border border-base-300 ${heightClass}`}
+      className={`isolate w-full overflow-hidden ${frameClass} ${heightClass}`}
     />
   );
 }

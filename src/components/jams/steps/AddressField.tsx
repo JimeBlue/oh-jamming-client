@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useController } from 'react-hook-form';
 import { FaLocationDot, FaMagnifyingGlass } from 'react-icons/fa6';
+import { IoLocationOutline } from 'react-icons/io5';
 
 import { useAddressSearch } from '@/hooks/useAddressSearch';
 import { useJamForm } from '@/hooks/useJamForm';
@@ -269,7 +270,43 @@ export default function AddressField() {
       {/* Always rendered, pin or no pin. An empty map is what makes the list
           worth using — it shows the venue what picking a suggestion buys them,
           at the moment they're deciding whether to bother. */}
-      <VenueMap lat={lat} lng={lng} label={hasPin ? formatted : undefined} />
+      {/* The map and its note are one block, so they go in one wrapper rather
+          than as two children of the `space-y-3` above — the gap that rule puts
+          between siblings is exactly what shouldn't be here. The map squares its
+          bottom corners to meet the note, and keeps them when there is no note
+          to meet. */}
+      <div>
+        <VenueMap
+          lat={lat}
+          lng={lng}
+          label={hasPin ? formatted : undefined}
+          frameClass={
+            hasPin
+              ? 'rounded-t-box border border-b-0 border-base-300'
+              : 'rounded-box border border-base-300'
+          }
+          /* The typed address stays exactly as it is: what the venue is
+             correcting by dragging is where on the block the door is, which is a
+             thing the geocoder gets wrong for a back entrance and a thing the
+             text can't say. Only the coordinates move. */
+          onPinMove={(movedLat, movedLng) =>
+            field.onChange({ formatted, lat: movedLat, lng: movedLng })
+          }
+        />
+
+        {/* Only once there is a pin to drag — before that the sentence describes
+            a control that isn't there. The page's own pale blue, so the strip
+            reads as the map's caption rather than as another grey panel. */}
+        {hasPin && (
+          <p className="flex items-center gap-2 rounded-b-box border border-t-0 border-base-300 bg-pale-blue px-4 py-3 text-xs text-brand-navy/60">
+            <IoLocationOutline
+              aria-hidden
+              className="size-4 shrink-0 text-royal-blue"
+            />
+            Drag the pin if the door is somewhere else on the block.
+          </p>
+        )}
+      </div>
 
       {!hasPin && formatted.trim().length > 0 && (
         <p className="fieldset-label">

@@ -1,5 +1,6 @@
 'use client';
 
+import { Placeholder } from '@tiptap/extensions';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useState } from 'react';
@@ -39,6 +40,11 @@ type MarkdownEditorProps = {
   onChange: (markdown: string) => void;
   onBlur: () => void;
   invalid?: boolean;
+  /* Shown while the document is empty. A rich-text editor has no `placeholder`
+     attribute to hand — the text is a `::before` on the empty paragraph, drawn
+     from an extension — which is why this is a prop rather than something the
+     caller could pass straight through. */
+  placeholder?: string;
 };
 
 export default function MarkdownEditor({
@@ -46,6 +52,7 @@ export default function MarkdownEditor({
   onChange,
   onBlur,
   invalid,
+  placeholder,
 }: MarkdownEditorProps) {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
 
@@ -83,6 +90,10 @@ export default function MarkdownEditor({
            lying in the text. */
         transformPastedText: true,
       }),
+      /* The one extension from `@tiptap/extensions` this editor uses. It writes
+         the text into a `data-placeholder` attribute on the empty paragraph and
+         adds a class; drawing it is a `::before` rule in globals.css. */
+      Placeholder.configure({ placeholder: placeholder ?? '' }),
     ],
     content: defaultValue,
     editorProps: {

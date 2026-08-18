@@ -2,11 +2,13 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { FaRegImage, FaTrashCan } from 'react-icons/fa6';
+import { CiImageOn } from 'react-icons/ci';
+import { FaTrashCan } from 'react-icons/fa6';
 
 import { useJamImage } from '@/context/JamImageContext';
 import { MAX_IMAGE_MB, imageFileProblem } from '@/services/uploads';
 import JamField from './JamField';
+import JamNote from './JamNote';
 
 /* Step one: pick a photo of the room.
 
@@ -117,7 +119,13 @@ export default function ImageStep() {
       <JamField
         label="Session photo"
         error={error ?? undefined}
-        hint={`Optional. JPEG, PNG or WebP, up to ${MAX_IMAGE_MB}MB — a wide shot of the room works better than a poster.`}
+        /* The formats and the size limit moved into the chips inside the frame,
+           where they are read while deciding which file to drag rather than
+           after. What's left is the part no chip can carry: what makes a good
+           photo, and that skipping this step is a real option — it is the only
+           step of the eight that can be left empty, and a venue with no photo to
+           hand needs to know that before they go looking for one. */
+        hint="A wide shot of the room works better than a poster. You can add this later — sessions without a photo still publish."
       >
         {/* The drop zone *is* the control — there is no visible file input, and
             no click handler either. The whole zone is a <label> wrapping a
@@ -132,7 +140,7 @@ export default function ImageStep() {
                desktop card is 600px of dashed nothing, and the shape it would be
                previewing is a shape nobody can judge while it's empty. */
             previewUrl ? 'aspect-video' : ''
-          } ${isDragging ? 'border-primary bg-primary/10' : 'border-base-300 bg-base-200/60'}`}
+          } ${isDragging ? 'border-royal-blue bg-royal-blue/10' : 'border-royal-blue/25 bg-pale-blue'}`}
         >
           {previewUrl ? (
             <Image
@@ -168,14 +176,40 @@ export default function ImageStep() {
                 className="sr-only"
               />
 
-              <span className="flex size-14 items-center justify-center rounded-full bg-primary/10">
-                <FaRegImage className="size-6 text-primary" />
+              {/* A filled tile rather than a tinted disc: it is the only
+                  saturated thing inside a frame that is otherwise a dashed
+                  outline on pale blue, which is what makes the empty state read
+                  as a target rather than as a gap. */}
+              <span className="flex size-14 items-center justify-center rounded-box bg-royal-blue">
+                <CiImageOn className="size-7 text-white" />
               </span>
 
               <span className="space-y-1">
-                <span className="block font-bold">Drag &amp; drop your photo here</span>
-                <span className="block text-sm opacity-70">
-                  or <span className="text-primary underline">click to browse</span>
+                <span className="block font-bold text-brand-navy">
+                  Drag &amp; drop your photo here
+                </span>
+                <span className="block text-sm text-brand-navy/60">
+                  or{' '}
+                  <span className="font-bold text-royal-blue underline">
+                    click to browse
+                  </span>
+                </span>
+              </span>
+
+              {/* The two facts that decide whether a given file will be
+                  accepted, inside the frame the file is about to be dropped on.
+                  As chips rather than a sentence because they are read in the
+                  half-second before a drag, not during it — and the size is
+                  built from `MAX_IMAGE_MB`, which is the same constant the check
+                  that rejects the file uses. A third chip, "Landscape works
+                  best", was cut: it is advice rather than a rule, and it sits in
+                  the hint under the frame with the rest of the advice. */}
+              <span className="mt-1 flex flex-wrap justify-center gap-2">
+                <span className="rounded-field border border-royal-blue/15 bg-base-100 px-3 py-1 text-xs font-medium text-brand-navy/70">
+                  JPEG · PNG · WebP
+                </span>
+                <span className="rounded-field border border-royal-blue/15 bg-base-100 px-3 py-1 text-xs font-medium text-brand-navy/70">
+                  Up to {MAX_IMAGE_MB}MB
                 </span>
               </span>
             </label>
@@ -185,11 +219,20 @@ export default function ImageStep() {
       </JamField>
 
       {previewUrl && (
-        <button type="button" onClick={remove} className="btn btn-outline btn-sm gap-2">
+        <button
+          type="button"
+          onClick={remove}
+          className="btn btn-sm gap-2 border-royal-blue bg-transparent font-bold text-royal-blue shadow-none transition-colors hover:border-royal-blue hover:bg-royal-blue hover:text-white"
+        >
           <FaTrashCan className="size-4" />
           Remove photo
         </button>
       )}
+
+      <JamNote>
+        This is the first thing musicians see when they browse. Show the stage,
+        the backline or the room full of people.
+      </JamNote>
     </div>
   );
 }

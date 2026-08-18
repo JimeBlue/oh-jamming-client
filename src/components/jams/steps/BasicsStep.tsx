@@ -1,12 +1,12 @@
 'use client';
 
 import { useWatch } from 'react-hook-form';
-
 import { useJamForm } from '@/hooks/useJamForm';
 import { MAX_SUMMARY_CHARS } from '@/schemas/jamSession';
 import { generateJamSummary } from '@/services/ai';
 import AiAssistedField from './AiAssistedField';
 import JamField from './JamField';
+import JamNote from './JamNote';
 
 /* Title and summary — the two lines a musician reads in a list before deciding
    whether to open the session at all. */
@@ -84,6 +84,11 @@ export default function BasicsStep() {
           />
         )}
       />
+
+      <JamNote>
+        Musicians see the title and first line on the session card. Say
+        what&apos;s provided and who it&apos;s for.
+      </JamNote>
     </div>
   );
 }

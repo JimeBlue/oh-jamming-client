@@ -221,28 +221,50 @@ function JamWizardForm() {
             own bubbles fire first on the date and time inputs, and the venue gets
             two different messages for one mistake in two different styles. */}
         <form onSubmit={onFormSubmit} noValidate>
-          <div className="mt-8 rounded-box bg-base-100 p-6 shadow-xl sm:p-10">
-            {/* Space Grotesk on the last step alone. Everything under it there
-                is the musician's page, which is set in `font-display`
-                throughout — Changa One above it made the heading a third voice
-                on a screen that already has the listing's two. */}
-            <h1
-              className={
-                isLastStep
-                  ? 'font-display text-2xl font-bold tracking-tight sm:text-3xl'
-                  : 'font-heading text-2xl sm:text-3xl'
-              }
-            >
-              {step.title}
-            </h1>
-            {/* `in` rather than `step.description &&`: `JAM_STEPS` is
-                `as const satisfies`, so the preview step's member of the union
-                has no such key at all and a property access doesn't typecheck. */}
-            {'description' in step && (
-              <p className="mt-2 text-sm opacity-70">{step.description}</p>
-            )}
+          {/* `overflow-hidden` is what lets the navy band be square-edged and
+              still sit inside the card's 1rem corner — the alternative is
+              rounding the band's top two corners by hand and keeping the two
+              radii in sync forever. `jam-card` is the hook for the field styling
+              in globals.css; see the note there. */}
+          <div className="jam-card mt-8 overflow-hidden rounded-box bg-base-100 shadow-xl">
+            {/* The card's own header, in the same navy as the bar at the top of
+                the screen. It gives the step somewhere to be that isn't the
+                first thing above the first field: on white, the title, the
+                description and the label of field one were three lines of dark
+                text at three sizes, and which of them was the heading had to be
+                worked out from the sizes. */}
+            <div className="bg-brand-navy px-6 py-8 sm:px-10">
+              {/* The step's name from the progress bar, repeated. Not
+                  decoration: the bar is eight circles wide and its labels are
+                  10px, so this is where "which step am I on" is legible — and it
+                  is the same string, from the same list, so the two can't
+                  disagree. Lime is the one colour that survives being 12px on
+                  this navy. */}
+              <p className="font-display text-xs font-bold tracking-[0.18em] text-brand-green uppercase">
+                {step.shortLabel}
+              </p>
 
-            <div className="mt-8">
+              {/* Space Grotesk on every step, not just the preview. It was the
+                  preview's alone because everything under it there is the
+                  musician's page, set in `font-display` throughout — but the
+                  same argument holds one step up: Changa One is the site's
+                  poster face, and eight screens of it over a form reads as
+                  shouting the field labels rather than titling them. `font-bold`
+                  is not optional — the display face is variable, so without it
+                  this lands at 400. */}
+              <h1 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                {step.title}
+              </h1>
+              {/* `in` rather than `step.description &&`: `JAM_STEPS` is
+                  `as const satisfies`, so the preview step's member of the union
+                  has no such key at all and a property access doesn't
+                  typecheck. */}
+              {'description' in step && (
+                <p className="mt-2 text-sm text-white/70">{step.description}</p>
+              )}
+            </div>
+
+            <div className="p-6 sm:p-10">
               <StepFields />
             </div>
           </div>
@@ -265,10 +287,17 @@ function JamWizardForm() {
                 onClick={goBack}
                 /* Written out rather than `btn-outline`, which takes its colour
                    from the button's text and would need a second class to say
-                   which colour anyway. Cyan is the step back because indigo is
-                   the step forward — the pair reads as a direction, not as two
-                   equally weighted choices. */
-                className="btn gap-2 border-cyan-blue bg-transparent font-bold text-cyan-blue transition-colors hover:border-cyan-blue hover:bg-cyan-blue hover:text-white"
+                   which colour anyway.
+                   The same royal blue as the button opposite, hollow rather than
+                   filled: back and forward are one control in two halves, and
+                   giving the two directions two different hues said they were
+                   two unrelated choices. Weight carries which one is the way on.
+
+                   Transparent at rest — the page shows through, not a white fill
+                   — and solid on hover, which is the exact inverse of the button
+                   opposite. The two trade places under the cursor, so the row
+                   never holds two solid buttons at once. */
+                className="btn gap-2 border-royal-blue bg-transparent font-bold text-royal-blue shadow-none transition-colors hover:border-royal-blue hover:bg-royal-blue hover:text-white"
               >
                 <FaArrowLeft className="size-4" />
                 Back
@@ -298,7 +327,7 @@ function JamWizardForm() {
                    read on two buttons sitting in the same row.
                    `disabled:` keeps the filled look while publishing, so the
                    spinner isn't sitting in an outline that looks switched off. */
-                className="btn btn-primary gap-2 font-bold transition-colors hover:border-primary hover:bg-transparent hover:text-primary disabled:border-transparent disabled:bg-primary disabled:text-primary-content"
+                className="btn gap-2 border-royal-blue bg-royal-blue font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-royal-blue disabled:border-royal-blue disabled:bg-royal-blue disabled:text-white"
               >
                 {/* The same arrow the Next button carries, because this is the
                     same gesture — forward, out of the wizard. It replaced the
@@ -324,7 +353,13 @@ function JamWizardForm() {
                 key="next"
                 type="button"
                 onClick={goNext}
-                className="btn btn-primary gap-2 font-bold"
+                /* Solid at rest, hollowed out on hover — the same way Publish
+                   behaves in the same corner. Hovering takes weight off the
+                   forward button rather than adding it, which is what keeps the
+                   row from having two solid buttons in it at any moment.
+                   Royal blue written out rather than `btn-primary`: the wizard's
+                   indigo is the app chrome, and this row belongs to the form. */
+                className="btn gap-2 border-royal-blue bg-royal-blue font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-royal-blue"
               >
                 Go to the next step
                 <FaArrowRight className="size-4" />

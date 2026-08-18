@@ -12,6 +12,7 @@ import {
   type Genre,
   type SkillLevel,
 } from '@/schemas/jamSession';
+import JamNote from './JamNote';
 
 /* Who the session is for. Two chip rows with the same behaviour, which is the
    reason they share a step at all.
@@ -45,7 +46,6 @@ type TagRowProps<T extends string> = {
   legend: string;
   options: readonly T[];
   labels: Record<T, string>;
-  catchAll: T;
   selected: readonly T[];
   error?: string;
   onToggle: (value: T) => void;
@@ -55,7 +55,6 @@ const TagRow = <T extends string>({
   legend,
   options,
   labels,
-  catchAll,
   selected,
   error,
   onToggle,
@@ -76,7 +75,7 @@ const TagRow = <T extends string>({
                visually hidden input under every chip. */
             aria-pressed={isSelected}
             onClick={() => onToggle(option)}
-            className={`btn btn-sm ${chipClass(isSelected, option === catchAll)}`}
+            className={`btn btn-sm font-bold shadow-none ${chipClass(isSelected)}`}
           >
             {labels[option]}
           </button>
@@ -92,13 +91,14 @@ const TagRow = <T extends string>({
   </fieldset>
 );
 
-/* The catch-all wears the lime accent rather than the indigo: it isn't one more
-   choice in the row, it's the answer that replaces the row. */
-const chipClass = (isSelected: boolean, isCatchAll: boolean): string => {
-  if (!isSelected) return 'btn-outline';
-
-  return isCatchAll ? 'btn-accent' : 'btn-primary';
-};
+/* One selected look for every chip, catch-all included — it used to wear the lime
+   accent to say "this replaces the row", which the exclusivity rule in
+   `toggleTag` already demonstrates by emptying the row in front of the venue.
+   Two selected colours in one row read as two kinds of selection instead. */
+const chipClass = (isSelected: boolean): string =>
+  isSelected
+    ? 'border-royal-blue bg-royal-blue text-white hover:bg-royal-blue'
+    : 'border-royal-blue/20 bg-base-100 text-brand-navy transition-colors hover:border-royal-blue hover:bg-base-100 hover:text-royal-blue';
 
 export default function TagsStep() {
   const {
@@ -129,7 +129,6 @@ export default function TagsStep() {
         legend="Genres*"
         options={genres}
         labels={GENRE_LABELS}
-        catchAll={ALL_GENRES}
         selected={genreField.value}
         error={errors.genres?.message ?? errors.genres?.root?.message}
         onToggle={(value) => change(genreField, 'genres', value, ALL_GENRES)}
@@ -139,16 +138,15 @@ export default function TagsStep() {
         legend="Skill levels*"
         options={skillLevels}
         labels={SKILL_LEVEL_LABELS}
-        catchAll={ALL_LEVELS}
         selected={levelField.value}
         error={errors.skillLevel?.message ?? errors.skillLevel?.root?.message}
         onToggle={(value) => change(levelField, 'skillLevel', value, ALL_LEVELS)}
       />
 
-      <p className="fieldset-label">
+      <JamNote>
         These are what musicians filter the listings by, so pick what the night
         actually is rather than everything it could tolerate.
-      </p>
+      </JamNote>
     </div>
   );
 }
