@@ -215,12 +215,22 @@ export default function AiAssistedField({
         id={`${fieldId}-panel-ai`}
         aria-labelledby={`${fieldId}-tab-ai`}
         hidden={tab !== 'ai'}
+        /* The notes and the button they feed are one thing, and the border says
+           so: what is written inside this box is not the field — it is the
+           instruction that fills the field, and it leaves the box only when
+           Generate is pressed. The manual panel has no such frame because there
+           the box *is* the field. */
+        className="rounded-box border border-royal-blue/15 p-4"
       >
         <textarea
           {...notes}
           disabled={isGenerating}
           rows={7}
-          className={`textarea w-full ${notesTooLong ? 'textarea-error' : ''}`}
+          /* Monospace on the placeholder alone: it is an example of a shape —
+             four short lines, one fact each — rather than a sentence to read,
+             and the even columns are what make it read as a template. What the
+             venue types over it is prose again. */
+          className={`textarea w-full placeholder:font-mono ${notesTooLong ? 'textarea-error' : ''}`}
           placeholder={notesPlaceholder}
         />
 
@@ -238,7 +248,18 @@ export default function AiAssistedField({
             type="button"
             onClick={runGenerate}
             disabled={!canGenerate}
-            className="btn gap-2 border-royal-blue bg-royal-blue font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-royal-blue"
+            /* The lime from the card's eyebrow, which is the one colour in this
+               card that is neither the navy of the header nor the blue of the
+               controls — and this button belongs to neither: it is the only
+               thing on the step that writes a field rather than collecting it.
+               Ink rather than white on it, because white on lime is 1.2:1.
+
+               Disabled is the page's own pale blue rather than daisyUI's grey,
+               so a button waiting for notes reads as an empty slot in the card
+               rather than as a broken control. Every one of those needs
+               `disabled:`, since daisyUI sets its own fill, border and text
+               colour when the attribute is present. */
+            className="btn gap-2 border-brand-green bg-brand-green font-bold text-[#0a0a2e] shadow-none transition-colors hover:bg-transparent hover:text-brand-green-deep disabled:border-pale-blue disabled:bg-pale-blue disabled:text-brand-navy/40"
           >
             {isGenerating ? (
               <span className="loading loading-spinner loading-sm" />
@@ -253,7 +274,7 @@ export default function AiAssistedField({
               deserves to know it will be replaced while they can still choose
               not to. */}
           {currentValue.trim() && !isGenerating && (
-            <span className="text-sm opacity-70">
+            <span className="text-xs opacity-70">
               This replaces what’s in the manual tab.
             </span>
           )}
