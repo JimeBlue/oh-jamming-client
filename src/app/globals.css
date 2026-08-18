@@ -124,19 +124,19 @@
 
 
 .filter-select select::picker(select) {
-  border-color: var(--color-primary);
+  border-color: var(--color-royal-blue);
 }
 
 .filter-select option:checked {
-  color: var(--color-primary);
+  color: var(--color-royal-blue);
 }
 
 /* The browse's four filters, popup included.
  *
  * A class of its own rather than more rules on `.filter-select`, which the
- * backstage guest list also wears and which is still indigo — the two strips
- * look alike but are on opposite sides of the app and only one has been
- * re-branded.
+ * backstage guest list wears. Both strips are blue now, but only this one opts
+ * into `base-select` to restyle the popup itself — the guest list keeps the
+ * platform's own list and only colours what it can reach.
  *
  * `appearance: base-select` is the opt-in that makes a select's dropdown part of
  * the page at all; without it the list is drawn by the OS and nothing below

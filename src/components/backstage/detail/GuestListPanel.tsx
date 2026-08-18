@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Fragment, useState } from 'react';
-import { AiFillClockCircle } from 'react-icons/ai';
 import { BiSolidGuitarAmp } from 'react-icons/bi';
 import { FaUserAlt } from 'react-icons/fa';
 import {
@@ -13,6 +12,7 @@ import {
   FaPeopleGroup,
   FaRegCalendar,
   FaRegCalendarCheck,
+  FaRegClock,
   FaRegEnvelope,
   FaRegFlag,
   FaUsers,
@@ -55,23 +55,21 @@ const stamp = new Intl.DateTimeFormat('en-GB', {
 const ALL = 'all';
 
 /* The two facts a venue needs while reading a roster — which night, and what
-   time. Filled indigo rather than the tinted pills used for status, because
+   time. Filled royal blue rather than the tinted chips used for status, because
    these are not a state anything is in: they are the page's subject, standing in
    for the session card this route doesn't render.
 
    `rounded-field` rather than `rounded-full`, which is the theme's own 0.5rem
    and the same radius daisyUI gives every `.btn` — so these sit at the top of
-   the page in the same shape as the header's buttons directly above them. The
-   pill is left to the status badges, where the roundness is what marks them as
-   labels rather than controls. */
+   the page in the same shape as the header's buttons directly above them. */
 const Fact = ({ children }: { children: React.ReactNode }) => (
-  <span className="badge h-auto gap-2 rounded-field border-0 bg-primary px-4 py-2 text-sm font-bold whitespace-nowrap text-primary-content">
+  <span className="badge h-auto gap-2 rounded-field border-0 bg-royal-blue px-4 py-2 text-sm font-bold whitespace-nowrap text-white">
     {children}
   </span>
 );
 
 const Dash = () => (
-  <span aria-hidden className="text-base-content/30">
+  <span aria-hidden className="text-dark-teal/30">
     —
   </span>
 );
@@ -96,11 +94,11 @@ const MusicianAvatar = ({ group }: { group: GuestGroup }) => {
     <div className="flex flex-col items-center gap-2 text-center sm:w-32 sm:shrink-0">
       <span
         aria-hidden
-        className="grid size-12 shrink-0 place-items-center rounded-full bg-primary/10"
+        className="grid size-12 shrink-0 place-items-center rounded-full bg-royal-blue/10"
       >
-        <Who className="size-5 text-primary" />
+        <Who className="size-5 text-royal-blue" />
       </span>
-      <p className="font-bold">
+      <p className="text-[15px] font-bold text-dark-teal">
         {group.musician.firstName} {group.musician.lastName}
       </p>
     </div>
@@ -111,8 +109,8 @@ const MusicianAvatar = ({ group }: { group: GuestGroup }) => {
    is what the eye scans down; the value is the grey the table's cells use, so a
    booking reads the same either side of the `xl` switch.
 
-   The glyph is indigo and set against the *first* line rather than centred, the
-   same treatment the header card gives its pin and clock — with six of these
+   The glyph is royal blue and set against the *first* line rather than centred,
+   the same treatment the header card gives its pin and clock — with six of these
    stacked, an icon drifting to the middle of a wrapped value would break the
    column they otherwise form down the left edge. */
 const Field = ({
@@ -124,16 +122,16 @@ const Field = ({
   label: string;
   children: React.ReactNode;
 }) => (
-  <p className="flex items-start gap-2 text-sm">
+  <p className="flex items-start gap-2 text-[13px]">
     {icon}
     <span>
-      <span className="font-bold">{label}:</span>{' '}
-      <span className="text-base-content/70">{children}</span>
+      <span className="font-bold text-dark-teal">{label}:</span>{' '}
+      <span className="text-dark-teal/70">{children}</span>
     </span>
   </p>
 );
 
-const FIELD_ICON = 'mt-1 size-3.5 shrink-0 text-primary';
+const FIELD_ICON = 'mt-1 size-3.5 shrink-0 text-royal-blue';
 
 /* A group's spots on one line, cancelled ones struck through. The separator sits
    *outside* the span so a cancelled spot doesn't drag the comma after it through
@@ -144,7 +142,7 @@ const SpotList = ({ spots }: { spots: GuestGroup['spots'] }) => (
     {spots.map((spot, index) => (
       <Fragment key={spot.bookingId}>
         {index > 0 && ', '}
-        <span className={spot.cancelled ? 'text-base-content/40 line-through' : ''}>
+        <span className={spot.cancelled ? 'text-dark-teal/40 line-through' : ''}>
           {spot.label}
         </span>
       </Fragment>
@@ -152,7 +150,7 @@ const SpotList = ({ spots }: { spots: GuestGroup['spots'] }) => (
   </>
 );
 
-const FILTER_ICON = 'size-4 shrink-0 text-primary';
+const FILTER_ICON = 'size-4 shrink-0 text-royal-blue';
 
 /* daisyUI's `.select` as the wrapper, with the control nested — the arrangement
    that sizes correctly, since `.select` carries the width clamp and the chevron.
@@ -184,7 +182,7 @@ const SelectField = ({
   /* `w-48` against daisyUI's own `clamp(3rem, 20rem, 100%)`. Three filters at
      20rem each left the search box at 203px — narrow enough to clip its own
      placeholder — and none of these ever needs 320px to say "All instruments". */
-  <label className="filter-select select select-bordered w-48 gap-2 border-primary/30 bg-base-100">
+  <label className="filter-select select select-bordered w-48 gap-2 border-royal-blue/20 bg-base-100 text-dark-teal">
     {icon}
     <select
       value={value}
@@ -197,20 +195,29 @@ const SelectField = ({
   </label>
 );
 
-/* The same green and pink the cockpit's slot chips use, so a booking that is
-   still on and a spot that is still open read as one colour across the two
-   sections. Cancelled shares its treatment with Reset filters — a soft wash of
-   the same pink — because both are the page's one destructive-ish note. */
+/* Outlined on a wash of their own colour, the shape the cockpit's slot chips and
+   the session badge both wear now — so a booking that is still on and a spot
+   that is still open read as one thing across the two routes. Confirmed letters
+   in the page's teal rather than a green of its own: the lime edge is what says
+   which state it is, and a third colour inside it would say it twice. */
 const STATUS = {
-  confirmed: { label: 'Confirmed', className: 'bg-brand-green/20 text-status-upcoming' },
-  cancelled: { label: 'Cancelled', className: 'bg-status-taken/10 text-status-taken' },
+  confirmed: {
+    label: 'Confirmed',
+    className: 'border-brand-green/50 bg-brand-green/20 text-dark-teal',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    className: 'border-status-cancelled/40 bg-status-cancelled/10 text-status-cancelled',
+  },
 } as const satisfies Record<GuestGroupStatus, { label: string; className: string }>;
 
 const StatusChip = ({ status }: { status: GuestGroupStatus }) => {
   const { label, className } = STATUS[status];
 
   return (
-    <span className={`badge h-auto border-0 px-3 py-1 font-bold whitespace-nowrap ${className}`}>
+    <span
+      className={`badge h-auto border px-3 py-1 text-[12px] font-bold whitespace-nowrap ${className}`}
+    >
       {label}
     </span>
   );
@@ -280,8 +287,10 @@ export default function GuestListPanel() {
           title — a venue that got here already knows which night they clicked. */}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl sm:text-3xl">Guest list</h1>
-          <p className="mt-1 font-bold text-base-content/80">{session.title}</p>
+          <h1 className="font-display text-[23px] font-bold text-dark-teal sm:text-[29px]">
+            Guest list
+          </h1>
+          <p className="mt-1 text-[15px] font-bold text-dark-teal">{session.title}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -293,7 +302,7 @@ export default function GuestListPanel() {
           )}
 
           <Fact>
-            <AiFillClockCircle aria-hidden className="size-4 shrink-0" />
+            <FaRegClock aria-hidden className="size-4 shrink-0" />
             <span className="tabular-nums">
               {session.startTime} – {session.endTime}
             </span>
@@ -301,7 +310,7 @@ export default function GuestListPanel() {
 
           <Link
             href="/my-backstage"
-            className="flex items-center gap-2 font-bold text-primary hover:text-secondary"
+            className="flex items-center gap-2 font-bold text-royal-blue transition-colors hover:text-dark-teal"
           >
             <FaArrowLeftLong aria-hidden className="size-4" />
             My backstage
@@ -311,7 +320,7 @@ export default function GuestListPanel() {
 
       {bookings.length === 0 ? (
         <div className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
-          <p className="py-8 text-center text-base-content/70">
+          <p className="py-8 text-center text-dark-teal/60">
             Nobody has booked a spot on this night yet.
           </p>
         </div>
@@ -332,8 +341,12 @@ export default function GuestListPanel() {
                   and `.select` wrappers are flex containers whose control grows,
                   so an SVG without it is the thing that gives way — which is
                   what was squashing the icons to a sliver. */}
-              <label className="input input-bordered flex min-w-48 flex-1 items-center gap-2 border-primary/30 bg-base-100">
-                <FaMagnifyingGlass aria-hidden className="size-4 shrink-0 text-primary" />
+              {/* The one filled field in the strip. It is the control a venue
+                  reaches for first and the only one that is typed into rather
+                  than picked from, and the pale ground is what says so without
+                  a second border weight. */}
+              <label className="input input-bordered flex min-w-48 flex-1 items-center gap-2 border-royal-blue/20 bg-pale-blue text-dark-teal">
+                <FaMagnifyingGlass aria-hidden className="size-4 shrink-0 text-royal-blue" />
                 <input
                   type="search"
                   value={query}
@@ -403,11 +416,11 @@ export default function GuestListPanel() {
                 <option value="cancelled">Cancelled</option>
               </SelectField>
 
-              {/* Pink in both states — off is not the same as greyed out here.
-                  The button is the page's one splash of that colour and it reads
-                  as part of the filter strip; draining it when there is nothing
-                  to reset makes the strip look half-broken rather than idle. The
-                  cursor is what reports the state.
+              {/* Outlined blue in both states — off is not the same as greyed
+                  out here. It reads as part of the filter strip; draining it
+                  when there is nothing to reset makes the strip look
+                  half-broken rather than idle, so the cursor is what reports
+                  the state.
 
                   The colours are restated behind `disabled:` because daisyUI's
                   `.btn:is(:disabled,…)` is more specific than a plain utility and
@@ -419,8 +432,8 @@ export default function GuestListPanel() {
                 type="button"
                 onClick={resetFilters}
                 disabled={noFilters}
-                className={`btn ml-auto border-0 bg-status-taken/10 font-bold text-status-taken disabled:pointer-events-auto disabled:cursor-not-allowed disabled:bg-status-taken/10 disabled:text-status-taken ${
-                  noFilters ? '' : 'hover:bg-status-taken/20'
+                className={`btn ml-auto border-royal-blue bg-transparent font-bold text-royal-blue shadow-none disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-royal-blue disabled:bg-transparent disabled:text-royal-blue ${
+                  noFilters ? '' : 'hover:border-royal-blue hover:bg-royal-blue hover:text-white'
                 }`}
               >
                 <FaArrowsRotate aria-hidden className="size-4" />
@@ -441,7 +454,7 @@ export default function GuestListPanel() {
 
           <div className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
               {rows.length === 0 ? (
-                <p className="py-8 text-center text-base-content/70">
+                <p className="py-8 text-center text-dark-teal/60">
                   No bookings match those filters.
                 </p>
               ) : (
@@ -459,7 +472,7 @@ export default function GuestListPanel() {
                     {rows.map((group) => (
                       <li
                         key={group.groupId}
-                        className="flex flex-wrap items-start gap-4 border-b border-base-200 py-6 last:border-b-0 sm:gap-5"
+                        className="flex flex-wrap items-start gap-4 border-b border-royal-blue/10 py-6 last:border-b-0 sm:gap-5"
                       >
                         {/* `basis-64` on the fields is what decides the phone
                             layout: a wrapping flex row breaks on bases before
@@ -477,7 +490,7 @@ export default function GuestListPanel() {
                             wrap under the name, where a left border would be a
                             stray mark down the page. No `xl` reset needed — the
                             whole list is `xl:hidden` by then. */}
-                        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-2.5 sm:basis-0 sm:border-l sm:border-base-300 sm:pl-5">
+                        <div className="flex min-w-0 flex-1 basis-64 flex-col gap-2.5 sm:basis-0 sm:border-l sm:border-royal-blue/15 sm:pl-5">
                           {/* Two of these are borrowed rather than picked: the
                               amp is the instruments filter's own glyph and the
                               clock is the header's, so the same idea keeps the
@@ -495,7 +508,7 @@ export default function GuestListPanel() {
                             <SpotList spots={group.spots} />
                           </Field>
                           <Field
-                            icon={<AiFillClockCircle aria-hidden className={FIELD_ICON} />}
+                            icon={<FaRegClock aria-hidden className={FIELD_ICON} />}
                             label="Slot"
                           >
                             {group.slotStartTime}–{group.slotEndTime}
@@ -535,19 +548,18 @@ export default function GuestListPanel() {
                   </ul>
 
                 <div className="hidden overflow-x-auto xl:block">
-                    <table className="table">
+                    <table className="table text-[13px]">
                       <thead>
-                        {/* Tinted rather than left on the card's white, which is
-                            what separates the headings from the first row without
-                            a rule between them. A wash of the brand indigo rather
-                            than `base-200`: the page background is already that,
-                            so a header in it would read as a gap in the card
-                            instead of a band across it. */}
-                        {/* `text-base-content` on the row, not the cells: daisyUI
-                            sets a muted colour on `.table thead`, and a `<tr>`
-                            with its own `color` beats what its cells would
-                            otherwise inherit from it. */}
-                        <tr className="bg-primary/10 text-base-content">
+                        {/* No tint any more. The band was what separated the
+                            headings from the first row; the rule under it does
+                            that on its own now, and the caps and the grey are
+                            enough to say these are labels rather than data —
+                            same treatment as the cockpit's own table, so the two
+                            venue-facing tables read alike. */}
+                        {/* Colour and size on the row, not the cells: daisyUI
+                            sets both on `.table thead`, and a `<tr>` with its own
+                            beats what its cells would otherwise inherit. */}
+                        <tr className="border-royal-blue/10 text-[11px] text-dark-teal/50">
                           <th>Musician</th>
                           <th>Band</th>
                           <th>Spots</th>
@@ -568,8 +580,8 @@ export default function GuestListPanel() {
                           const Who = group.spots.length > 1 ? FaUsers : FaUserAlt;
 
                           return (
-                            <tr key={group.groupId} className="align-top">
-                              <td className="font-bold whitespace-nowrap text-base-content/70">
+                            <tr key={group.groupId} className="border-royal-blue/10 align-top">
+                              <td className="font-bold whitespace-nowrap text-dark-teal">
                                 <span className="flex items-center gap-2">
                                   <Who
                                     aria-hidden
@@ -579,7 +591,7 @@ export default function GuestListPanel() {
                                 </span>
                               </td>
 
-                              <td className="text-base-content/70">{group.bandName ?? <Dash />}</td>
+                              <td className="text-dark-teal/70">{group.bandName ?? <Dash />}</td>
 
                               {/* The row is as tall as the booking is wide — one line per
                                   spot, struck through where that one spot is gone. This
@@ -593,8 +605,8 @@ export default function GuestListPanel() {
                                       key={spot.bookingId}
                                       className={
                                         spot.cancelled
-                                          ? 'text-base-content/40 line-through'
-                                          : 'text-base-content/70'
+                                          ? 'text-dark-teal/40 line-through'
+                                          : 'text-dark-teal/70'
                                       }
                                     >
                                       {spot.label}
@@ -603,7 +615,7 @@ export default function GuestListPanel() {
                                 </ul>
                               </td>
 
-                              <td className="tabular-nums whitespace-nowrap text-base-content/70">
+                              <td className="tabular-nums whitespace-nowrap text-dark-teal/70">
                                 {group.slotStartTime}–{group.slotEndTime}
                               </td>
 
@@ -623,17 +635,17 @@ export default function GuestListPanel() {
                               <td>
                                 <a
                                   href={`mailto:${group.musician.email}`}
-                                  className="break-all text-base-content/70 hover:underline"
+                                  className="break-all text-dark-teal/70 hover:underline"
                                 >
                                   {group.musician.email}
                                 </a>
                               </td>
 
-                              <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                              <td className="tabular-nums whitespace-nowrap text-dark-teal/50">
                                 {stamp.format(group.bookedAt)}
                               </td>
 
-                              <td className="tabular-nums whitespace-nowrap text-base-content/50">
+                              <td className="tabular-nums whitespace-nowrap text-dark-teal/50">
                                 {stamp.format(group.modifiedAt)}
                               </td>
                             </tr>
