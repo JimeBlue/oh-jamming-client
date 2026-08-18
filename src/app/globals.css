@@ -280,9 +280,12 @@
 
    `:not(…-error)` keeps the red border of a field that failed validation, which
    this would otherwise outrank: the plain `.input-error` is one class, and
-   `.jam-card .input` is two. */
+   `.jam-card .input` is two. `.input-ghost` is excluded for the same reason it
+   exists — the instrument rows carry their own fill and the name sits on it as
+   text, so a slot cut into that row would be a box inside a box. */
 .jam-card
   :is(.input, .textarea, .select, .file-input):not(
+    .input-ghost,
     .input-error,
     .textarea-error,
     .select-error
