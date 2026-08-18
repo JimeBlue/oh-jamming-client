@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { FaClipboardUser, FaPlugCirclePlus } from 'react-icons/fa6';
 import { IoLogOutOutline, IoTicketSharp } from 'react-icons/io5';
 import type { IconType } from 'react-icons/lib';
@@ -44,9 +45,31 @@ type AccountMenuProps = {
 
 export default function AccountMenu({ user, onClose }: AccountMenuProps) {
   const { logout } = useAuth();
+  const router = useRouter();
 
   const handleLogout = () => {
     onClose();
+
+    /* Leave the page *before* the session is cleared, and specifically before
+       `RequireRole` can react to it.
+
+       Logging out from a guarded page — /my-backstage, /my-bookings, /jams/new
+       — used to leave the guard sitting there watching the auth state flip to
+       anonymous, which is the case it handles by sending you to
+       `/login?next=<that page>`. But that `next` belonged to the account that
+       just left. Log back in as the other role and the guard greets you with
+       "This page is for venue accounts", having redirected you to a page your
+       new account was never allowed to open.
+
+       `next` is only meaningful when an anonymous visitor was reaching for
+       something — a musician who picked a slot, say. Logging out is the
+       opposite: the destination is the front door, and going there first means
+       there's no protected page left mounted to capture anything.
+
+       replace, not push, so the back button doesn't offer the page they just
+       signed out of. */
+    router.replace('/');
+
     /* Local state is cleared whether or not the request lands (see
        AuthContext), so a network failure here leaves the UI correct and there's
        nothing worth interrupting the user with. */

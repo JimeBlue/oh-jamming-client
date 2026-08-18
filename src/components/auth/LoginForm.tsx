@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 import PasswordInput from '@/components/ui/PasswordInput';
-import { HOME_BY_ROLE } from '@/config/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { safeNextPath, withNext } from '@/lib/nextPath';
 import { loginSchema, type LoginInput } from '@/schemas/auth';
@@ -54,15 +53,24 @@ export default function LoginForm() {
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      const user = await login(values);
+      await login(values);
 
-      /* The ?next= value came out of a URL, so it is checked before it is used
+      /* Home, not the role's own landing page. Signing in is the one moment
+         where we know nothing about what the user came to do — they typed an
+         address and a password, and either account could be behind them. The
+         home page reads correctly for both and puts the whole app one click
+         away; dropping a venue straight onto their backstage board assumed an
+         intent that the login form has no way to know about.
+
+         The ?next= value came out of a URL, so it is checked before it is used
          — see lib/nextPath. Unchecked, an absolute URL here would turn the
-         login page into an open redirect.
+         login page into an open redirect. It still wins when it's there,
+         because that one *is* a stated intent: somebody clicked something
+         specific and was interrupted.
 
          replace, not push: the login page shouldn't sit in history for the
          back button to land on once the user is already signed in. */
-      router.replace(safeNextPath(next, HOME_BY_ROLE[user.role]));
+      router.replace(safeNextPath(next, '/'));
     } catch (error) {
       /* Every way the API can reject a login is about the attempt as a whole
          rather than one field, so it goes above the button rather than under an
