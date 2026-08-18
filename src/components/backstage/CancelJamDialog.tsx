@@ -1,24 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { IoIosPeople } from 'react-icons/io';
-import { RiAlertFill } from 'react-icons/ri';
+import { FaExclamation } from 'react-icons/fa6';
 
 import type { JamSession } from '@/schemas/jamSession';
-
-/* How much of the line-up this takes down with it.
-
-   Spots, not people. The API writes one Booking document per spot — a band that
-   claimed three spots in one submission is three bookings sharing a `groupId`,
-   and `cancelJamSession`'s cascade flips all three. Counting people would be the
-   better number to show, and it isn't available here: a spot carries a
-   `bookingId` and nothing else, so the session alone can't say whether two
-   bookings belong to one musician. Saying "spots" is the claim this data
-   actually supports. */
-const countBookedSpots = (session: JamSession): number =>
-  session.slots
-    .flatMap((slot) => slot.spots)
-    .filter((spot) => spot.bookingId !== null).length;
 
 type Props = {
   /* Null means closed. One value rather than a `session` plus an `open` flag —
@@ -30,6 +15,11 @@ type Props = {
   onClose: () => void;
 };
 
+/* Are you sure — the venue's half of the same question the musician gets in
+   `bookings/CancelBookingDialog`, and drawn as the same object on purpose: the
+   two are the only destructive dialogs in the app, and a venue who has also
+   booked a night as a musician meets both. Divergent shapes would read as two
+   different kinds of warning when the stakes are the same kind of thing. */
 export default function CancelJamDialog({
   session,
   pending,
@@ -68,76 +58,75 @@ export default function CancelJamDialog({
         if (pending) event.preventDefault();
       }}
     >
-      <div className="modal-box max-w-md text-center">
-        <div className="mx-auto grid size-16 place-items-center rounded-full bg-caution/10">
-          {/* Decorative — the heading below says the same thing in words. */}
-          <RiAlertFill aria-hidden className="size-8 text-caution" />
+      {/* Narrow on purpose. It asks one question and there is nothing to read
+          across — a wide box would put the two buttons a hand's width apart. */}
+      <div className="modal-box max-w-md bg-base-100 p-8 text-center sm:p-10">
+        {/* Cyan rather than the error red the action deserves, because the panel
+            underneath is where the consequence is stated and one loud thing per
+            dialog is the budget. The halo is the same colour at a tenth of it,
+            which is what stops a 64px disc reading as a stop sign. */}
+        <div
+          aria-hidden
+          className="mx-auto grid size-20 place-items-center rounded-full bg-cyan-blue/10"
+        >
+          <span className="grid size-14 place-items-center rounded-full bg-cyan-blue">
+            <FaExclamation className="size-6 text-white" />
+          </span>
         </div>
 
-        {/* The content font, not `font-heading`. Changa One is a display face
-            built for three or four words; set at two lines of a question it is
-            harder to read than the sentence deserves, and this is the one piece
-            of text on the screen that has to be understood before a click. */}
-        <h3 className="mt-5 text-2xl font-bold">
-          Are you sure you want to cancel this jam session?
+        {/* Space Grotesk, not `font-heading`. Changa One is a display face built
+            for three or four words; set at two lines of a question it is harder
+            to read than the sentence deserves, and this is the one piece of text
+            on the screen that has to be understood before a click. */}
+        <h3 className="mt-6 font-display text-2xl leading-snug font-bold text-balance text-dark-teal">
+          Are you sure you want to cancel this session?
         </h3>
 
         {/* The title names the session so the venue can see they're about to
             call off the one they meant — the board can have several nights on it
-            with the same shape. */}
+            with the same shape. Quieter than the question and quieter than the
+            panel below it: it is an identifier, not a second thing to weigh. */}
         {session && (
-          <p className="mt-3 font-bold text-primary">
+          <p className="mt-3 font-bold text-dark-teal/70">
             &ldquo;{session.title}&rdquo;
           </p>
         )}
 
-        {/* One panel now, holding both the warning and its consequence. They
-            were two separate lines and the consequence read as a footnote — the
-            number of people this reaches is the whole reason to stop and think,
-            so it belongs inside the thing that says stop. */}
-        <div className="mt-5 flex items-start gap-3 rounded-box border border-caution/40 bg-caution/8 p-4 text-left">
-          <IoIosPeople aria-hidden className="size-6 shrink-0 text-caution" />
-
-          <div>
-            <p className="font-bold text-caution">This can&apos;t be undone.</p>
-
-            {/* Only when there are any. A flat "0 booked spots will be cancelled"
-                on a night nobody booked is noise, and noise is what teaches
-                people to click through warnings without reading them. */}
-            {session && countBookedSpots(session) > 0 && (
-              <p className="mt-1 text-sm text-base-content/80">
-                <span className="font-bold tabular-nums">
-                  {countBookedSpots(session)}
-                </span>{' '}
-                booked {countBookedSpots(session) === 1 ? 'spot' : 'spots'} will
-                be cancelled too.
-              </p>
-            )}
-          </div>
-        </div>
+        {/* A panel rather than a line of small print. It is the one fact that
+            makes this different from every other button on the page, and set as
+            a caption it is the thing nobody reads. */}
+        <p className="mt-5 inline-block rounded-field bg-pale-blue px-5 py-3 text-sm font-medium text-dark-teal">
+          Cancellation can&rsquo;t be undone.
+        </p>
 
         {/* Rendered here rather than closing on failure: a dialog that vanishes
             leaves the venue guessing whether the night is off. */}
         {error && (
-          <p role="alert" className="mt-4 text-sm text-error">
+          <p
+            role="alert"
+            className="mt-5 rounded-box border border-error/40 bg-error/5 p-4 text-sm text-dark-teal"
+          >
             {error}
           </p>
         )}
 
-        {/* justify-center overrides modal-action's right alignment — the
-            SweetAlert shape the design is after is a centred pair. */}
-        <div className="modal-action justify-center">
-          {/* The board's pink rather than daisyUI's `btn-error` red, so the
-              button that finishes the job is the same colour as the one that
-              started it — the venue clicked a pink Cancel to get here. */}
+        {/* Stacked and full width, with the destructive one on top — the shape
+            of the design, and the shape a thumb expects on a phone. Reversed
+            weight from the rest of the app on purpose: here the filled button is
+            the one that calls off the night, so the way out is the quiet one,
+            and it is directly under the thumb rather than off in a corner. */}
+        <div className="mt-8 flex flex-col gap-3">
           <button
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="btn border-0 bg-status-cancelled font-bold text-white hover:bg-status-cancelled/90"
+            /* Darker on hover, not lighter. `/90` was the reflex and it was
+               wrong here: fading a near-black towards a white ground makes the
+               one committing button look like it is switching off. */
+            className="btn h-13 border-none bg-dark-teal font-bold text-white transition-colors hover:bg-[#002926]"
           >
-            {pending && <span className="loading loading-spinner loading-sm" />}
-            Cancel session
+            {pending && <span className="loading loading-spinner" />}
+            {pending ? 'Cancelling…' : 'Cancel session'}
           </button>
 
           <button
@@ -146,13 +135,10 @@ export default function CancelJamDialog({
             disabled={pending}
             /* Focus lands on the way out, not on the way through. <dialog>
                focuses its first focusable child, and with the destructive button
-               first that would put Enter one keystroke from calling off a jam
-               the venue only came here to look at. */
+               above this one that would put Enter one keystroke from calling off
+               a jam the venue only came here to look at. */
             autoFocus
-            /* Outline rather than ghost: a ghost button is only a label until
-               you hover it, and the safe way out of a destructive dialog should
-               look like a button without being hunted for. */
-            className="btn btn-outline btn-primary font-bold"
+            className="btn h-13 border-base-300 bg-base-100 font-bold text-royal-blue transition-colors hover:border-royal-blue hover:bg-pale-blue"
           >
             Back
           </button>
