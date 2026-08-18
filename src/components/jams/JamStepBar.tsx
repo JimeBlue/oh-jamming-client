@@ -10,7 +10,11 @@ type JamStepBarProps = {
    is an outlined circle, not a filled one, and daisyUI draws its circles with
    ::before content that can't take a ring without a fight. Eight steps also sit
    badly in its equal-column grid. This is about forty lines and does exactly
-   what the design asks. */
+   what the design asks.
+
+   Space Grotesk throughout, matching the step headings under it: at 12px Changa
+   One's single heavy weight can't tell the current label from the seven around
+   it, and the bar's whole job is that one distinction. */
 export default function JamStepBar({ currentIndex }: JamStepBarProps) {
   const current = JAM_STEPS[currentIndex];
 
@@ -19,7 +23,7 @@ export default function JamStepBar({ currentIndex }: JamStepBarProps) {
       {/* Below md there is no room for eight labels, so the position is stated
           in words instead. Not merely decorative — it's the only place the step
           name appears at that width. */}
-      <p className="text-center text-sm font-medium md:hidden">
+      <p className="text-center font-display text-sm font-medium md:hidden">
         <span className="opacity-60">
           Step {currentIndex + 1} of {JAM_STEPS.length}
         </span>
@@ -68,7 +72,7 @@ export default function JamStepBar({ currentIndex }: JamStepBarProps) {
               </span>
 
               <span
-                className={`mt-2 hidden px-1 text-center text-xs leading-tight md:block ${
+                className={`mt-2 hidden px-1 text-center font-display text-xs leading-tight md:block ${
                   isCurrent
                     ? 'font-bold'
                     : isDone

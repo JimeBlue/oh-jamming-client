@@ -222,17 +222,14 @@ function JamWizardForm() {
             two different messages for one mistake in two different styles. */}
         <form onSubmit={onFormSubmit} noValidate>
           <div className="mt-8 rounded-box bg-base-100 p-6 shadow-xl sm:p-10">
-            {/* Space Grotesk on the last step alone. Everything under it there
-                is the musician's page, which is set in `font-display`
-                throughout — Changa One above it made the heading a third voice
-                on a screen that already has the listing's two. */}
-            <h1
-              className={
-                isLastStep
-                  ? 'font-display text-2xl font-bold tracking-tight sm:text-3xl'
-                  : 'font-heading text-2xl sm:text-3xl'
-              }
-            >
+            {/* Space Grotesk on every step, not just the preview. It was the
+                preview's alone because everything under it there is the
+                musician's page, set in `font-display` throughout — but the same
+                argument holds one step up: Changa One is the site's poster face,
+                and eight screens of it over a form reads as shouting the field
+                labels rather than titling them. `font-bold` is not optional —
+                the display face is variable, so without it this lands at 400. */}
+            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
               {step.title}
             </h1>
             {/* `in` rather than `step.description &&`: `JAM_STEPS` is
@@ -324,7 +321,11 @@ function JamWizardForm() {
                 key="next"
                 type="button"
                 onClick={goNext}
-                className="btn btn-primary gap-2 font-bold"
+                /* Hollows out on hover, the same way Publish does in the same
+                   corner — and the inverse of Back, which fills. Two buttons in
+                   one row both getting brighter on hover is what makes neither
+                   of them look like it moved. */
+                className="btn btn-primary gap-2 font-bold transition-colors hover:border-primary hover:bg-transparent hover:text-primary"
               >
                 Go to the next step
                 <FaArrowRight className="size-4" />
