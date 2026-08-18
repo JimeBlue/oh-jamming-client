@@ -1,6 +1,7 @@
 'use client';
 
 import { useController, useWatch } from 'react-hook-form';
+import { FiClock } from 'react-icons/fi';
 import { IoInformationCircle } from 'react-icons/io5';
 
 import { SLOT_DURATION_OPTIONS } from '@/config/jamOptions';
@@ -79,7 +80,7 @@ export default function SlotsStep() {
             return (
               <label
                 key={minutes}
-                className={`btn ${optionClass(isSelected, isAvailable)}`}
+                className={`btn font-bold shadow-none ${optionClass(isSelected, isAvailable)}`}
               >
                 <input
                   type="radio"
@@ -98,8 +99,11 @@ export default function SlotsStep() {
       </JamField>
 
       {plan && (
-        <div className="rounded-box border border-base-300 p-4">
-          <p className="text-sm">
+        /* The pale ground the fields sit on, used here for the opposite job:
+            everything above it is a choice, and this is the consequence of the
+            one just made. Nothing in it can be edited. */
+        <div className="mt-4 rounded-box border border-royal-blue/15 bg-pale-blue p-5">
+          <p className="text-sm text-brand-navy">
             <span className="font-bold">{plan.slots.length} slots</span> of{' '}
             {field.value} minutes, back to back.
           </p>
@@ -112,24 +116,48 @@ export default function SlotsStep() {
             {plan.slots.map((slot) => (
               <li
                 key={slot.startTime}
-                className="rounded-field bg-base-200 px-3 py-1 text-sm tabular-nums"
+                className="rounded-field border border-royal-blue/15 bg-base-100 px-3 py-1 text-sm font-medium text-brand-navy tabular-nums"
               >
                 {slot.startTime} – {slot.endTime}
               </li>
             ))}
           </ul>
+
+          {/* The one thing the tiles above don't say, and the thing a venue
+              cutting a night into six pieces is quietly assuming either way:
+              they are six bookings, not six seats at one. Ruled off, because it
+              is a fact about the whole plan rather than another slot. */}
+          <p className="mt-4 flex items-center gap-2 border-t border-royal-blue/15 pt-3 text-xs text-brand-navy/60">
+            <FiClock aria-hidden className="size-4 shrink-0 text-cyan-blue" />
+            Musicians book one slot each.
+          </p>
         </div>
       )}
     </div>
   );
 }
 
-/* Selected-but-impossible is a real state: the window can change on the previous
+/* Three states written out rather than daisyUI's `btn-primary` / `btn-outline` /
+   `btn-disabled`, which bring the wizard's indigo and daisyUI's own grey — and
+   which fight back when only one of their properties is overridden.
+
+   The unavailable ones are a pale fill with no edge, so the row reads as "these
+   four are the choices" at a glance: an outline says clickable, and a greyed
+   outline says broken. What they actually are is not applicable to a session
+   this long.
+
+   Selected-but-impossible is a real state: the window can change on the previous
    step after a length was already chosen. It stays visibly selected — hiding
    which one is picked would make the error underneath unreadable — but wears the
    error colour instead of the brand one. */
 const optionClass = (isSelected: boolean, isAvailable: boolean): string => {
-  if (isSelected) return isAvailable ? 'btn-primary' : 'btn-outline btn-error';
+  if (isSelected) {
+    return isAvailable
+      ? 'border-royal-blue bg-royal-blue text-white hover:bg-royal-blue'
+      : 'border-error bg-transparent text-error hover:bg-transparent';
+  }
 
-  return isAvailable ? 'btn-outline' : 'btn-outline btn-disabled';
+  return isAvailable
+    ? 'border-royal-blue/20 bg-base-100 text-brand-navy transition-colors hover:border-royal-blue hover:bg-base-100 hover:text-royal-blue'
+    : 'cursor-not-allowed border-transparent bg-pale-blue text-brand-navy/30 hover:bg-pale-blue';
 };
