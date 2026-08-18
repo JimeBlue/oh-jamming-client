@@ -2,8 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FaMagnifyingGlass } from 'react-icons/fa6';
 import { HiOutlineSparkles } from 'react-icons/hi';
+
+import { BotMessageSquare } from '@/components/animate-ui/icons/bot-message-square';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
 
 import { useTypedPlaceholder } from '@/hooks/useTypedPlaceholder';
 import { MAX_SEARCH_CHARS } from '@/services/ai';
@@ -96,7 +98,14 @@ export default function HomeSearch() {
                      that will not hold still. The real name is the sr-only label
                      above, so this stays purely visual. */
                   placeholder={placeholder}
-                  className="min-w-0 grow bg-transparent text-dark-teal placeholder:text-dark-teal/50 focus:outline-none"
+                  /* The placeholder is a colour away from the value on purpose:
+                     it writes itself out a character at a time, and text that
+                     moves in the same colour as what you typed reads as the
+                     field editing itself. The section's own cyan — the same one
+                     the eyebrow and the sparkle beside this field wear — so the
+                     moving text belongs to the section rather than introducing
+                     a hue that appears nowhere else. */
+                  className="min-w-0 grow bg-transparent text-dark-teal placeholder:text-cyan-blue focus:outline-none"
                 />
               </label>
 
@@ -113,13 +122,29 @@ export default function HomeSearch() {
                   hover. The border is there at rest too, in the fill's own
                   colour, so gaining a visible edge doesn't also change the
                   button's size. */}
-              <button
-                type="submit"
-                className="btn h-12 shrink-0 gap-2 border-cyan-blue bg-cyan-blue font-display text-base font-bold text-white shadow-none transition-colors hover:border-cyan-blue hover:bg-transparent hover:text-cyan-blue"
-              >
-                <FaMagnifyingGlass aria-hidden className="size-4" />
-                AI search
-              </button>
+              {/* The wrapper, not `animateOnHover` on the icon itself: the
+                  trigger has to be the button, or the bot only nods when the
+                  cursor is over the 20px glyph rather than over the control
+                  the reader is actually aiming at.
+
+                  `asChild` so it hands its props to the button below instead of
+                  wrapping it in a div — a block element between the flex row
+                  and this button would take the row's sizing and `shrink-0`
+                  with it. */}
+              <AnimateIcon animateOnHover animateOnTap asChild>
+                <button
+                  type="submit"
+                  className="btn h-12 shrink-0 gap-2 border-cyan-blue bg-cyan-blue font-display text-base font-bold text-white shadow-none transition-colors hover:border-cyan-blue hover:bg-transparent hover:text-cyan-blue"
+                >
+                  {/* A bot rather than the magnifying glass this button wore:
+                      the field beside it takes a sentence and hands it to the
+                      model, so the glyph says which of the two searches this
+                      is. The sparkle in the field says the same thing at rest;
+                      this one says it when you reach for the button. */}
+                  <BotMessageSquare aria-hidden className="size-5" />
+                  AI search
+                </button>
+              </AnimateIcon>
             </div>
 
             {/* Only ever shown once the cap is passed, so the field carries no

@@ -1,9 +1,13 @@
+import HomeStepBadge from './HomeStepBadge';
+
 /* How it works: the three things that happen between arriving and playing.
 
    A server component, and deliberately so — it is the one section on this page
    with nothing to fetch and nothing to click. Everything above it is either the
    video, a form, or numbers counted from the live board; this is prose about
-   the flow those numbers belong to, so it ships as HTML.
+   the flow those numbers belong to, so it ships as HTML. The three numbered
+   badges are the one exception and they live in their own client file, which is
+   what keeps the copy here on the server.
 
    The three steps are the app's actual route — search, book, turn up with the
    QR — in the order a musician meets them. Keeping the wording aligned with
@@ -63,15 +67,7 @@ export default function HomeSteps() {
               key={title}
               className="rounded-2xl bg-base-100 p-6 shadow-sm sm:p-8"
             >
-              {/* aria-hidden: the number is already carried by the list, and a
-                  screen reader announcing "01" before "item 1 of 3" is the same
-                  fact twice. */}
-              <span
-                aria-hidden
-                className={`grid size-9 place-items-center rounded-full font-display text-sm font-bold ${badge}`}
-              >
-                {String(index + 1).padStart(2, '0')}
-              </span>
+              <HomeStepBadge index={index} className={badge} />
 
               <h3 className="mt-6 font-display text-xl font-bold text-dark-teal">
                 {title}

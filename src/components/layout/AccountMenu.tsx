@@ -19,15 +19,14 @@ type AccountLink = {
    up for booking. Keyed by role so adding an item is a one-line change and the
    two lists can't quietly diverge in styling.
 
-   The venue pair points at real routes, and so does the musician's first one
-   now. "Book a spot" is still `#`: there is no single page to book from — you
-   book a *night*, from its own page — so that item is waiting on a decision
-   about where it should land, not on a page being written. A link to a 404 is
-   worse than one that visibly does nothing. */
+   "Book a spot" lands on the browse rather than on a booking form, because
+   there is no page that books in the abstract — you book a *night*, from its
+   own page. The browse is the step before that, which is as close as a menu
+   item can get. */
 const linksByRole: Record<UserRole, AccountLink[]> = {
   musician: [
     { label: 'My bookings', href: '/my-bookings', icon: FaClipboardUser },
-    { label: 'Book a spot', href: '#', icon: IoTicketSharp },
+    { label: 'Book a spot', href: '/jams', icon: IoTicketSharp },
   ],
   venue: [
     { label: 'My Backstage', href: '/my-backstage', icon: MdBadge },
@@ -70,7 +69,7 @@ export default function AccountMenu({ user, onClose }: AccountMenuProps) {
         {linksByRole[user.role].map(({ label, href, icon: Icon }) => (
           <li key={label}>
             <Link href={href} onClick={onClose} className="gap-3">
-              <Icon className="size-5 shrink-0 text-primary" />
+              <Icon className="size-5 shrink-0 text-royal-blue" />
               {label}
             </Link>
           </li>
@@ -80,7 +79,7 @@ export default function AccountMenu({ user, onClose }: AccountMenuProps) {
             flex-grow and stretches inside a flex column. */}
         <li className="mt-1 border-t border-base-300 pt-1">
           <button type="button" onClick={handleLogout} className="gap-3">
-            <IoLogOutOutline className="size-5 shrink-0 text-primary" />
+            <IoLogOutOutline className="size-5 shrink-0 text-royal-blue" />
             Log out
           </button>
         </li>

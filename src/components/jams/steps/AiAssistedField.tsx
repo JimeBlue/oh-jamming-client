@@ -2,9 +2,10 @@
 
 import { useId, useState } from 'react';
 import { useController, useWatch } from 'react-hook-form';
-import { FaPencil, FaWandMagicSparkles } from 'react-icons/fa6';
-import { LuSparkles } from 'react-icons/lu';
+import { FaPencil } from 'react-icons/fa6';
 
+import { BotMessageSquare } from '@/components/animate-ui/icons/bot-message-square';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
 import { useJamForm } from '@/hooks/useJamForm';
 import { ApiError } from '@/services/api';
 import { MAX_NOTES_CHARS } from '@/services/ai';
@@ -59,12 +60,16 @@ type Tab = 'manual' | 'ai';
    without a second name to keep in sync. */
 const TABS = [
   { id: 'manual', label: 'Enter manually', Icon: FaPencil, weight: 'font-bold' },
-  /* Lighter than its neighbour, in the lettering and in the icon's strokes
-     (lucide is drawn at 2px on a 24px grid where the solid fa6 pencil has no
-     strokes at all). Writing it yourself is the primary way to fill this field;
-     the model is the offer beside it, and an offer set in the same weight as the
-     thing it sits next to reads as the recommendation. */
-  { id: 'ai', label: 'Generate with AI', Icon: LuSparkles, weight: 'font-medium' },
+  /* Lighter than its neighbour, in the lettering and in the icon's strokes (the
+     bot is drawn at 2px on a 24px grid where the solid fa6 pencil has no strokes
+     at all). Writing it yourself is the primary way to fill this field; the
+     model is the offer beside it, and an offer set in the same weight as the
+     thing it sits next to reads as the recommendation.
+
+     The same bot the browse's AI tab and the home page's AI button wear. Three
+     places now offer the model something to read, and one glyph across all
+     three is what stops each of them looking like a separate feature. */
+  { id: 'ai', label: 'Generate with AI', Icon: BotMessageSquare, weight: 'font-medium' },
 ] as const satisfies readonly {
   id: Tab;
   label: string;
@@ -171,28 +176,35 @@ export default function AiAssistedField({
           className="flex items-center gap-1 rounded-field bg-pale-blue p-1"
         >
           {TABS.map(({ id, label: tabLabel, Icon, weight }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              id={`${fieldId}-tab-${id}`}
-              aria-selected={tab === id}
-              aria-controls={`${fieldId}-panel-${id}`}
-              /* The selected one is the only thing in the pair carrying a fill,
-                 which is what makes "which of these am I in" answerable without
-                 reading either label. The other stays on the trough and takes
-                 the same blue in text on hover — the pointer says what the click
-                 would do before the click. */
-              className={`btn btn-sm gap-2 border-0 shadow-none sm:btn-md ${weight} ${
-                tab === id
-                  ? 'bg-royal-blue text-white hover:bg-royal-blue'
-                  : 'bg-transparent text-brand-navy hover:bg-transparent hover:text-royal-blue'
-              }`}
-              onClick={() => setTab(id)}
-            >
-              <Icon className="size-4" />
-              {tabLabel}
-            </button>
+            /* Wrapped uniformly rather than only around the AI one. The pencil
+               is a plain react-icons glyph and ignores the context entirely, so
+               the wrapper costs it two unused handlers — cheaper than the `id
+               === 'ai' ?` branch, which would put a conditional inside the map
+               whose whole purpose is that the two buttons are the same button
+               with a different label and icon. */
+            <AnimateIcon key={id} animateOnHover animateOnTap asChild>
+              <button
+                type="button"
+                role="tab"
+                id={`${fieldId}-tab-${id}`}
+                aria-selected={tab === id}
+                aria-controls={`${fieldId}-panel-${id}`}
+                /* The selected one is the only thing in the pair carrying a
+                   fill, which is what makes "which of these am I in" answerable
+                   without reading either label. The other stays on the trough
+                   and takes the same blue in text on hover — the pointer says
+                   what the click would do before the click. */
+                className={`btn btn-sm gap-2 border-0 shadow-none sm:btn-md ${weight} ${
+                  tab === id
+                    ? 'bg-royal-blue text-white hover:bg-royal-blue'
+                    : 'bg-transparent text-brand-navy hover:bg-transparent hover:text-royal-blue'
+                }`}
+                onClick={() => setTab(id)}
+              >
+                <Icon className="size-4" />
+                {tabLabel}
+              </button>
+            </AnimateIcon>
           ))}
         </div>
       }
@@ -244,10 +256,11 @@ export default function AiAssistedField({
         )}
 
         <div className="mt-4 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={runGenerate}
-            disabled={!canGenerate}
+          <AnimateIcon animateOnHover animateOnTap asChild>
+            <button
+              type="button"
+              onClick={runGenerate}
+              disabled={!canGenerate}
             /* The lime from the card's eyebrow, which is the one colour in this
                card that is neither the navy of the header nor the blue of the
                controls — and this button belongs to neither: it is the only
@@ -259,15 +272,19 @@ export default function AiAssistedField({
                rather than as a broken control. Every one of those needs
                `disabled:`, since daisyUI sets its own fill, border and text
                colour when the attribute is present. */
-            className="btn gap-2 border-brand-green bg-brand-green font-bold text-[#0a0a2e] shadow-none transition-colors hover:bg-transparent hover:text-brand-green-deep disabled:border-pale-blue disabled:bg-pale-blue disabled:text-brand-navy/40"
-          >
-            {isGenerating ? (
-              <span className="loading loading-spinner loading-sm" />
-            ) : (
-              <FaWandMagicSparkles className="size-4" />
-            )}
-            {isGenerating ? 'Writing…' : 'Generate'}
-          </button>
+              className="btn gap-2 border-brand-green bg-brand-green font-bold text-[#0a0a2e] shadow-none transition-colors hover:bg-transparent hover:text-brand-green-deep disabled:border-pale-blue disabled:bg-pale-blue disabled:text-brand-navy/40"
+            >
+              {isGenerating ? (
+                <span className="loading loading-spinner loading-sm" />
+              ) : (
+                /* The wand is gone: it was the only glyph in the app saying
+                   "the model" in a different word from the rest, and this
+                   button is the one that actually calls it. */
+                <BotMessageSquare className="size-4" />
+              )}
+              {isGenerating ? 'Writing…' : 'Generate'}
+            </button>
+          </AnimateIcon>
 
           {/* Said once, before the click rather than after it. Someone who has
               already written something and is idly trying the other tab

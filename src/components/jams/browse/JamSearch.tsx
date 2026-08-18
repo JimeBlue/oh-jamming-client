@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { FaArrowsRotate, FaMagnifyingGlass, FaSliders } from 'react-icons/fa6';
+import { FaArrowsRotate, FaSliders } from 'react-icons/fa6';
 import { HiOutlineSparkles } from 'react-icons/hi';
 
+import { BotMessageSquare } from '@/components/animate-ui/icons/bot-message-square';
+import { AnimateIcon } from '@/components/animate-ui/icons/icon';
 import { useTypedPlaceholder } from '@/hooks/useTypedPlaceholder';
 import { MAX_SEARCH_CHARS } from '@/services/ai';
 import type { JamSessionQuery } from '@/services/jamSessions';
@@ -135,20 +137,27 @@ export default function JamSearch({
             filling it would make hover announce a selection that hasn't
             happened. */}
         <div role="tablist" className="flex gap-2 self-start">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'ai'}
-            className={`btn gap-2 whitespace-nowrap border-0 font-bold ${
-              tab === 'ai'
-                ? 'bg-royal-blue text-white hover:bg-royal-blue/90'
-                : 'bg-base-100 text-dark-teal/60 shadow-none ring-1 ring-dark-teal/10 hover:bg-base-100 hover:text-royal-blue hover:ring-royal-blue'
-            }`}
-            onClick={() => setTab('ai')}
-          >
-            <HiOutlineSparkles className="size-4" />
-            AI search
-          </button>
+          {/* The same bot the home page's AI button wears, and the same wrapper
+              around the whole control rather than the glyph — hovering a 16px
+              icon is not what anyone is aiming at. `asChild` keeps this a real
+              `<button role="tab">`; a wrapping div would land between the
+              tablist and its tab and break that relationship. */}
+          <AnimateIcon animateOnHover animateOnTap asChild>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'ai'}
+              className={`btn gap-2 whitespace-nowrap border-0 font-bold ${
+                tab === 'ai'
+                  ? 'bg-royal-blue text-white hover:bg-royal-blue/90'
+                  : 'bg-base-100 text-dark-teal/60 shadow-none ring-1 ring-dark-teal/10 hover:bg-base-100 hover:text-royal-blue hover:ring-royal-blue'
+              }`}
+              onClick={() => setTab('ai')}
+            >
+              <BotMessageSquare className="size-4" />
+              AI search
+            </button>
+          </AnimateIcon>
 
           <button
             type="button"
@@ -289,21 +298,33 @@ export default function JamSearch({
                 than a tint, because anything faded enough to read as disabled
                 takes the white label down with it — the affordance is the
                 cursor and the dead click, not the colour. */}
-            <button
-              type="submit"
-              disabled={!canSearch}
-              className="btn h-12 shrink-0 gap-2 border-0 bg-royal-blue px-6 font-bold text-white hover:bg-royal-blue/90 disabled:cursor-not-allowed disabled:bg-royal-blue! disabled:text-white!"
-            >
-              {isSearching ? (
-                <span className="loading loading-spinner loading-sm" />
-              ) : (
-                <FaMagnifyingGlass className="size-4" />
-              )}
-              {/* The word is hidden on a phone, where the bar has to leave room
-                  for the text being typed into it. The button keeps its
-                  accessible name from the label below. */}
-              <span className="max-sm:sr-only">{isSearching ? 'Reading…' : 'Search'}</span>
-            </button>
+            {/* The bot rather than a magnifier, because this button doesn't run
+                a search — it hands the sentence to the model. It is the same
+                control the tab above it names, so it wears the same glyph.
+
+                The hover animation is on the wrapper and the icon is swapped
+                out mid-request, which is fine: with the spinner in its place
+                there is no icon to animate and the wrapper simply has nothing
+                to drive. */}
+            <AnimateIcon animateOnHover animateOnTap asChild>
+              <button
+                type="submit"
+                disabled={!canSearch}
+                className="btn h-12 shrink-0 gap-2 border-0 bg-royal-blue px-6 font-bold text-white hover:bg-royal-blue/90 disabled:cursor-not-allowed disabled:bg-royal-blue! disabled:text-white!"
+              >
+                {isSearching ? (
+                  <span className="loading loading-spinner loading-sm" />
+                ) : (
+                  <BotMessageSquare className="size-5" />
+                )}
+                {/* The word is hidden on a phone, where the bar has to leave
+                    room for the text being typed into it. The button keeps its
+                    accessible name from the label below. */}
+                <span className="max-sm:sr-only">
+                  {isSearching ? 'Reading…' : 'Search'}
+                </span>
+              </button>
+            </AnimateIcon>
           </div>
 
           {/* Only ever shown once the cap is passed, so the field carries no

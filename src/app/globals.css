@@ -120,6 +120,98 @@
   --color-cyan-blue: #01a8cb;
   --color-pale-blue: #f1f7fc;
   --color-emerald-green: #01d265;
+
+  /* Scroll reveals: rise and fade, driven by a keyframe rather than by
+     transition classes toggled on a state flag.
+
+     The distinction matters here and isn't stylistic. `HomeTonight` renders
+     skeletons first and swaps in the real tiles when the fetch lands, so a tile
+     can mount into a section that is *already* on screen. A transition needs
+     two renders — one to paint the start state, one to move off it — and a
+     tile that mounts with its end classes already on simply appears. A
+     keyframe runs on the frame the element mounts, so both orders animate.
+
+     Up from below, not in from the side: these arrive as the page is scrolled
+     down, so rising to meet the reader moves with that rather than across it. */
+  --animate-reveal: reveal 0.6s ease-out both;
+
+  /* The step numbers, hopping once as they are scrolled to.
+   *
+   * No `both`, and nothing here is a fill: the first and last frames are both
+   * `translateY(0)`, so a badge that never animates is already in its finished
+   * state. That is what makes this one safe to switch off outright — unlike the
+   * reveal above, there is no start state to be stranded in.
+   *
+   * The timing function is set per keyframe rather than once on the shorthand,
+   * because a jump is two different curves: leaving the ground is fast and
+   * decelerates, falling back accelerates. One ease-out across the whole thing
+   * gives a badge that floats up and settles down, which reads as hovering.
+   *
+   * The second, smaller hop is the whole reason it looks like a jump rather
+   * than a nudge — it is the bounce on landing, and without it the badge stops
+   * dead in a way nothing physical does. */
+  /* The hosts watermark, swelling once and settling back.
+   *
+   * Slower than the badges' jump, and for the same reason it is a different
+   * animation at all: this thing is 320px of pale green behind a paragraph. The
+   * badge is a small saturated disc that can afford to be quick and sharp,
+   * where that speed at this size reads as the page flinching. Long is what
+   * makes something this big feel like it is breathing rather than jumping —
+   * which is also what lets it travel further than the badge without becoming
+   * the loudest thing in the section.
+   *
+   * Out on the way up and back in on the return, so it arrives at full size
+   * with the weight off and eases into rest rather than snapping to it. */
+  --animate-swell: swell 1.1s;
+
+  @keyframes swell {
+    0% {
+      transform: scale(1);
+      animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    42% {
+      transform: scale(1.22);
+      animation-timing-function: cubic-bezier(0.4, 0, 0.3, 1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  --animate-step-jump: step-jump 0.72s;
+
+  @keyframes step-jump {
+    0% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1);
+    }
+    32% {
+      transform: translateY(-0.85rem);
+      animation-timing-function: cubic-bezier(0.6, 0, 0.75, 1);
+    }
+    58% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.3, 0, 0.4, 1);
+    }
+    78% {
+      transform: translateY(-0.22rem);
+      animation-timing-function: cubic-bezier(0.6, 0, 0.75, 1);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 

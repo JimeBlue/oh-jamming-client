@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { FaGuitar, FaLocationDot, FaMicrophoneLines, FaRegClock } from 'react-icons/fa6';
 
+import useInView from '@/hooks/useInView';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
 import type { JamSession } from '@/schemas/jamSession';
@@ -87,6 +88,12 @@ const summarise = (sessions: readonly JamSession[], cities: number): Stats | nul
 export default function HomeTonight() {
   const [state, setState] = useState<TonightState>({ status: 'loading' });
 
+  /* One observer on the list, not one per tile. The four are a single object as
+     far as the reader is concerned — they arrive together, staggered — and four
+     observers would let the bottom row wait for its own threshold and break the
+     sequence on a short screen. */
+  const { ref: tilesRef, inView } = useInView<HTMLUListElement>();
+
   useEffect(() => {
     /* Flipped by the cleanup, so navigating away mid-flight doesn't set state on
        an unmounted component. */
@@ -123,11 +130,21 @@ export default function HomeTonight() {
       <div className="mx-auto grid w-full max-w-7xl gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
         {state.status === 'loading' ? <CopySkeleton /> : <Copy stats={state.stats} />}
 
-        <ul className="grid gap-4 sm:grid-cols-2">
+        <ul ref={tilesRef} className="grid gap-4 sm:grid-cols-2">
           {state.status === 'loading'
             ? [0, 1, 2, 3].map((key) => <TileSkeleton key={key} />)
-            : tiles(state.stats).map(({ icon, value, label }) => (
-                <Tile key={label} icon={icon} value={value} label={label} />
+            : tiles(state.stats).map(({ icon, value, label }, index) => (
+                <Tile
+                  key={label}
+                  icon={icon}
+                  value={value}
+                  label={label}
+                  /* The skeletons don't reveal. They are already a moving
+                     placeholder, and animating one in is an arrival announcing
+                     something that hasn't arrived. */
+                  shown={inView}
+                  index={index}
+                />
               ))}
         </ul>
       </div>
@@ -195,14 +212,24 @@ const tiles = (stats: Stats) => [
   { icon: <FaGuitar />, value: String(stats.instrumentTypes), label: 'instrument types' },
 ];
 
+/* 80ms apart. Far enough that the four read as a sequence rather than as one
+   block with soft edges, close enough that the last one is in place inside a
+   second — the tile a reader looks at first is as likely to be the fourth as
+   the first, and a long stagger makes that one feel late. */
+const STAGGER_MS = 80;
+
 const Tile = ({
   icon,
   value,
   label,
+  shown,
+  index,
 }: {
   icon: React.ReactNode;
   value: string;
   label: string;
+  shown: boolean;
+  index: number;
 }) => (
   /* A white wash rather than a second colour: the band is one flat cyan, and
      anything with a hue of its own on top of it becomes a third brand colour
@@ -212,7 +239,19 @@ const Tile = ({
      Stacking the icon above its number gives a desktop tile two rows of air
      between three short things, and the box reads as mostly empty — the number
      is the content, so the tile should be no taller than the number needs. */
-  <li className="flex items-center gap-4 rounded-box bg-white/15 p-5 lg:gap-5 lg:p-6">
+  /* Invisible until the list is scrolled to, then revealed on its own beat.
+     `motion-reduce:opacity-100` on the waiting state as well as
+     `motion-reduce:animate-none` on the revealed one: without the first, a
+     reader who asked for less motion would get no motion *and* no tiles until
+     the observer happened to fire. */
+  <li
+    className={`flex items-center gap-4 rounded-box bg-white/15 p-5 lg:gap-5 lg:p-6 ${
+      shown
+        ? 'animate-reveal motion-reduce:animate-none'
+        : 'opacity-0 motion-reduce:opacity-100'
+    }`}
+    style={shown ? { animationDelay: `${index * STAGGER_MS}ms` } : undefined}
+  >
     <span
       aria-hidden
       className="grid size-10 shrink-0 place-items-center rounded-box bg-white/15 text-lg lg:size-12 lg:text-xl"
