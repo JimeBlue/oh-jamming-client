@@ -322,3 +322,19 @@
   outline-offset: 1px;
   outline-color: var(--color-royal-blue);
 }
+
+/* The overview editor's placeholder. A contenteditable has no `placeholder`
+   attribute, so TipTap's extension puts the text in `data-placeholder` on the
+   empty paragraph and this draws it.
+
+   `float` with zero height rather than `position: absolute`: it keeps the
+   paragraph's own line box, so the caret sits at the start of the placeholder
+   instead of on a line above it. Only the first paragraph, so a blank line in
+   the middle of a written overview doesn't sprout the prompt again. */
+.rich-text p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: color-mix(in oklab, var(--color-brand-navy) 45%, transparent);
+}
