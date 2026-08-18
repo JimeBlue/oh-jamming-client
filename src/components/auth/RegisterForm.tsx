@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 import PasswordInput from '@/components/ui/PasswordInput';
-import { HOME_BY_ROLE } from '@/config/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { safeNextPath, withNext } from '@/lib/nextPath';
 import {
@@ -62,10 +61,16 @@ export default function RegisterForm({ role }: { role: UserRole }) {
       /* toRegisterPayload strips confirmPassword: the API validates this
          endpoint strictly, so an extra key is a 400 for the whole request, not
          a field it quietly ignores. */
-      const user = await createAccount(toRegisterPayload(values));
+      await createAccount(toRegisterPayload(values));
 
       /* Registering signs you in — the API issues the same session cookies as
          login — so this goes straight to the app, not to the login page.
+
+         Home for both roles, matching login rather than dropping a new venue
+         onto their empty backstage board. The argument for the board was
+         onboarding, and it isn't wrong; it just isn't worth the two doors into
+         the app landing in two different places, which is the thing people
+         actually notice.
 
          `next` came out of a URL, so it is re-checked here rather than trusted
          from the link that carried it; unchecked, an absolute value would make
@@ -74,7 +79,7 @@ export default function RegisterForm({ role }: { role: UserRole }) {
          A venue whose `next` points at a musician-only page lands on the role
          guard's explanation instead, which is the right answer and the same one
          login gives — they can't be sent somewhere their account can't go. */
-      router.replace(safeNextPath(next, HOME_BY_ROLE[user.role]));
+      router.replace(safeNextPath(next, '/'));
     } catch (error) {
       /* 409 is the one failure that belongs to a specific field: the unique
          index on email fired, so the address is already taken. Everything else
