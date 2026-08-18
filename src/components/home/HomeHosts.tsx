@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import megaphone from '@/assets/megaphone.png';
+import HomeHostsMegaphone from '@/components/home/HomeHostsMegaphone';
 import MaskIcon from '@/components/ui/MaskIcon';
 
 /* The venue's half of the page, after three sections addressed to musicians.
@@ -56,9 +57,12 @@ export default function HomeHosts() {
 
           `md` and up. There is no room beside the text on a phone, and it is
           the one thing here that carries nothing. */}
-      <MaskIcon
+      {/* `hidden md:block` is also what scopes the swell to a desktop: below
+          `md` there is no watermark to animate, so the breakpoint that decides
+          whether it exists is the same one that decides whether it moves. */}
+      <HomeHostsMegaphone
         src={megaphone.src}
-        className="pointer-events-none absolute right-4 top-10 hidden size-44 bg-accent/[0.07] md:block lg:right-12 lg:top-1/2 lg:size-80 lg:-translate-y-1/2 2xl:right-40"
+        className="pointer-events-none absolute right-4 top-10 hidden size-44 md:block lg:right-12 lg:top-1/2 lg:size-80 lg:-translate-y-1/2 2xl:right-40"
       />
 
       {/* max-w-3xl inside the page's container: the copy keeps the left edge the
