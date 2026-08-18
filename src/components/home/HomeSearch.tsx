@@ -96,7 +96,14 @@ export default function HomeSearch() {
                      that will not hold still. The real name is the sr-only label
                      above, so this stays purely visual. */
                   placeholder={placeholder}
-                  className="min-w-0 grow bg-transparent text-dark-teal placeholder:text-dark-teal/50 focus:outline-none"
+                  /* The placeholder is a colour away from the value on purpose:
+                     it writes itself out a character at a time, and text that
+                     moves in the same colour as what you typed reads as the
+                     field editing itself. The section's own cyan — the same one
+                     the eyebrow and the sparkle beside this field wear — so the
+                     moving text belongs to the section rather than introducing
+                     a hue that appears nowhere else. */
+                  className="min-w-0 grow bg-transparent text-dark-teal placeholder:text-cyan-blue focus:outline-none"
                 />
               </label>
 
