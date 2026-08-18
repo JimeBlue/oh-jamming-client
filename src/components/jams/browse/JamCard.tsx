@@ -70,7 +70,11 @@ export default function JamCard({ session }: { session: JamSession }) {
           a card link usually sounds like and is worth overriding.
 
           The card lifts and deepens its shadow under the pointer while the photo
-          grows inside its own frame. It replaced daisyUI's `hover-3d`, which
+          grows inside its own frame. The shadow is deliberately faint at rest:
+          the grid is a dozen of these on a near-white ground, and a drop shadow
+          heavy enough to read on one card reads as haze once it is tiled. The
+          lift is what carries the hover — the shadow only has to keep up with
+          it. It replaced daisyUI's `hover-3d`, which
           tilted the card towards the cursor and needed eight empty absolutely
           positioned zones laid over it to know where the cursor was — an effect
           this grid didn't need and a layer of decoy elements between every card
@@ -87,7 +91,7 @@ export default function JamCard({ session }: { session: JamSession }) {
         {/* `overflow-hidden` is what keeps the growing photo inside the card's
             rounded top corners — it came free with `hover-3d`'s own clipping
             before, and without it the image squares them off on hover. */}
-        <div className="relative flex h-full flex-col overflow-hidden rounded-box bg-base-100 shadow-lg transition-shadow duration-300 group-hover:shadow-2xl">
+        <div className="relative flex h-full flex-col overflow-hidden rounded-box bg-base-100 shadow-sm transition-shadow duration-300 group-hover:shadow-md">
           <div className="relative aspect-video w-full bg-cyan-blue/10">
             {session.image ? (
               <Image
