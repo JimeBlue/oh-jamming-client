@@ -207,14 +207,31 @@ export default function VenueMap({
   }, [lat, lng, label]);
 
   return (
+    /* Two divs, and the split is load-bearing. Leaflet writes its own classes
+       onto the element it is handed — `leaflet-container`, `leaflet-grab`, the
+       touch ones — and React sets `className` wholesale, so any re-render that
+       changes the class string wipes them.
+
+       That is not hypothetical: `frameClass` squares the bottom corners the
+       moment an address is picked, which is exactly when the map went blank.
+       Tiles lose `.leaflet-container .leaflet-tile { max-width: none !important }`
+       and inherit Tailwind preflight's `max-width: 100%` instead, so the map
+       collapses while the marker and the controls — styled by rules that aren't
+       scoped to the container — stay on screen and make it look like only the
+       tiles failed. Dragging goes with `leaflet-grab`.
+
+       So the styling lives out here, where React is free to change it, and the
+       inner div is Leaflet's alone with a class string that never varies.
+
+       `isolate` matters: Leaflet gives its internal panes z-indexes up to 800,
+       and without a stacking context of its own the map would paint straight
+       over the suggestion list hanging down from the input above it. */
     <div
-      ref={containerRef}
       role="application"
       aria-label={label ? `Map showing ${label}` : 'Map — no address picked yet'}
-      /* `isolate` matters: Leaflet gives its internal panes z-indexes up to 800,
-         and without a stacking context of its own the map would paint straight
-         over the suggestion list hanging down from the input above it. */
       className={`isolate w-full overflow-hidden ${frameClass} ${heightClass}`}
-    />
+    >
+      <div ref={containerRef} className="size-full" />
+    </div>
   );
 }
