@@ -1,6 +1,7 @@
 'use client';
 
 import { useWatch } from 'react-hook-form';
+import { FiInfo } from 'react-icons/fi';
 
 import { useJamForm } from '@/hooks/useJamForm';
 import { MAX_SUMMARY_CHARS } from '@/schemas/jamSession';
@@ -84,6 +85,28 @@ export default function BasicsStep() {
           />
         )}
       />
+
+      {/* Why the two fields above are worth spending time on, said once at the
+          bottom where it can be read after them rather than as a preamble to
+          them. Deliberately not `alert-info`: `--color-info` is the brand indigo,
+          so that class is a solid indigo block, which is more voice than a note
+          under a form needs.
+
+          `aria-hidden` on the icon — it names nothing the sentence doesn't. */}
+      <div className="mt-6 flex items-start gap-3 rounded-box border border-royal-blue/15 bg-pale-blue p-4">
+        <span
+          aria-hidden
+          className="grid size-7 shrink-0 place-items-center rounded-field bg-cyan-blue text-white"
+        >
+          <FiInfo className="size-4" />
+        </span>
+        {/* The same thinned navy the field hints use — this is a note under a
+            form, and at full strength it competed with the labels above it. */}
+        <p className="text-xs font-normal text-brand-navy/60">
+          Musicians see the title and first line on the session card. Say
+          what&apos;s provided and who it&apos;s for.
+        </p>
+      </div>
     </div>
   );
 }

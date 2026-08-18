@@ -266,3 +266,59 @@
     margin-bottom: 0;
   }
 }
+
+/* The jam builder's card, styled from here rather than field by field: the eight
+   steps between them hold text inputs, textareas, selects, a file input and two
+   time pickers, spread over a dozen components, and setting the same two
+   properties on each of them is a rule that only holds until someone adds the
+   thirteenth.
+
+   Pale blue rather than white, because the card under them is white — daisyUI's
+   default leaves an input as an outline drawn on paper, and this is what makes
+   it a slot cut into it. The same pale blue the page sits on, so a field reads
+   as the page showing through the card.
+
+   `:not(…-error)` keeps the red border of a field that failed validation, which
+   this would otherwise outrank: the plain `.input-error` is one class, and
+   `.jam-card .input` is two. */
+.jam-card
+  :is(.input, .textarea, .select, .file-input):not(
+    .input-error,
+    .textarea-error,
+    .select-error
+  ) {
+  background-color: var(--color-pale-blue);
+  border-color: color-mix(in oklab, var(--color-royal-blue) 20%, transparent);
+}
+
+/* Navy rather than the body's near-black, and the same navy as the band above:
+   the labels are the only other text in the card at that weight, and matching
+   them to the header is what ties the two halves together. */
+.jam-card .fieldset-legend {
+  color: var(--color-brand-navy);
+}
+
+/* The hint under a field: the same navy, thinned rather than turned grey. A
+   neutral grey next to a blue-tinted input reads as a different family of
+   colour; the label's own navy at 60% reads as the label, said more quietly.
+
+   `:not(.text-error)` for the same reason as the inputs above — a failed field
+   swaps this line for its message, and two classes would outrank the one that
+   makes it red. */
+.jam-card .fieldset-label:not(.text-error) {
+  color: color-mix(in oklab, var(--color-brand-navy) 60%, transparent);
+}
+
+/* daisyUI focuses an input with a 2px outline held 2px off the edge, which on a
+   field this pale reads as a second border in a third colour — see the black
+   double ring in the design review. One pixel, tight to the edge, in the blue
+   the rest of the card focuses and fills with.
+
+   Thinner, not absent: this is the only thing telling a keyboard user which of
+   the eight fields they are in. `:focus-within` covers the file input and the
+   date and time pickers, where the focus lands on a child. */
+.jam-card :is(.input, .textarea, .select, .file-input):is(:focus, :focus-within) {
+  outline-width: 1px;
+  outline-offset: 1px;
+  outline-color: var(--color-royal-blue);
+}

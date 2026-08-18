@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useController, useWatch } from 'react-hook-form';
-import { FaWandMagicSparkles } from 'react-icons/fa6';
-import { HiOutlineSparkles } from 'react-icons/hi';
+import { FaPencil, FaWandMagicSparkles } from 'react-icons/fa6';
+import { LuSparkles } from 'react-icons/lu';
 
 import { useJamForm } from '@/hooks/useJamForm';
 import { ApiError } from '@/services/api';
@@ -49,6 +49,29 @@ type AiAssistedFieldProps = {
 
 type Tab = 'manual' | 'ai';
 
+/* A list rather than two hand-written buttons: the pair has to be identical in
+   everything but its label, its icon and which of them is lit, and two copies of
+   nine classes is where that stops being true.
+
+   "Generate with AI" is one string now, where it used to be "Generate with" plus
+   a badge carrying the word AI — the badge needed an `aria-label` beside it to
+   stop screen readers announcing the fragment, and the icon says the same thing
+   without a second name to keep in sync. */
+const TABS = [
+  { id: 'manual', label: 'Enter manually', Icon: FaPencil, weight: 'font-bold' },
+  /* Lighter than its neighbour, in the lettering and in the icon's strokes
+     (lucide is drawn at 2px on a 24px grid where the solid fa6 pencil has no
+     strokes at all). Writing it yourself is the primary way to fill this field;
+     the model is the offer beside it, and an offer set in the same weight as the
+     thing it sits next to reads as the recommendation. */
+  { id: 'ai', label: 'Generate with AI', Icon: LuSparkles, weight: 'font-medium' },
+] as const satisfies readonly {
+  id: Tab;
+  label: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  weight: string;
+}[];
+
 export default function AiAssistedField({
   label,
   error,
@@ -61,6 +84,10 @@ export default function AiAssistedField({
   renderManual,
 }: AiAssistedFieldProps) {
   const { control, setValue } = useJamForm();
+
+  /* Both instances of this component are on screen in the same wizard, so the
+     tab/panel ids have to be unique per instance rather than per component. */
+  const fieldId = useId();
 
   const { field: notes } = useController({ control, name: notesName });
 
@@ -117,143 +144,119 @@ export default function AiAssistedField({
   };
 
   return (
-    <JamField label={label} error={error} hint={tab === 'manual' ? manualHint : notesHintWithCount(notesHint, notes.value.length, notesTooLong)}>
-      {/* `role="tablist"` with real buttons rather than daisyUI's radio-input
-          form: generating has to move the venue to the other tab, and a radio set
-          can only be moved by clicking it. `aria-selected` is what daisyUI 5
-          reads to show the matching panel, so the accessible state and the
-          visible one are the same attribute rather than two that can drift.
+    <JamField
+      label={label}
+      error={error}
+      hint={
+        tab === 'manual'
+          ? manualHint
+          : notesHintWithCount(notesHint, notes.value.length, notesTooLong)
+      }
+      /* A segmented control on the label's row rather than daisyUI's lifted
+         tabs above a bordered panel. The panel was a second card inside the
+         card, with its own edge a few pixels in from the real one; this way the
+         inputs sit on the card like every other step's do, and the only thing
+         the tabs draw is themselves.
 
-          `tabs-sm` below 640px, because at 375px the two labels otherwise don't
-          fit on one line — and this list has to hold one line. The margin is
-          about 9px, so a longer label on either tab needs re-measuring rather
-          than assuming. daisyUI lays the panel out as a flex sibling that wraps
-          onto its own row, so a tab list that wraps puts the lifted tab on one
-          row and the panel it is drawn as attached to under another, which reads
-          as a broken border rather than as two tabs. `flex-nowrap` is not the fix
-          and makes it worse: it keeps the panel on the tabs' line and the whole
-          card scrolls sideways.
+         `role="tablist"` with real buttons rather than daisyUI's radio-input
+         form: generating has to move the venue to the other tab, and a radio set
+         can only be moved by clicking it.
 
-          Every `type="button"` here is load-bearing. A bare button inside this
-          form is a submit button, and submitting means walking to the next step
-          mid-sentence. */}
-      <div role="tablist" className="tabs tabs-lift tabs-sm sm:tabs-md">
-        {/* Inactive is filled rather than transparent — a tab that reads as
-            "there is another one of these" rather than as empty space — and
-            takes the active colour on hover, so the pointer answers "what
-            happens if I click this" before the click. Which tab is which is
-            carried by the label and the badge rather than by colour; both go
-            primary when active, like the rest of the builder. */}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'manual'}
-          className={`tab whitespace-nowrap font-bold ${
-            tab === 'manual'
-              ? 'tab-active text-primary'
-              : 'bg-base-200 text-base-content hover:text-primary'
-          }`}
-          onClick={() => setTab('manual')}
-        >
-          Enter manually
-        </button>
-
-        {/* `--tabcontent-radius-ss` pinned to 0. daisyUI rounds the panel's
-            top-left whenever the active tab is not the first one, so selecting
-            the second tab curves the panel away underneath the first — which
-            works when the tabs float above a transparent panel, and does not
-            once the inactive tab is filled: the fill stays square while the
-            panel beneath it curves, leaving a notch at the card's left edge.
-            Square always, so the panel's left edge and the tab list's line up
-            whichever tab is selected. */}
+         Every `type="button"` here is load-bearing. A bare button inside this
+         form is a submit button, and submitting means walking to the next step
+         mid-sentence. */
+      action={
         <div
-          role="tabpanel"
-          className="tab-content border-base-300 bg-base-100 p-4 [--tabcontent-radius-ss:0]"
+          role="tablist"
+          className="flex items-center gap-1 rounded-field bg-pale-blue p-1"
         >
-          {renderManual(generationId)}
-        </div>
-
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === 'ai'}
-          /* Spelled out, because the accessible name computed from the contents
-             comes back as "Generate with" — the badge is a styled span and the
-             word it carries is doing real work in the label rather than
-             decorating it. Without this, a screen reader announces a fragment. */
-          aria-label="Generate with AI"
-          className={`tab gap-2 whitespace-nowrap font-bold ${
-            tab === 'ai'
-              ? 'tab-active text-primary'
-              : 'bg-base-200 text-base-content hover:text-primary'
-          }`}
-          onClick={() => setTab('ai')}
-        >
-          Generate with
-          {/* The badge finishes the label — "Generate with" alone is a fragment —
-              so unlike the rest of the tab it keeps its colour when the tab is
-              inactive, and it can't be dropped at narrow widths the way a purely
-              decorative one could. */}
-          <span className="badge badge-sm badge-primary gap-1">
-            <HiOutlineSparkles className="size-3.5" />
-            AI
-          </span>
-        </button>
-
-        {/* `--tabcontent-radius-ss` pinned to 0. daisyUI rounds the panel's
-            top-left whenever the active tab is not the first one, so selecting
-            the second tab curves the panel away underneath the first — which
-            works when the tabs float above a transparent panel, and does not
-            once the inactive tab is filled: the fill stays square while the
-            panel beneath it curves, leaving a notch at the card's left edge.
-            Square always, so the panel's left edge and the tab list's line up
-            whichever tab is selected. */}
-        <div
-          role="tabpanel"
-          className="tab-content border-base-300 bg-base-100 p-4 [--tabcontent-radius-ss:0]"
-        >
-          <textarea
-            {...notes}
-            disabled={isGenerating}
-            rows={7}
-            className={`textarea w-full ${notesTooLong ? 'textarea-error' : ''}`}
-            placeholder={notesPlaceholder}
-          />
-
-          {/* Under the textarea rather than over it: this is the outcome of the
-              button below, and an error above the input it belongs to reads as a
-              warning about the whole step. */}
-          {generateError && (
-            <p role="alert" className="mt-2 text-sm text-error">
-              {generateError}
-            </p>
-          )}
-
-          <div className="mt-4 flex items-center gap-3">
+          {TABS.map(({ id, label: tabLabel, Icon, weight }) => (
             <button
+              key={id}
               type="button"
-              onClick={runGenerate}
-              disabled={!canGenerate}
-              className="btn btn-primary gap-2 font-bold"
+              role="tab"
+              id={`${fieldId}-tab-${id}`}
+              aria-selected={tab === id}
+              aria-controls={`${fieldId}-panel-${id}`}
+              /* The selected one is the only thing in the pair carrying a fill,
+                 which is what makes "which of these am I in" answerable without
+                 reading either label. The other stays on the trough and takes
+                 the same blue in text on hover — the pointer says what the click
+                 would do before the click. */
+              className={`btn btn-sm gap-2 border-0 shadow-none sm:btn-md ${weight} ${
+                tab === id
+                  ? 'bg-royal-blue text-white hover:bg-royal-blue'
+                  : 'bg-transparent text-brand-navy hover:bg-transparent hover:text-royal-blue'
+              }`}
+              onClick={() => setTab(id)}
             >
-              {isGenerating ? (
-                <span className="loading loading-spinner loading-sm" />
-              ) : (
-                <FaWandMagicSparkles className="size-4" />
-              )}
-              {isGenerating ? 'Writing…' : 'Generate'}
+              <Icon className="size-4" />
+              {tabLabel}
             </button>
+          ))}
+        </div>
+      }
+    >
+      {/* Both panels stay mounted and one is `hidden`, rather than rendering
+          only the selected one: switching tabs and switching back has to leave
+          the notes, the caret and the scroll position where they were. Unmounting
+          would throw all three away, and the notes are not in the form. */}
+      <div
+        role="tabpanel"
+        id={`${fieldId}-panel-manual`}
+        aria-labelledby={`${fieldId}-tab-manual`}
+        hidden={tab !== 'manual'}
+      >
+        {renderManual(generationId)}
+      </div>
 
-            {/* Said once, before the click rather than after it. Someone who has
-                already written something and is idly trying the other tab
-                deserves to know it will be replaced while they can still choose
-                not to. */}
-            {currentValue.trim() && !isGenerating && (
-              <span className="text-sm opacity-70">
-                This replaces what’s in the manual tab.
-              </span>
+      <div
+        role="tabpanel"
+        id={`${fieldId}-panel-ai`}
+        aria-labelledby={`${fieldId}-tab-ai`}
+        hidden={tab !== 'ai'}
+      >
+        <textarea
+          {...notes}
+          disabled={isGenerating}
+          rows={7}
+          className={`textarea w-full ${notesTooLong ? 'textarea-error' : ''}`}
+          placeholder={notesPlaceholder}
+        />
+
+        {/* Under the textarea rather than over it: this is the outcome of the
+            button below, and an error above the input it belongs to reads as a
+            warning about the whole step. */}
+        {generateError && (
+          <p role="alert" className="mt-2 text-sm text-error">
+            {generateError}
+          </p>
+        )}
+
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={runGenerate}
+            disabled={!canGenerate}
+            className="btn gap-2 border-royal-blue bg-royal-blue font-bold text-white shadow-none transition-colors hover:bg-transparent hover:text-royal-blue"
+          >
+            {isGenerating ? (
+              <span className="loading loading-spinner loading-sm" />
+            ) : (
+              <FaWandMagicSparkles className="size-4" />
             )}
-          </div>
+            {isGenerating ? 'Writing…' : 'Generate'}
+          </button>
+
+          {/* Said once, before the click rather than after it. Someone who has
+              already written something and is idly trying the other tab
+              deserves to know it will be replaced while they can still choose
+              not to. */}
+          {currentValue.trim() && !isGenerating && (
+            <span className="text-sm opacity-70">
+              This replaces what’s in the manual tab.
+            </span>
+          )}
         </div>
       </div>
     </JamField>
