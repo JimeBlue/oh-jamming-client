@@ -10,13 +10,10 @@ import { FiInfo } from 'react-icons/fi';
 export default function JamNote({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-6 flex items-start gap-3 rounded-box border border-royal-blue/15 bg-pale-blue p-4">
-      {/* aria-hidden: it names nothing the sentence doesn't. */}
-      <span
-        aria-hidden
-        className="grid size-7 shrink-0 place-items-center rounded-field bg-cyan-blue text-white"
-      >
-        <FiInfo className="size-4" />
-      </span>
+      {/* The glyph alone, no tile behind it: a filled square is the weight of a
+          button, and this panel is the quietest thing in the card. aria-hidden
+          because it names nothing the sentence doesn't. */}
+      <FiInfo aria-hidden className="mt-0.5 size-4 shrink-0 text-cyan-blue" />
       <p className="text-xs font-normal text-brand-navy/60">{children}</p>
     </div>
   );
