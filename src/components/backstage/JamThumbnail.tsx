@@ -36,9 +36,9 @@ export default function JamThumbnail({
       <div
         /* Decorative: the row already says the title, in words, an inch away. */
         aria-hidden
-        className={`grid ${box} shrink-0 place-items-center rounded-box bg-primary/10`}
+        className={`grid ${box} shrink-0 place-items-center rounded-box bg-royal-blue/10`}
       >
-        <FaRegImage className="size-7 text-primary/40" />
+        <FaRegImage className="size-7 text-royal-blue/30" />
       </div>
     );
   }

@@ -124,7 +124,12 @@ export default function JamDetailShell({
     <div className="flex min-h-[calc(100dvh-5rem)] flex-col lg:flex-row">
       <JamDetailNav id={id} />
 
-      <div className="min-w-0 flex-1">
+      {/* The panels' own ground, rather than the body's `base-200`. The cockpit
+          is white cards and a navy tile, and the faintly indigo grey underneath
+          them belongs to the site's indigo — the pale blue is the colour this
+          side of the app is being moved to. It sits on the shared column rather
+          than in the cockpit itself because a panel can't paint the page. */}
+      <div className="min-w-0 flex-1 bg-pale-blue">
         {/* The guest list gets the whole width; the other two keep a reading
             measure. Nine columns of names, spots and timestamps are worth every
             pixel of a wide screen, while the cockpit is cards and the listing is
@@ -136,7 +141,7 @@ export default function JamDetailShell({
         >
           {state.status === 'loading' && (
             <div className="flex justify-center py-24">
-              <span className="loading loading-spinner loading-lg text-primary" />
+              <span className="loading loading-spinner loading-lg text-royal-blue" />
               <span className="sr-only">Loading this jam session</span>
             </div>
           )}
