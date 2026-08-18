@@ -4,19 +4,23 @@ import type { JamStatus } from '@/lib/jamStatus';
    readable to someone who can't tell the lime from the green, and "Past" is not
    a thing a colour can spell.
 
-   Three of them are a dark label on a pale pill. Today is the inverse — solid
-   brand indigo with the brand lime on top — and that inversion is what makes it
-   the one row a venue's eye lands on, more than any hue choice could. It is also
-   where the raw `--color-brand-green` finally gets used at full strength: on
-   white it is 1.2:1 and unreadable, on this indigo it is 4.7:1.
+   The two live states are outlined on white rather than filled, which is what
+   lets the dot beside the label be a *different* colour from the edge around
+   it: Today is a lime ring with a saturated green dot inside it, Upcoming the
+   same shape in royal blue. Filled pills couldn't do that — a dot on a wash of
+   its own colour is either invisible or a second fill.
 
-   Upcoming and Cancelled take their fill from their own text colour at low
-   alpha, so the pair can't drift apart: change the token and the pill follows.
-   Past is given a surface instead, because its pill is a neutral grey rather
-   than a wash of the grey above it.
+   Today is the one that has to be found at a glance, so it takes the lime,
+   which nothing else on this page uses as a line. Upcoming takes the blue the
+   rest of the cockpit is drawn in, at 40% for the edge and full strength for
+   the dot and the word: the same colour three deep, so it reads as one state
+   rather than as a badge assembled from parts.
+
+   Past and Cancelled are still filled pills with no edge. They are the two that
+   mean "nothing to do here", and an outline is an invitation.
 
    `dot` and `ping` are spelled out on all four rather than only on the ones that
-   need them. Three entries just say `bg-current` and `false`, which is
+   need them. Two entries just say `bg-current` and `false`, which is
    redundant — and is what makes Today's moving dot look like the deliberate
    exception it is instead of something half-edited.
 
@@ -26,25 +30,25 @@ import type { JamStatus } from '@/lib/jamStatus';
 const STATUS = {
   upcoming: {
     label: 'Upcoming',
-    className: 'bg-brand-green/20 text-status-upcoming',
-    dot: 'bg-current',
+    className: 'border border-royal-blue/40 bg-base-100 text-royal-blue',
+    dot: 'bg-royal-blue',
     ping: false,
   },
   today: {
     label: 'Today',
-    className: 'bg-primary text-brand-green',
-    dot: 'bg-brand-green',
+    className: 'border border-brand-green bg-base-100 text-dark-teal',
+    dot: 'bg-emerald-green',
     ping: true,
   },
   past: {
     label: 'Past',
-    className: 'bg-status-past-surface text-status-past',
+    className: 'border-0 bg-status-past-surface text-status-past',
     dot: 'bg-current',
     ping: false,
   },
   cancelled: {
     label: 'Cancelled',
-    className: 'bg-status-cancelled/10 text-status-cancelled',
+    className: 'border-0 bg-status-cancelled/10 text-status-cancelled',
     dot: 'bg-current',
     ping: false,
   },
@@ -66,12 +70,17 @@ const STATUS = {
    Past and cancelled go translucent rather than white: on the grey card a white
    chip is the brightest thing in the row, which is the opposite of what a night
    that is over should be. */
-const PILL = 'rounded-full px-4 py-1';
+/* `rounded-field` rather than `rounded-full`: this sits an inch from the header's
+   own buttons, which take their corner from the same token, and a capsule beside
+   them read as a different family of control. Shorter than a button too —
+   `py-0.5` against a button's `--size` — because it is a label about the session
+   and not a thing to press, and matching their height is what would make it look
+   like one. */
+const SURFACE = 'rounded-field px-4 py-0.5';
 
-/* Squarer and tighter than the pill the surface badges wear — this one shares a
-   card with the Cancel button, and two different roundings an inch apart read as
-   an accident. */
-const CHIP = 'rounded-field px-3 py-0.5';
+/* The same corner as above and tighter across, because this one shares a card
+   with the Cancel button and has less room to spend. */
+const CHIP = 'rounded-field border-0 px-3 py-0.5';
 
 const ON_COLOR = {
   upcoming: {
@@ -94,29 +103,33 @@ export default function JamStatusBadge({
   const onColor = tone === 'onColor';
   const { className, dot } = onColor ? ON_COLOR[status] : STATUS[status];
 
-  /* Shape rides with the colour rather than sitting on the wrapper, because the
-     on-colour Today is the one badge that isn't a pill and a `rounded-full` in
-     the base would be there to be fought with. */
-  const shape = onColor ? '' : PILL;
+  /* Shape rides with the colour rather than sitting on the wrapper: the two sets
+     agree on the corner but not on how much room they have across, and the
+     on-colour one already carries its own padding. */
+  const shape = onColor ? '' : SURFACE;
 
   return (
-    /* border-0 because daisyUI gives every badge a 1px border from `--border`,
-       and against these soft fills it reads as a second, darker outline of the
-       same shape rather than as an edge.
+    /* The border is decided per state rather than switched off here. daisyUI
+       gives every badge a 1px edge from `--border`, which against a soft fill is
+       a second, darker outline of the same shape — so the filled ones say
+       `border-0` — while the two outlined states want that edge in a colour of
+       their own. Left on the wrapper it would have been a rule to fight either
+       way round.
 
-       `h-auto` is what makes `py-1` mean anything: `.badge` sets an explicit
-       `height: var(--size)`, so padding alone changes nothing and the pill stays
-       the height daisyUI picked. Releasing the height lets the content set it.
+       `h-auto` is what makes the vertical padding mean anything: `.badge` sets an
+       explicit `height: var(--size)`, so padding alone changes nothing and the
+       badge stays the height daisyUI picked. Releasing the height lets the
+       content set it.
 
-       The pill's padding is deliberately lopsided — 1rem beside the words,
-       0.25rem above and below. A pill wants to be wider than it is tall, and
-       matching the two turns it into a lozenge with a lot of dead colour in it.
+       The padding is deliberately lopsided — 1rem beside the words, 0.125rem
+       above and below. A badge wants to be wider than it is tall, and matching
+       the two turns it into a lozenge with a lot of dead colour in it.
 
        No `badge-lg`: its only remaining job here was the font size, since
        `h-auto` already gave the height away, and at that size the label competed
        with the row's own heading. `text-sm` sets it directly. */
     <span
-      className={`badge h-auto gap-2 border-0 text-sm font-bold ${shape} ${className}`}
+      className={`badge h-auto gap-2 text-sm font-bold ${shape} ${className}`}
     >
       {/* aria-hidden on the whole thing: it carries no meaning the label doesn't
           already, which is what makes the animation safe to hide outright below

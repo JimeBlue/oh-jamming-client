@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { AiFillClockCircle } from 'react-icons/ai';
+import { FaRegClock } from 'react-icons/fa6';
 import { FiInfo } from 'react-icons/fi';
 
 import { guestTally, jamReport, type InstrumentTally } from '@/lib/jamReport';
@@ -88,7 +88,7 @@ const Verdict = ({ booked, total }: { booked: number; total: number }) => {
        nothing left to do about this instrument" is the one that stops reading as
        a shade of the same answer. */
     return (
-      <span className="badge h-auto border-0 bg-brand-green px-3 py-1 font-bold text-brand-navy">
+      <span className="badge h-auto border-0 text-[12px] bg-brand-green px-3 py-1 font-bold text-dark-teal">
         Full
       </span>
     );
@@ -96,7 +96,7 @@ const Verdict = ({ booked, total }: { booked: number; total: number }) => {
 
   if (booked === 0) {
     return (
-      <span className="badge h-auto border-0 bg-royal-blue/10 px-3 py-1 font-bold text-royal-blue">
+      <span className="badge h-auto border-0 text-[12px] bg-royal-blue/10 px-3 py-1 font-bold text-royal-blue">
         Nobody yet
       </span>
     );
@@ -106,26 +106,35 @@ const Verdict = ({ booked, total }: { booked: number; total: number }) => {
      thing — nothing yet, on the way, done — instead of two badges with a loose
      number between them. */
   return (
-    <span className="badge h-auto border-0 bg-brand-green/20 px-3 py-1 font-bold text-status-upcoming tabular-nums">
+    <span className="badge h-auto border-0 text-[12px] bg-brand-green/20 px-3 py-1 font-bold text-dark-teal tabular-nums">
       {Math.round((booked / total) * 100)}%
     </span>
   );
 };
 
 /* An instrument inside one slot: "Voice 3/3". Lit in the lime once the last spot
-   is gone and left plain until then — which is the whole reason the chips are
+   is gone and left grey until then — which is the whole reason the chips are
    here rather than a second bar, because a slot at 7/12 says nothing about
    *which* seven are left.
 
-   The green pair is the Upcoming badge's exactly, brand lime at low alpha under
-   the darkened lime it is named for: the raw token is 1.2:1 on white and would
-   be a rumour of a label rather than one. */
+   Both wear the page's teal, so the lime is doing all of the work of saying
+   which is which. The grey ground under the ones still going is what keeps that
+   readable: against white the lit chip was a tint next to paper, and the pale
+   lime had to carry the whole distinction on its own.
+
+   The name is whatever the venue typed into the builder, which includes
+   "SAXOPHONE" — so it is lowercased and its first letter put back rather than
+   left to shout across a row of chips. `capitalize` alone would not do it: it
+   only touches the first letter of each word and leaves the rest of a
+   caps-locked one as it found it. `first-letter` needs a block container to
+   apply to, which is why it sits on the `li` and not on a span around the
+   name. */
 const SlotChip = ({ instrument, booked, total }: InstrumentTally) => (
   <li
-    className={`rounded-field border px-3 py-1 text-sm tabular-nums ${
+    className={`rounded-field border px-3 py-1 text-[13px] lowercase tabular-nums text-dark-teal first-letter:uppercase ${
       booked === total
-        ? 'border-brand-green/50 bg-brand-green/20 text-status-upcoming'
-        : 'border-royal-blue/20 bg-base-100 text-brand-navy'
+        ? 'border-brand-green/50 bg-brand-green/20'
+        : 'border-royal-blue/20 bg-base-content/5'
     }`}
   >
     {instrument} <span className="font-bold">{booked}/{total}</span>
@@ -143,10 +152,10 @@ const Section = ({
 }) => (
   <section className="rounded-box bg-base-100 p-4 shadow-xl sm:p-6">
     <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-5">
-      <h2 className="shrink-0 font-display text-xl font-bold text-brand-navy">
+      <h2 className="shrink-0 font-display text-[19px] font-bold text-dark-teal">
         {title}
       </h2>
-      <p className="max-w-prose text-sm text-brand-navy/60">{note}</p>
+      <p className="max-w-prose text-[13px] text-dark-teal/60">{note}</p>
     </div>
     <div className="mt-5">{children}</div>
   </section>
@@ -162,24 +171,24 @@ const Tile = ({
   note: string;
 }) => (
   <div className="rounded-box bg-base-100 p-5 shadow-xl">
-    {/* Figure in the navy the page's headings wear, label in the blue — these
-        three sit beside the filled navy tile, and carrying its two colours
-        through is what makes the four read as one set rather than as one card
-        and three footnotes.
+    {/* Figure in the teal the page's headings wear, label in the blue — these
+        three sit beside the filled navy tile, and carrying the page's own two
+        colours through is what makes the four read as one set rather than as
+        one card and three footnotes.
 
         The icon marks the line under the number as an explanation of it rather
         than a second reading, which is what the note underneath needs: "aren't
         counted above" is about the tile beside it, not about this one. Same
         cyan glyph as the notes in the builder, so an ⓘ means one thing on both
         sides of the venue's app. */}
-    <p className="font-display text-4xl font-bold text-brand-navy tabular-nums">
+    <p className="font-display text-[35px] font-bold text-dark-teal tabular-nums">
       {value}
     </p>
-    <p className="mt-1 flex items-center gap-2 font-bold text-royal-blue">
+    <p className="mt-1 flex items-center gap-2 text-[15px] font-bold text-royal-blue">
       <FiInfo aria-hidden className="size-4 shrink-0 text-cyan-blue" />
       {label}
     </p>
-    <p className="mt-1 text-sm text-brand-navy/60">{note}</p>
+    <p className="mt-1 text-[13px] text-dark-teal/60">{note}</p>
   </div>
 );
 
@@ -203,10 +212,10 @@ export default function CockpitPanel() {
 
     return (
       <section className="rounded-box border border-status-cancelled/40 bg-status-cancelled/5 p-6 sm:p-8">
-        <h2 className="font-display text-xl font-bold text-brand-navy">
+        <h2 className="font-display text-[19px] font-bold text-dark-teal">
           This night was called off
         </h2>
-        <p className="mt-2 text-brand-navy/70">
+        <p className="mt-2 text-[15px] text-dark-teal/70">
           {musicians === 0
             ? 'Nobody had booked a spot when it was cancelled.'
             : `${musicians} musician${musicians === 1 ? '' : 's'} had booked a spot when it was cancelled, and every booking was cancelled with it.`}
@@ -215,7 +224,7 @@ export default function CockpitPanel() {
         {musicians > 0 && (
           <Link
             href={`/my-backstage/${session.id}/guests`}
-            className="btn mt-6 border-royal-blue bg-transparent font-bold text-royal-blue shadow-none transition-colors hover:border-royal-blue hover:bg-royal-blue hover:text-white"
+            className="btn mt-6 border-royal-blue bg-transparent text-[13px] font-bold text-royal-blue shadow-none transition-colors hover:border-royal-blue hover:bg-royal-blue hover:text-white"
           >
             See who was booked
           </Link>
@@ -252,17 +261,17 @@ export default function CockpitPanel() {
                 background: `conic-gradient(var(--color-brand-green) ${report.fillRate}%, color-mix(in oklab, currentColor 20%, transparent) 0)`,
               }}
             >
-              <span className="grid size-14 place-items-center rounded-full bg-brand-navy text-sm font-bold tabular-nums">
+              <span className="grid size-14 place-items-center rounded-full bg-brand-navy text-[13px] font-bold tabular-nums">
                 {report.fillRate}%
               </span>
             </div>
 
             <div>
-              <p className="font-display text-4xl font-bold tabular-nums">
+              <p className="font-display text-[35px] font-bold tabular-nums">
                 {report.booked}
-                <span className="text-xl text-white/50"> / {report.total}</span>
+                <span className="text-[19px] text-white/50"> / {report.total}</span>
               </p>
-              <p className="mt-1 font-bold text-brand-green">Spots booked</p>
+              <p className="mt-1 text-[15px] font-bold text-brand-green">Spots booked</p>
             </div>
           </div>
 
@@ -270,7 +279,7 @@ export default function CockpitPanel() {
               the figure above rather than a third line of it, and `mt-auto`
               keeps it on the tile's bottom edge however tall the row grows to
               fit the three beside it. */}
-          <p className="mt-auto border-t border-white/15 pt-3 text-sm text-white/60">
+          <p className="mt-auto border-t border-white/15 pt-3 text-[13px] text-white/60">
             {report.free} still free across {slotCount} slot
             {slotCount === 1 ? '' : 's'}
           </p>
@@ -315,22 +324,22 @@ export default function CockpitPanel() {
               key={instrument}
               className="border-b border-royal-blue/10 py-4 first:pt-0 last:border-b-0 last:pb-0"
             >
-              <p className="font-bold text-brand-navy">{instrument}</p>
+              <p className="text-[15px] font-bold text-dark-teal">{instrument}</p>
 
               {/* A description list because that is what these are — three
                   labels and their values — and a two-column grid so the labels
                   line up down the card rather than each row finding its own
                   indent. */}
-              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-sm text-brand-navy">
-                <dt className="text-brand-navy/50">Booked</dt>
+              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1 text-[13px] text-dark-teal">
+                <dt className="text-dark-teal/50">Booked</dt>
                 <dd className="tabular-nums">
-                  {booked} <span className="text-brand-navy/40">/ {total}</span>
+                  {booked} <span className="text-dark-teal/40">/ {total}</span>
                 </dd>
 
-                <dt className="text-brand-navy/50">Free</dt>
+                <dt className="text-dark-teal/50">Free</dt>
                 <dd className="tabular-nums">{total - booked}</dd>
 
-                <dt className="text-brand-navy/50">Fill</dt>
+                <dt className="text-dark-teal/50">Fill</dt>
                 <dd className="flex items-center gap-3">
                   <FillBar
                     booked={booked}
@@ -345,11 +354,11 @@ export default function CockpitPanel() {
         </ul>
 
         <div className="hidden overflow-x-auto sm:block">
-          <table className="table">
+          <table className="table text-[13px]">
             {/* daisyUI sets both of these inside `:where()`, so a plain utility
                 outranks them — no `!` needed to move the heads off the theme's
                 grey and the rules off its indigo-tinted `base-200`. */}
-            <thead className="text-brand-navy/50">
+            <thead className="text-[11px] text-dark-teal/50">
               <tr className="border-royal-blue/10">
                 <th>Instrument</th>
                 <th>Booked</th>
@@ -361,11 +370,11 @@ export default function CockpitPanel() {
             <tbody>
               {report.byInstrument.map(({ instrument, booked, total }) => (
                 <tr key={instrument} className="border-royal-blue/10">
-                  <td className="font-bold text-brand-navy">{instrument}</td>
-                  <td className="tabular-nums text-brand-navy">
-                    {booked} <span className="text-brand-navy/40">/ {total}</span>
+                  <td className="font-bold text-dark-teal">{instrument}</td>
+                  <td className="tabular-nums text-dark-teal">
+                    {booked} <span className="text-dark-teal/40">/ {total}</span>
                   </td>
-                  <td className="tabular-nums text-brand-navy/60">{total - booked}</td>
+                  <td className="tabular-nums text-dark-teal/60">{total - booked}</td>
                   <td>
                     <FillBar
                       booked={booked}
@@ -398,17 +407,21 @@ export default function CockpitPanel() {
                   arrangement as the header card's address and date blocks, so
                   the page has one way of pairing an icon with two lines.
 
-                  No colour on the icon: it inherits, so it is the time's own
-                  colour by construction rather than by a second class that has
-                  to be kept in step with it. */}
-              <div className="flex items-start gap-2 text-brand-navy">
-                <AiFillClockCircle aria-hidden className="mt-1 size-4 shrink-0" />
+                  Grey rather than the time's own teal. Six of these run down
+                  the section and they all say the same thing, so at the times'
+                  own weight the column reads as a stack of glyphs with the
+                  hours behind them. */}
+              <div className="flex items-start gap-2 text-dark-teal">
+                <FaRegClock
+                  aria-hidden
+                  className="mt-1 size-4 shrink-0 text-base-content/40"
+                />
                 <div>
-                  <p className="font-bold tabular-nums">
+                  <p className="text-[13px] font-bold tabular-nums">
                     {startTime}–{endTime}
                   </p>
                   <p
-                    className={`text-sm font-bold tabular-nums ${slotCountTone(booked, total)}`}
+                    className={`text-[13px] font-bold tabular-nums ${slotCountTone(booked, total)}`}
                   >
                     {booked} / {total} booked
                   </p>
