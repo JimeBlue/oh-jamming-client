@@ -120,6 +120,31 @@
   --color-cyan-blue: #01a8cb;
   --color-pale-blue: #f1f7fc;
   --color-emerald-green: #01d265;
+
+  /* Scroll reveals: rise and fade, driven by a keyframe rather than by
+     transition classes toggled on a state flag.
+
+     The distinction matters here and isn't stylistic. `HomeTonight` renders
+     skeletons first and swaps in the real tiles when the fetch lands, so a tile
+     can mount into a section that is *already* on screen. A transition needs
+     two renders — one to paint the start state, one to move off it — and a
+     tile that mounts with its end classes already on simply appears. A
+     keyframe runs on the frame the element mounts, so both orders animate.
+
+     Up from below, not in from the side: these arrive as the page is scrolled
+     down, so rising to meet the reader moves with that rather than across it. */
+  --animate-reveal: reveal 0.6s ease-out both;
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
 }
 
 
