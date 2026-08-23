@@ -8,7 +8,7 @@ import useInView from '@/hooks/useInView';
 import { jamReport } from '@/lib/jamReport';
 import { jamStatus } from '@/lib/jamStatus';
 import type { JamSession } from '@/schemas/jamSession';
-import { getJamCities, getJamSessions } from '@/services/jamSessions';
+import { getAllJamSessions, getJamCities } from '@/services/jamSessions';
 
 /* The cyan band under the search: what is actually on the board tonight.
 
@@ -99,7 +99,12 @@ export default function HomeTonight() {
        an unmounted component. */
     let active = true;
 
-    Promise.all([getJamSessions(), getJamCities()])
+    /* The whole board, not the first page of it. Every number below is a sum
+       over all of it — open spots, instrument types — and `getJamSessions` now
+       answers with twelve, so counting from that would print a confident total
+       that is simply the first screenful. Exactly the failure the comment at the
+       top of this file is about. */
+    Promise.all([getAllJamSessions(), getJamCities()])
       .then(([sessions, cities]) => {
         if (!active) return;
 

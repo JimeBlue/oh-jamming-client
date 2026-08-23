@@ -527,3 +527,23 @@ export const jamSessionSchema = z.object({
 });
 
 export type JamSession = z.infer<typeof jamSessionSchema>;
+
+/* One page of the browse. `GET /jam-sessions` is the only list endpoint that
+   wraps its results — `/mine` and `/cities` still hand back a bare array.
+
+   `total` counts every session matching the filters, not the ones in `items`,
+   and it is the only reason this is an object: a full page cannot tell you
+   whether it is the last one, so how many pages there are is unanswerable
+   without it.
+
+   `page` and `limit` are echoed by the API, and read from here rather than from
+   what was asked for — they differ whenever a default filled one in, and the
+   pager should draw what the server actually did. */
+export const jamSessionPageSchema = z.object({
+  items: z.array(jamSessionSchema),
+  total: z.number(),
+  page: z.number(),
+  limit: z.number(),
+});
+
+export type JamSessionPage = z.infer<typeof jamSessionPageSchema>;
