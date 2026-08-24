@@ -67,6 +67,7 @@ function JamWizardForm() {
 
   const form = useForm<JamFormValues>({
     resolver: zodResolver(jamFormSchema),
+    mode: 'onTouched',
     /* Not the default 'onSubmit'. Next validates with `trigger`, which never sets
        `isSubmitted`, so react-hook-form's automatic re-validation-on-change never
        switches on — and a message would sit there in red while the venue is
@@ -87,6 +88,7 @@ function JamWizardForm() {
     getValues,
     subscribe,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = form;
 
@@ -127,7 +129,24 @@ function JamWizardForm() {
   const goNext = async () => {
     if (!step) return;
 
-    if (!(await trigger(JAM_STEP_FIELDS[step.id], { shouldFocus: true }))) return;
+    const fields = JAM_STEP_FIELDS[step.id];
+
+    if (!(await trigger(fields, { shouldFocus: true }))) {
+      /* `trigger` writes errors but never touches `touchedFields`, and
+         'onTouched' only re-validates a field once it has been left. So the
+         field this Next just complained about — one the venue skipped entirely
+         and has never blurred — would keep its red message while they type the
+         very thing that fixes it. Marking them touched is what hands them back
+         to the mode above.
+
+         Same value in, so nothing is written: this sets a flag, and `shouldDirty`
+         is deliberately absent so an untouched step doesn't come out dirty. */
+      for (const field of fields) {
+        setValue(field, getValues(field), { shouldTouch: true });
+      }
+
+      return;
+    }
 
     setStepIndex((index) => Math.min(JAM_STEPS.length - 1, index + 1));
   };
