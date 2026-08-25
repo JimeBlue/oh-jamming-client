@@ -167,6 +167,11 @@ Deliberately out of scope for the first release, in the order I'd build them.
 - **A stats endpoint.** The home page counts open spots by walking the whole
   board over the network. Fine at nine sessions, indefensible at nine hundred —
   it belongs in a single aggregation.
+- **One account, both roles.** Role is fixed at registration, so a venue owner who
+  also plays needs two logins — today the app can only offer to sign them out and
+  back in. Eventbrite and Airbnb answer this with a mode switch rather than a
+  second account, which here means `roles` as a set on the user, not a client
+  change.
 - **Door scanning.** Bookings already carry a QR code; nothing reads it yet.
 - **Recurring nights.** Most venues run the same jam every second Monday and
   currently publish it by hand each time.
