@@ -42,7 +42,16 @@ export default async function BookPage({ params, searchParams }: BookPageProps) 
   return (
     <main className="min-h-screen flex-1 bg-pale-blue pt-28">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-4 pb-20 sm:px-6 lg:px-8">
-        <RequireRole role="musician">
+        {/* A venue who switches accounts here goes back to the session, not to
+            this step. Signing in and being dropped on an instrument picker says
+            nothing about which night or which slot is being booked — the slot
+            board does, with `?slot=` already selected, and Next is one click
+            away. Same destination JamSlotPicker sends an anonymous visitor to,
+            for the same reason. */}
+        <RequireRole
+          role="musician"
+          returnTo={`/jams/${id}?slot=${encodeURIComponent(slot)}`}
+        >
           <InstrumentPicker
             id={id}
             slotId={slot}
