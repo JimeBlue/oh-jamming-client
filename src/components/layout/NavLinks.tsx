@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation';
 
 /* One source of truth: the bar renders these horizontally on desktop, the
    mobile menu renders the same list stacked. */
+/* "About us" is out until there is a page behind it: there is no route at
+   /about, so the link was a 404 in the header of every page — including the
+   screenshots in the README. Put it back with the page, not before it. */
 const links = [
   { href: '/', label: 'Home' },
   { href: '/jams', label: 'All Jams' },
-  { href: '/about', label: 'About us' },
 ];
 
 const activeClasses =

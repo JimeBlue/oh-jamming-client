@@ -16,19 +16,55 @@ import {
 import type { UserRole } from '@/schemas/user';
 import { ApiError } from '@/services/api';
 
-/* Pink for musicians, indigo for venues — the one place the two forms differ
-   visually, so which account you're creating is readable at a glance. */
-const submitButtonClass: Record<UserRole, string> = {
-  musician: 'btn-secondary',
-  venue: 'btn-primary',
+/* Pink for musicians, indigo for venues — the only way the two forms differ
+   visually, so which account you're creating is readable at a glance.
+
+   One record rather than three keyed the same way: the word in the heading, the
+   colour it's tinted and the fill on the button have to agree to say anything at
+   all. Split across separate maps, adding a role means remembering all three. */
+const byRole: Record<
+  UserRole,
+  { noun: string; highlight: string; ink: string; submit: string }
+> = {
+  /* The two blocks don't take the same lettering, because the two colours
+     aren't equally dark. White on the pink is thin — the app gets away with it
+     on a button, but a word this size wants the page's ink behind it, which
+     also ties the highlight to the rest of the heading. The indigo is dark
+     enough that white is the legible half of the pair. */
+  musician: {
+    noun: 'musician',
+    highlight: 'bg-secondary',
+    ink: 'text-base-content',
+    submit: 'btn-secondary',
+  },
+  venue: {
+    noun: 'venue',
+    highlight: 'bg-primary',
+    ink: 'text-white',
+    submit: 'btn-primary',
+  },
 };
 
-const roleNoun: Record<UserRole, string> = {
-  musician: 'musician',
-  venue: 'venue',
+/* The hand-painted look: a block whose edges wander, the way a brush leaves
+   them. Every point is a percentage, so it holds its shape whichever word is
+   inside it — "musician" is half again as wide as "venue".
+
+   A polygon rather than a border-radius, which can only ever draw a smooth
+   ellipse; the wobble along each side is the whole effect. The trade is that a
+   clip cuts rather than draws, so the padding below has to keep the letters
+   clear of the ragged edge — the widest excursion is 4% of the width and 10%
+   of the height. */
+const brushedHighlight = {
+  clipPath: `polygon(
+    2% 10%, 10% 2%, 28% 7%, 46% 1%, 66% 7%, 84% 2%, 97% 9%,
+    99% 32%, 96% 56%, 100% 80%,
+    94% 95%, 74% 99%, 52% 93%, 30% 100%, 11% 95%, 3% 89%,
+    1% 62%, 0% 34%
+  )`,
 };
 
 export default function RegisterForm({ role }: { role: UserRole }) {
+  const { noun, highlight, ink, submit } = byRole[role];
   const { register: createAccount } = useAuth();
   const router = useRouter();
 
@@ -102,7 +138,25 @@ export default function RegisterForm({ role }: { role: UserRole }) {
     /* noValidate hands validation entirely to zod, so the browser's own bubbles
        don't fire first with different wording in a different style. */
     <form onSubmit={onSubmit} noValidate>
-      <h1 className="font-heading text-3xl">Get started with a free account</h1>
+      {/* The role in the heading rather than only in the tab above it. Someone
+          who arrives on this page from a link — the login card's "Register
+          here", the role guard's button — never chose a tab, so the tab is
+          reporting a decision they didn't watch being made. The word is tinted
+          painted in the colour of the button they'll press, which is the same
+          pairing the tabs and the submit already use.
+
+          inline-block so the vertical padding actually pushes the block out
+          past the text rather than letting it overlap the line above. */}
+      <h1 className="font-heading text-3xl leading-snug">
+        Get started with a free{' '}
+        <span
+          style={brushedHighlight}
+          className={`${highlight} ${ink} inline-block px-4 py-1`}
+        >
+          {noun}
+        </span>{' '}
+        account
+      </h1>
 
       <p className="mt-2 text-sm">
         You already have an Oh Jamming account?{' '}
@@ -115,10 +169,13 @@ export default function RegisterForm({ role }: { role: UserRole }) {
 
       {/* The role can never be changed after signup — it decides whether you
           book spots or offer them, and it's the one thing on this form that
-          can't be fixed later by editing a profile. */}
+          can't be fixed later by editing a profile.
+
+          No longer names the role: the heading does that now, in colour, one
+          line up. Saying it twice in three lines made the warning read as
+          filler rather than as the one irreversible thing on the page. */}
       <p className="mt-3 text-xs opacity-70">
-        You&rsquo;re creating a {roleNoun[role]} account. This can&rsquo;t be
-        changed later.
+        The account type can&rsquo;t be changed later.
       </p>
 
       <fieldset className="fieldset mt-4">
@@ -212,7 +269,7 @@ export default function RegisterForm({ role }: { role: UserRole }) {
       <button
         type="submit"
         disabled={isSubmitting}
-        className={`btn ${submitButtonClass[role]} mt-6 w-full font-bold`}
+        className={`btn ${submit} mt-6 w-full font-bold`}
       >
         {isSubmitting && <span className="loading loading-spinner" />}
         {isSubmitting ? 'Creating account…' : 'Create account'}

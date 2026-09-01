@@ -39,19 +39,26 @@ type RequireRoleProps = {
 /* Keyed by the role the page *requires*, not the one the visitor has — there
    are only two, so "you need to be a venue" already says "you are a musician".
    Reads better than assembling the sentence from both halves. */
-const wrongRoleCopy: Record<UserRole, { heading: string; body: string }> = {
+const wrongRoleCopy: Record<
+  UserRole,
+  { heading: string; body: string; switchLabel: string }
+> = {
   venue: {
     heading: 'This page is for venue accounts',
-    body: 'Only venues can post jam sessions. Your account is registered as a musician, so browsing sessions and booking spots is your side of the app.',
+    body: 'Only venues can post jam sessions. Your account is registered as a musician.',
+    switchLabel: 'Log in or register as a venue',
   },
   musician: {
     heading: 'This page is for musician accounts',
-    /* Doesn't end on "posting sessions is your side of the app" the way the
-       venue one does: that closes the door, and this side of the card now
-       offers a way through it. */
     body: 'Only musicians can book spots, and your account is registered as a venue. Log in with a musician account — or register one — to carry on.',
+    switchLabel: 'Log in or register as a musician',
   },
 };
+
+/* Neither body ends on "browsing sessions is your side of the app" any more.
+   That sentence was there to leave someone with somewhere to go, and it did it
+   by closing the door — which is the opposite of what the button under it now
+   offers. */
 
 /* This page as a `next` value — query string and all, because of
    /jams/[id]/book?slot=…: the slot is the one thing the visitor chose before
@@ -139,34 +146,41 @@ export default function RequireRole({
      nothing here", which isn't true and gives them nothing to do next. They
      aren't lost, they're holding the other kind of account. */
   if (user.role !== role) {
-    const { heading, body } = wrongRoleCopy[role];
+    const { heading, body, switchLabel } = wrongRoleCopy[role];
 
-    /* Sign out and land on the login page, pointed at wherever they should pick
-       the flow back up. Only offered on the musician side — see the button
-       below.
+    /* Sign out and go to the login page, so they can arrive back with the kind
+       of account this page needs.
 
        Leave the page *before* clearing the session, the same order
-       AccountMenu's logout uses. There it prevents the guard from capturing a
-       `next`; here the guard would build the identical URL, so what this
-       actually buys is not flashing the "Redirecting you…" spinner on the way.
+       AccountMenu's logout uses — and see `switchingAccount` above for what
+       stops the redirect effect from undoing it on the way.
 
-       Unlike that one, this *wants* the `next`. AccountMenu drops it because a
-       destination belonging to the account that just left is a trap — log back
-       in as the other role and you are greeted by this very card. Here the
-       destination is musician-only and musician is the role they are leaving to
-       go and get, so it is the one case where the two agree. */
-    const switchToMusician = () => {
+       Where they land afterwards is the one thing the two sides don't share:
+
+       - A venue turned away from the booking step was mid-flow, so `returnTo`
+         carries them back to the slot they picked. AccountMenu deliberately
+         drops `next` on logout, because a destination belonging to the account
+         that just left is a trap; this is the exception, since the page is
+         musician-only and musician is the role they are leaving to go and get.
+
+       - A musician turned away from the builder wasn't mid-anything —
+         /jams/new is a place, not a step — so there is nothing to return to and
+         no `next` to carry. /login with none sends them home, which is where a
+         new venue should start anyway: their board is empty until they publish
+         something. */
+    const switchAccount = () => {
       /* `returnTo` is assembled from route params by the page that passes it,
          so it is checked here as well — the same rule lib/nextPath applies to
          anything that reaches ?next=, since that is exactly where this is
          about to end up. */
-      const destination = safeNextPath(returnTo, currentPathAndSearch());
+      const destination =
+        role === 'musician' ? safeNextPath(returnTo, currentPathAndSearch()) : null;
 
       /* Before either of the next two lines: the effect must be stood down
          while this component can still re-render, not after logout wakes it. */
       switchingAccount.current = true;
 
-      router.replace(loginHref(destination));
+      router.replace(destination ? loginHref(destination) : '/login');
 
       /* Local state is cleared whether or not the request lands (see
          AuthContext), so a failure here still leaves the UI correct. */
@@ -181,30 +195,35 @@ export default function RequireRole({
           <h1 className="font-heading text-2xl">{heading}</h1>
           <p className="mt-3 text-sm opacity-80">{body}</p>
 
-          {/* Two different dead ends, so two different ways out.
+          {/* The account that can use this page is the answer to why they are
+              reading this, so it leads on both sides. */}
+          <button
+            type="button"
+            onClick={switchAccount}
+            className="btn btn-secondary mt-6 w-full font-bold"
+          >
+            {switchLabel}
+          </button>
 
-              A venue turned away from a musician-only page got here by
-              *reaching for something* — they picked a slot and pressed Next.
-              "Take me to my home page" answers a question they didn't ask;
-              what they need is the account that can finish the booking, and
-              the slot is still in the URL to come back to.
+          {/* Offered to a musician only, and only as the quieter of the two.
 
-              The other direction isn't the same shape. A musician on
-              /jams/new or /my-backstage didn't pick anything to come back
-              for — the builder is a place, not a step — so home stays the
-              honest offer there until that side gets a flow of its own. */}
-          {role === 'musician' ? (
-            <button
-              type="button"
-              onClick={switchToMusician}
-              className="btn btn-secondary mt-6 w-full font-bold"
-            >
-              Log in or register as a musician
-            </button>
-          ) : (
+              A venue reached this card by picking a slot and pressing Next —
+              they were mid-booking, and "here is your home page" answers a
+              question they didn't ask. A musician clicking "Post your jam" out
+              of curiosity is a likelier story than one who wants a second
+              account for it, so the way back matters on this side.
+
+              The header's navy rather than a second pink button: it is the same
+              weight without competing for the same eye, and daisyUI's own
+              secondary treatments both fail here — ghost has no edge on white,
+              and outline reads as the pink one disabled. Written out rather than
+              using a btn-* class for the same reason NavActions does: the hover
+              swaps to royal blue, the other half of the header's pair, where
+              daisyUI would grey it. */}
+          {role === 'venue' && (
             <Link
               href={HOME_BY_ROLE[user.role]}
-              className="btn btn-secondary mt-6 w-full font-bold"
+              className="btn mt-3 w-full border-brand-navy bg-brand-navy font-bold text-white shadow-none transition-colors hover:border-royal-blue hover:bg-royal-blue hover:text-white"
             >
               Take me to my home page
             </Link>
